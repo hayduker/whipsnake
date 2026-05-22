@@ -1,4 +1,7 @@
 use std::{env, fs::read_to_string, io::{self, Write}};
+use token::Token;
+
+mod token;
 
 fn main() -> Result<(), &'static str>{
     let args: Vec<String> = env::args().collect();
@@ -57,9 +60,6 @@ impl Scanner {
         vec!()
     }
 }
-
-#[derive(Debug)]
-struct Token {}
 
 
 fn _error(line: u32, message: &str) {
