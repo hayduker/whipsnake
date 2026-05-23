@@ -36,6 +36,7 @@ pub enum TokenKind {
     For,
     If,
     None,
+    Not,
     Or,
     Print,
     Return,

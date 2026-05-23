@@ -69,36 +69,6 @@ impl Scanner {
         }
     }
 
-    // pub fn scan_tokens(&mut self) {
-    //     // let mut tokens = vec![];
-
-    //     while !self.is_at_end() {
-    //         self.start = self.current;
-            
-    //         match self.scan_token() {
-    //             Ok(token) => {
-    //                 if token.kind != TokenKind::Inert {
-    //                     self.tokens.push(token)
-    //                 }
-    //             },
-    //             Err(ScannerError::UnexpectedCharacter(l, c)) => {
-    //                 eprintln!("ScannerError::UnexpectedCharacter line {l}: {c}")
-    //             },
-    //             Err(ScannerError::TooManyIndentations(l, n)) => {
-    //                 eprintln!("ScannerError::TooManyIndentationsline {l}: {n} more than previous line")
-    //             }
-    //         }
-    //     }
-
-    //     self.tokens.push(Token {
-    //         kind: TokenKind::Eof,
-    //         lexeme: String::from(""),
-    //         line: self.line,
-    //     });        
-
-    //     // self.tokens
-    // }
-
     fn next_token_group(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
         let c = self.advance().unwrap();
 
@@ -161,69 +131,6 @@ impl Scanner {
 
         Ok(Some(vec![self.build_token(kind)]))
     }
-
-    // fn scan_token(&mut self) -> Result<Token, ScannerError> {
-    //     let c = self.advance().unwrap();
-
-    //     println!("scan_token c = >{c}<");
-
-    //     let kind = match c {
-    //         '\n' => {
-    //             self.line += 1;
-    //             self.scan_indentation()?
-    //         },
-    //         // beginning-of-line indentation is consumed with self.scan_indentation
-    //         // in '\n' pattern, so this is whitespace elsewhere in the line
-    //         ' ' | '\t' | '\r' => TokenKind::Inert,
-    //         '(' => TokenKind::LeftParen,
-    //         ')' => TokenKind::RightParen,
-    //         ':' => TokenKind::Colon,
-    //         ',' => TokenKind::Comma,
-    //         '.' => TokenKind::Def,
-    //         '-' => TokenKind::Minus,
-    //         '+' => TokenKind::Plus,
-    //         '/' => TokenKind::Slash,
-    //         '*' => TokenKind::Star,
-    //         '!' => {
-    //             if self.advance_if_match('=') {
-    //                 TokenKind::BangEqual
-    //             } else {
-    //                 TokenKind::Bang
-    //             }
-    //         },
-    //         '=' => {
-    //             if self.advance_if_match('=') {
-    //                 TokenKind::EqualEqual
-    //             } else {
-    //                 TokenKind::Equal
-    //             }
-    //         },
-    //         '<' => {
-    //             if self.advance_if_match('=') {
-    //                 TokenKind::LessEqual
-    //             } else {
-    //                 TokenKind::Less
-    //             }
-    //         },
-    //         '>' => {
-    //             if self.advance_if_match('=') {
-    //                 TokenKind::GreaterEqual
-    //             } else {
-    //                 TokenKind::Greater
-    //             }
-    //         },
-    //         // a python comment
-    //         '#' => {
-    //             while self.peek() != Some('\n') && !self.is_at_end() {
-    //                 self.advance();
-    //             }
-    //             TokenKind::Inert
-    //         }
-    //         _ => return Err(ScannerError::UnexpectedCharacter(self.line, c))
-    //     };
-
-    //     Ok(self.build_token(kind))
-    // }
 
     fn scan_indentation(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
         let mut num_spaces: usize = 0;
