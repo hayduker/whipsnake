@@ -16,20 +16,14 @@ macro_rules! test_no_errors {
 
 macro_rules! test_single_char {
     ($name:ident, $input:expr, $kind:expr) => {
-        #[test]
-        fn $name() {
-            let tokens: Vec<Token> = Scanner::new($input)
-                .map(|r| r.unwrap())
-                .collect();
-
-            assert_eq!(
-                tokens,
-                vec![
-                    Token::new($kind, String::from($input), 1),
-                    Token::new(TokenKind::Eof, String::from(""), 1),
-                ]
-            );
-        }
+        test_no_errors![
+            $name,
+            $input,
+            vec![
+                Token::new($kind, String::from($input), 1),
+                Token::new(TokenKind::Eof, String::from(""), 1),
+            ]
+        ];
     };
 }
 
@@ -54,5 +48,67 @@ test_no_errors!(
         Token::new(TokenKind::Plus, String::from("+"), 1),
         Token::new(TokenKind::Minus, String::from("-"), 1),
         Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_multiple_lines,
+    "+*<>=\n.!=",
+    vec![
+        Token::new(TokenKind::Plus, String::from("+"), 1),
+        Token::new(TokenKind::Star, String::from("*"), 1),
+        Token::new(TokenKind::Less, String::from("<"), 1),
+        Token::new(TokenKind::GreaterEqual, String::from(">="), 1),
+        Token::new(TokenKind::Dot, String::from("."), 2),
+        Token::new(TokenKind::BangEqual, String::from("!="), 2),
+        Token::new(TokenKind::Eof, String::from(""), 2),
+    ]
+);
+
+test_no_errors!(
+    scan_internal_whitespace,
+    "+ *\t<\r>   =\n.!=",
+    vec![
+        Token::new(TokenKind::Plus, String::from("+"), 1),
+        Token::new(TokenKind::Star, String::from("*"), 1),
+        Token::new(TokenKind::Less, String::from("<"), 1),
+        Token::new(TokenKind::Greater, String::from(">"), 1),
+        Token::new(TokenKind::Equal, String::from("="), 1),
+        Token::new(TokenKind::Dot, String::from("."), 2),
+        Token::new(TokenKind::BangEqual, String::from("!="), 2),
+        Token::new(TokenKind::Eof, String::from(""), 2),
+    ]
+);
+
+test_no_errors!(
+    scan_comments,
+    "+*<>=# blah blah blah",
+    vec![
+        Token::new(TokenKind::Plus, String::from("+"), 1),
+        Token::new(TokenKind::Star, String::from("*"), 1),
+        Token::new(TokenKind::Less, String::from("<"), 1),
+        Token::new(TokenKind::GreaterEqual, String::from(">="), 1),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_indentation,
+    ":\n    :\n        :\n    :\n        :\n:\n:",
+    vec![
+        Token::new(TokenKind::Colon, String::from(":"), 1),
+        Token::new(TokenKind::Indent, String::from(""), 2),
+        Token::new(TokenKind::Colon, String::from(":"), 2),
+        Token::new(TokenKind::Indent, String::from(""), 3),
+        Token::new(TokenKind::Colon, String::from(":"), 3),
+        Token::new(TokenKind::Dedent, String::from(""), 4),
+        Token::new(TokenKind::Colon, String::from(":"), 4),
+        Token::new(TokenKind::Indent, String::from(""), 5),
+        Token::new(TokenKind::Colon, String::from(":"), 5),
+        Token::new(TokenKind::Dedent, String::from(""), 6),
+        Token::new(TokenKind::Dedent, String::from(""), 6),
+        Token::new(TokenKind::Colon, String::from(":"), 6),
+        Token::new(TokenKind::Colon, String::from(":"), 7),
+        Token::new(TokenKind::Eof, String::from(""), 7),
     ]
 );

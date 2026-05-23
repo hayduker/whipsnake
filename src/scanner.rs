@@ -158,7 +158,7 @@ impl Scanner {
         if level == self.indent_level + 1 {
             generated_tokens.push(Token::new(
                 TokenKind::Indent,
-                self.current_lexeme(),
+                String::from(""),
                 self.line
             ));
         } else if level < self.indent_level {
@@ -166,7 +166,7 @@ impl Scanner {
             for _ in 0..num_dedents {
                 generated_tokens.push(Token::new(
                     TokenKind::Dedent,
-                    self.current_lexeme(),
+                    String::from(""),
                     self.line
                 ));
             }
