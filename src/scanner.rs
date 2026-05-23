@@ -1,7 +1,8 @@
 use crate::token::{TokenKind, Token};
 
 enum ScannerError {
-    UnexpectedCharacter(char),
+    UnexpectedCharacter(usize, char),
+    TooManyIndentations(usize, usize),
 }
 
 pub struct Scanner {
@@ -37,8 +38,11 @@ impl Scanner {
                         self.tokens.push(token)
                     }
                 },
-                Err(ScannerError::UnexpectedCharacter(c)) => {
-                    eprintln!("ScannerError::UnexpectedCharacter {c}")
+                Err(ScannerError::UnexpectedCharacter(l, c)) => {
+                    eprintln!("ScannerError::UnexpectedCharacter line {l}: {c}")
+                },
+                Err(ScannerError::TooManyIndentations(l, n)) => {
+                    eprintln!("ScannerError::TooManyIndentationsline {l}: {n} more than previous line")
                 }
             }
         }
@@ -59,36 +63,12 @@ impl Scanner {
 
         let kind = match c {
             '\n' => {
-                println!("got newline!");
                 self.line += 1;
-                
-                // we have to check the next line for indentation now
-                let mut num_spaces: usize = 0;
-                while self.peek() == Some(' ') {
-                    num_spaces += 1;
-                    self.advance();
-                }
-
-                println!("num_spaces = {num_spaces}");
-
-                let level = num_spaces / 4;
-
-                println!("new level = {}, old level = {}", level, self.indent_level);
-
-                if level == self.indent_level {
-                    // self.tokens.push(self.build_token(TokenKind::Inert));
-                } else if level == self.indent_level + 1 {
-                    self.tokens.push(self.build_token(TokenKind::Indent));
-                } else if level < self.indent_level {
-                    let num_dedents = self.indent_level - level;
-                    for _ in 0..num_dedents {
-                        self.tokens.push(self.build_token(TokenKind::Dedent));
-                    }
-                }
-                self.indent_level = level;
-
-                TokenKind::Inert
-            }
+                self.scan_indentation()?
+            },
+            // beginning-of-line indentation is consumed with self.scan_indentation
+            // in '\n' pattern, so this is whitespace elsewhere in the line
+            ' ' | '\t' | '\r' => TokenKind::Inert,
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
             ':' => TokenKind::Colon,
@@ -133,10 +113,32 @@ impl Scanner {
                 }
                 TokenKind::Inert
             }
-            _ => return Err(ScannerError::UnexpectedCharacter(c))
+            _ => return Err(ScannerError::UnexpectedCharacter(self.line, c))
         };
 
         Ok(self.build_token(kind))
+    }
+
+    fn scan_indentation(&mut self) -> Result<TokenKind, ScannerError> {
+        let mut num_spaces: usize = 0;
+        while self.advance_if_match(' ') { num_spaces += 1 }
+        let level = num_spaces / 4;
+        println!("num_spaces = {num_spaces}, new level = {}, old level = {}", level, self.indent_level);
+
+        if level == self.indent_level + 1 {
+            self.tokens.push(self.build_token(TokenKind::Indent));
+        } else if level < self.indent_level {
+            let num_dedents = self.indent_level - level;
+            for _ in 0..num_dedents {
+                self.tokens.push(self.build_token(TokenKind::Dedent));
+            }
+        } else if level != self.indent_level {
+            let how_many = level - self.indent_level;
+            return Err(ScannerError::TooManyIndentations(self.line, how_many));
+        }
+        self.indent_level = level;
+
+        Ok(TokenKind::Inert)
     }
 
     fn advance(&mut self) -> Option<char> {
