@@ -48,25 +48,46 @@ impl Scanner {
         let c = self.advance();
         // println!("scan_token got c = {c}");
 
-        match c {
-            '(' => Ok(self.build_token(TokenKind::LeftParen)),
-            ')' => Ok(self.build_token(TokenKind::RightParen)),
-            ',' => Ok(self.build_token(TokenKind::Comma)),
-            '.' => Ok(self.build_token(TokenKind::Def)),
-            '-' => Ok(self.build_token(TokenKind::Minus)),
-            '+' => Ok(self.build_token(TokenKind::Plus)),
-            '*' => Ok(self.build_token(TokenKind::Star)),
+        let kind = match c {
+            '(' => TokenKind::LeftParen,
+            ')' => TokenKind::RightParen,
+            ',' => TokenKind::Comma,
+            '.' => TokenKind::Def,
+            '-' => TokenKind::Minus,
+            '+' => TokenKind::Plus,
+            '*' => TokenKind::Star,
             '!' => {
-                let kind = if self.advance_if_match('=') {
+                if self.advance_if_match('=') {
                     TokenKind::BangEqual
                 } else {
                     TokenKind::Bang
-                };
-
-                Ok(self.build_token(kind))
+                }
             },
-            _ => Err(ScannerError::UnexpectedCharacter(c))
-        }
+            '=' => {
+                if self.advance_if_match('=') {
+                    TokenKind::EqualEqual
+                } else {
+                    TokenKind::Equal
+                }
+            },
+            '<' => {
+                if self.advance_if_match('=') {
+                    TokenKind::LessEqual
+                } else {
+                    TokenKind::Less
+                }
+            },
+            '>' => {
+                if self.advance_if_match('=') {
+                    TokenKind::GreaterEqual
+                } else {
+                    TokenKind::Greater
+                }
+            },
+            _ => return Err(ScannerError::UnexpectedCharacter(c))
+        };
+
+        Ok(self.build_token(kind))
     }
 
     fn advance(&mut self) -> char {
