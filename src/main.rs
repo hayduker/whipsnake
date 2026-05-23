@@ -1,7 +1,9 @@
 use std::{env, fs::read_to_string, io::{self, Write}};
 use token::Token;
+use scanner::Scanner;
 
 mod token;
+mod scanner;
 
 fn main() -> Result<(), &'static str>{
     let args: Vec<String> = env::args().collect();
@@ -41,26 +43,13 @@ fn run_file(filename: &str) {
 }
 
 fn run(source: String) {
-    let scanner = Scanner::new(source);
+    let mut scanner = Scanner::new(source.as_str());
     let tokens = scanner.scan_tokens();
 
     for token in tokens {
         println!("{:?}", token);
     }
 }
-
-struct Scanner {}
-
-impl Scanner {
-    fn new(_source: String) -> Scanner {
-        Scanner {}  
-    }
-
-    fn scan_tokens(&self) -> Vec<Token> {
-        vec!()
-    }
-}
-
 
 fn _error(line: u32, message: &str) {
     _report(line, "", message);

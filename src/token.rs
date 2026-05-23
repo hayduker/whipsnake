@@ -1,5 +1,5 @@
 #[derive(Debug)]
-enum TokenType {
+pub enum TokenKind {
 // single-character tokens
     LeftParen,
     RightParen,
@@ -42,12 +42,19 @@ enum TokenType {
     Super,
     True,
     While,
+
+    // python uses whitespace, I guess
+    Indent,
+    Dedent,
+
+    // makes the parser cleaner
+    Eof,
 }
 
 #[derive(Debug)]
-pub struct Token{
-    typ: TokenType,
-    lexeme: String,
+pub struct Token {
+    pub kind: TokenKind,
+    pub lexeme: String,
     // literal: idk what Nystrom is using this for yet,
-    line: u32,
+    pub line: usize,
 }
