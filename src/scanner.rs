@@ -5,6 +5,7 @@ use crate::token::{TokenKind, Token, Literal};
 #[derive(Debug)]
 pub enum ScannerError {
     UnexpectedCharacter(usize, char),
+    UnterminatedString(usize),
     TooManyIndentations(usize, usize),
 }
 
@@ -86,7 +87,7 @@ impl Scanner {
             ')' => TokenKind::RightParen,
             ':' => TokenKind::Colon,
             ',' => TokenKind::Comma,
-            '.' => TokenKind::Def,
+            '.' => TokenKind::Dot,
             '-' => TokenKind::Minus,
             '+' => TokenKind::Plus,
             '/' => TokenKind::Slash,
@@ -142,7 +143,7 @@ impl Scanner {
             _ => return Err(ScannerError::UnexpectedCharacter(self.line, c))
         };
 
-        Ok(Some(vec![self.build_token(kind)]))
+        Ok(Some(vec![Token::new(kind, self.current_lexeme(), self.line)]))
     }
 
     fn scan_indentation(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
@@ -155,11 +156,19 @@ impl Scanner {
         let mut generated_tokens = vec![];
 
         if level == self.indent_level + 1 {
-            generated_tokens.push(self.build_token(TokenKind::Indent));
+            generated_tokens.push(Token::new(
+                TokenKind::Indent,
+                self.current_lexeme(),
+                self.line
+            ));
         } else if level < self.indent_level {
             let num_dedents = self.indent_level - level;
             for _ in 0..num_dedents {
-                generated_tokens.push(self.build_token(TokenKind::Dedent));
+                generated_tokens.push(Token::new(
+                    TokenKind::Dedent,
+                    self.current_lexeme(),
+                    self.line
+                ));
             }
         } else if level != self.indent_level {
             let how_many = level - self.indent_level;
@@ -202,18 +211,8 @@ impl Scanner {
         }
     }
 
-    fn build_token(&self, kind: TokenKind) -> Token {
-        self.build_token_with_literal(kind, Literal::None)
-    }
-
-    fn build_token_with_literal(&self, kind: TokenKind, literal: Literal) -> Token {
-        let lexeme: String = self.source.get(self.start..self.current).unwrap().iter().collect();
-        Token {
-            kind,
-            lexeme,
-            literal,
-            line: self.line,
-        }
+    fn current_lexeme(&self) -> String {
+        self.source.get(self.start..self.current).unwrap().iter().collect()
     }
 
     fn is_at_end(&self) -> bool {

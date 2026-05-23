@@ -52,16 +52,31 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Literal {
     None,
     String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
     pub literal: Literal,
     pub line: usize,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, lexeme: String, line: usize) -> Self {
+        Self::with_literal(kind, lexeme, Literal::None, line)
+    }
+
+    pub fn with_literal(kind: TokenKind, lexeme: String, literal: Literal, line: usize) -> Token {
+        Self {
+            kind,
+            lexeme,
+            literal,
+            line,
+        }
+    }
 }

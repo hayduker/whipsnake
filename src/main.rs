@@ -1,8 +1,5 @@
 use std::{env, fs::read_to_string, io::{self, Write}};
-use scanner::{Scanner, ScannerError};
-
-mod token;
-mod scanner;
+use whipsnake::scanner::{Scanner, ScannerError};
 
 fn main() -> Result<(), &'static str>{
     let args: Vec<String> = env::args().collect();
@@ -47,11 +44,14 @@ fn run(source: String) {
         match result {
             Ok(token) => println!("{token:?}"),
             Err(ScannerError::UnexpectedCharacter(l, c)) => {
-                eprintln!("ScannerError: unexpected character {c} at line {l}")
+                eprintln!("ScannerError: unexpected character {c} at line {l}");
             },
             Err(ScannerError::TooManyIndentations(l, n)) => {
-                eprintln!("ScannerError: too many indentations at line {l}, got {n} more than previous line")
+                eprintln!("ScannerError: too many indentations at line {l}, got {n} more than previous line");
             },
+            Err(ScannerError::UnterminatedString(l)) => {
+                eprintln!("ScannerError: unterminated string at line {l}");
+            }
         }
     }
 }
