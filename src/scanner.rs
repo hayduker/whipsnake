@@ -1,5 +1,9 @@
 use crate::token::{TokenKind, Token};
 
+enum ScannerError {
+    UnexpectedCharacter(char),
+}
+
 pub struct Scanner {
     source: Vec<char>,
     tokens: Vec<Token>,
@@ -19,41 +23,43 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> &Vec<Token> {
-        // let mut tokens = vec![];
+    pub fn scan_tokens(&mut self) -> Vec<Token> {
+        let mut tokens = vec![];
 
         while !self.is_at_end() {
             self.start = self.current;
-            self.scan_token();
+            
+            match self.scan_token() {
+                Ok(token) => tokens.push(token),
+                Err(ScannerError::UnexpectedCharacter(c)) => {
+                    eprintln!("ScannerError::UnexpectedCharacter {c}")
+                }
+            }
         }
 
-        self.tokens.push(Token {
+        tokens.push(Token {
             kind: TokenKind::Eof,
             lexeme: String::from(""),
             line: self.line,
         });        
 
-        &self.tokens
+        tokens
     }
 
-    fn scan_token(&mut self) -> Token {
+    fn scan_token(&mut self) -> Result<Token, ScannerError> {
         let c = self.advance();
         // println!("scan_token got c = {c}");
 
-
         match c {
-            '(' => self.add_token(TokenKind::LeftParen),
-            ')' => self.add_token(TokenKind::RightParen),
-            ',' => self.add_token(TokenKind::Comma),
-            '.' => self.add_token(TokenKind::Def),
-            '-' => self.add_token(TokenKind::Minus),
-            '+' => self.add_token(TokenKind::Plus),
-            '/' => self.add_token(TokenKind::Slash),
-            '*' => self.add_token(TokenKind::Star),
-            _ => panic!("Scanning error: got unexpected character {c}")
+            '(' => Ok(self.build_token(TokenKind::LeftParen)),
+            ')' => Ok(self.build_token(TokenKind::RightParen)),
+            ',' => Ok(self.build_token(TokenKind::Comma)),
+            '.' => Ok(self.build_token(TokenKind::Def)),
+            '-' => Ok(self.build_token(TokenKind::Minus)),
+            '+' => Ok(self.build_token(TokenKind::Plus)),
+            '*' => Ok(self.build_token(TokenKind::Star)),
+            _ => Err(ScannerError::UnexpectedCharacter(*c))
         }
-
-        Token { kind: TokenKind::Class, lexeme: String::from(""), line: 0 }
     }
 
     fn advance(&mut self) -> &char {
@@ -63,13 +69,13 @@ impl Scanner {
         c
     }
 
-    fn add_token(&mut self, kind: TokenKind) {
+    fn build_token(&self, kind: TokenKind) -> Token {
         let text: String = self.source.get(self.start..self.current).unwrap().iter().collect();
-        self.tokens.push(Token {
+        Token {
             kind,
             lexeme: text,
             line: self.line,
-        });
+        }
     }
 
     // fn add_token_with_literal(&mut self, kind: TokenKind)
