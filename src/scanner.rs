@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::token::{TokenKind, Token};
+use crate::token::{TokenKind, Token, Literal};
 
 #[derive(Debug)]
 pub enum ScannerError {
@@ -10,7 +10,6 @@ pub enum ScannerError {
 
 pub struct Scanner {
     source: Vec<char>,
-    // pub tokens: Vec<Token>,
     indent_level: usize,
     start: usize,
     current: usize,
@@ -50,6 +49,7 @@ impl Iterator for Scanner {
         Some(Ok(Token {
             kind: TokenKind::Eof,
             lexeme: String::from(""),
+            literal: Literal::None,
             line: self.line,
         }))
     }
@@ -95,7 +95,7 @@ impl Scanner {
                 if self.advance_if_match('=') {
                     TokenKind::BangEqual
                 } else {
-                    TokenKind::Bang
+                    return Err(ScannerError::UnexpectedCharacter(self.line, c))
                 }
             },
             '=' => {
@@ -126,6 +126,19 @@ impl Scanner {
                 }
                 return Ok(None);
             }
+            // '"' => {
+            //     while self.peek() != Some('"') {
+            //         if self.peek() == '\n' || self.is_at_end() {
+            //             return Err(ScannerError::UnterminatedString((self.line)));
+            //         }
+            //         self.advance();
+            //     }
+
+            //     self.advance(); // eat the closing "
+                
+            //     let value = self.source.get(self.start..self.current);
+            //     return self.build_token(TokenKind::String, value);
+            // }
             _ => return Err(ScannerError::UnexpectedCharacter(self.line, c))
         };
 
@@ -190,15 +203,18 @@ impl Scanner {
     }
 
     fn build_token(&self, kind: TokenKind) -> Token {
-        let text: String = self.source.get(self.start..self.current).unwrap().iter().collect();
+        self.build_token_with_literal(kind, Literal::None)
+    }
+
+    fn build_token_with_literal(&self, kind: TokenKind, literal: Literal) -> Token {
+        let lexeme: String = self.source.get(self.start..self.current).unwrap().iter().collect();
         Token {
             kind,
-            lexeme: text,
+            lexeme,
+            literal,
             line: self.line,
         }
     }
-
-    // fn add_token_with_literal(&mut self, kind: TokenKind)
 
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()

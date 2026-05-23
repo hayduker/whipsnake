@@ -12,7 +12,6 @@ pub enum TokenKind {
     Star,
 
     // one or two character tokens
-    Bang,
     BangEqual,
     Equal,
     EqualEqual,
@@ -54,9 +53,15 @@ pub enum TokenKind {
 }
 
 #[derive(Debug)]
+pub enum Literal {
+    None,
+    String,
+}
+
+#[derive(Debug)]
 pub struct Token {
     pub kind: TokenKind,
     pub lexeme: String,
-    // literal: idk what Nystrom is using this for yet,
+    pub literal: Literal,
     pub line: usize,
 }
