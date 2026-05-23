@@ -48,10 +48,6 @@ pub enum TokenKind {
     Indent,
     Dedent,
 
-    // this won't appear in the token stream, but
-    // it simplifies the scanning logic a bit
-    Inert,
-
     // makes the parser cleaner
     Eof,
 }

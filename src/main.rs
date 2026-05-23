@@ -1,6 +1,5 @@
 use std::{env, fs::read_to_string, io::{self, Write}};
-use token::Token;
-use scanner::Scanner;
+use scanner::{Scanner, ScannerError};
 
 mod token;
 mod scanner;
@@ -43,11 +42,17 @@ fn run_file(filename: &str) {
 }
 
 fn run(source: String) {
-    let mut scanner = Scanner::new(source.as_str());
-    scanner.scan_tokens();
-
-    for token in scanner.tokens {
-        println!("{:?}", token);
+    let scanner = Scanner::new(source.as_str());
+    for result in scanner {
+        match result {
+            Ok(token) => println!("{token:?}"),
+            Err(ScannerError::UnexpectedCharacter(l, c)) => {
+                eprintln!("ScannerError: unexpected character {c} at line {l}")
+            },
+            Err(ScannerError::TooManyIndentations(l, n)) => {
+                eprintln!("ScannerError: too many indentations at line {l}, got {n} more than previous line")
+            },
+        }
     }
 }
 
@@ -59,3 +64,4 @@ fn _report(line: u32, donde: &str, message: &str) {
     println!("[line {line}] Error{donde}: {message}");
     // had_error = true; // Nystrom sets this in the top-level Lox class in Java
 }
+
