@@ -6,7 +6,6 @@ enum ScannerError {
 
 pub struct Scanner {
     source: Vec<char>,
-    tokens: Vec<Token>,
     start: usize,
     current: usize,
     line: usize,
@@ -16,7 +15,6 @@ impl Scanner {
     pub fn new(source: &str) -> Scanner {
         Scanner {
             source: source.chars().collect(),
-            tokens: vec![],
             start: 0,
             current: 0,
             line: 1,
@@ -58,15 +56,36 @@ impl Scanner {
             '-' => Ok(self.build_token(TokenKind::Minus)),
             '+' => Ok(self.build_token(TokenKind::Plus)),
             '*' => Ok(self.build_token(TokenKind::Star)),
-            _ => Err(ScannerError::UnexpectedCharacter(*c))
+            '!' => {
+                let kind = if self.advance_if_match('=') {
+                    TokenKind::BangEqual
+                } else {
+                    TokenKind::Bang
+                };
+
+                Ok(self.build_token(kind))
+            },
+            _ => Err(ScannerError::UnexpectedCharacter(c))
         }
     }
 
-    fn advance(&mut self) -> &char {
+    fn advance(&mut self) -> char {
         // println!("advance current = {}", self.current);
         let c = self.source.get(self.current).unwrap();
         self.current += 1;
-        c
+        *c
+    }
+
+    fn advance_if_match(&mut self, expected: char) -> bool {
+        if self.is_at_end() { return false; }
+
+        let next = self.source.get(self.current).unwrap();
+        if *next != expected {
+            return false;
+        }
+
+        self.current += 1;
+        true
     }
 
     fn build_token(&self, kind: TokenKind) -> Token {
