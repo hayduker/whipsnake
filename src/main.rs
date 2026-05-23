@@ -44,9 +44,9 @@ fn run_file(filename: &str) {
 
 fn run(source: String) {
     let mut scanner = Scanner::new(source.as_str());
-    let tokens = scanner.scan_tokens();
+    scanner.scan_tokens();
 
-    for token in tokens {
+    for token in scanner.tokens {
         println!("{:?}", token);
     }
 }

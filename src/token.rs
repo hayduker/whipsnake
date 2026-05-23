@@ -1,8 +1,9 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TokenKind {
-// single-character tokens
+    // single-character tokens
     LeftParen,
     RightParen,
+    Colon,
     Comma,
     Dot,
     Minus,
@@ -46,6 +47,10 @@ pub enum TokenKind {
     // python uses whitespace, I guess
     Indent,
     Dedent,
+
+    // this won't appear in the token stream, but
+    // it simplifies the scanning logic a bit
+    Inert,
 
     // makes the parser cleaner
     Eof,
