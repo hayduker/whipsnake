@@ -126,3 +126,59 @@ test_no_errors!(
         Token::new(TokenKind::Eof, String::from(""), 1),
     ]
 );
+
+test_no_errors!(
+    scan_empty_string,
+    "\"\"",
+    vec![
+        Token::with_literal(
+            TokenKind::String,
+            String::from("\"\""),
+            Literal::String(String::from("")),
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_float,
+    "3.14159",
+    vec![
+        Token::with_literal(
+            TokenKind::Number,
+            String::from("3.14159"),
+            Literal::Float(3.14159),
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_big_float,
+    "39401.1",
+    vec![
+        Token::with_literal(
+            TokenKind::Number,
+            String::from("39401.1"),
+            Literal::Float(39401.1),
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_integer,
+    "3",
+    vec![
+        Token::with_literal(
+            TokenKind::Number,
+            String::from("3"),
+            Literal::Float(3 as f64),
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);

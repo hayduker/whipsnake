@@ -122,6 +122,7 @@ impl Scanner {
             },
             '#' => return self.scan_comment(),
             '"' => return self.scan_string_literal(),
+            '0'..='9' => return self.scan_number_literal(),
             _ => return Err(ScannerError::UnexpectedCharacter(self.line, c))
         };
 
@@ -193,6 +194,41 @@ impl Scanner {
         )]));
     }
 
+    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+        while self.peek().map_or(false, |c| self.is_digit(c)) {
+            self.advance();
+        }
+
+        if !self.is_at_end() && self.peek().unwrap() == '.' && self.is_digit(self.peek_next().unwrap()) {
+            self.advance();
+        }
+
+        if self.peek() == Some('.') && self.peek_next().map_or(false, |c| self.is_digit(c)) {
+            self.advance();
+        }
+
+        while self.peek().map_or(false, |c| self.is_digit(c)) {
+            self.advance();
+        }
+
+        let float = self.current_lexeme()
+            .parse().expect("Scanner guarantees a well-formed numeric value in earlier part of this method.");
+
+        Ok(Some(vec![Token::with_literal(
+            TokenKind::Number,
+            self.current_lexeme(),
+            Literal::Float(float),
+            self.line
+        )]))
+    }
+
+    fn is_digit(&self, c: char) -> bool {
+        match c {
+            '0'..='9' => true,
+            _ => false,
+        }
+    }
+
     fn advance(&mut self) -> Option<char> {
         match self.peek() {
             Some(c) => {
@@ -215,10 +251,16 @@ impl Scanner {
 
     fn peek(&self) -> Option<char> {
         if self.is_at_end() {
-            None
-        } else {
-            Some(*self.source.get(self.current).unwrap())
+            return None;
         }
+        Some(*self.source.get(self.current).unwrap())
+    }
+
+    fn peek_next(&self) -> Option<char> {
+        if self.current + 1 >= self.source.len() {
+            return None;
+        }
+        Some(*self.source.get(self.current + 1).unwrap())
     }
 
     fn current_lexeme(&self) -> String {
