@@ -1,13 +1,11 @@
 use whipsnake::scanner::Scanner;
-use whipsnake::token::{Token, TokenKind, Literal};
+use whipsnake::token::{Literal, Token, TokenKind};
 
 macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]
         fn $name() {
-            let tokens: Vec<Token> = Scanner::new($input)
-                .map(|r| r.unwrap())
-                .collect();
+            let tokens: Vec<Token> = Scanner::new($input).map(|r| r.unwrap()).collect();
 
             assert_eq!(tokens, $expected);
         }

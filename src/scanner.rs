@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::token::{TokenKind, Token, Literal};
+use crate::token::{Literal, Token, TokenKind};
 
 #[derive(Debug)]
 pub enum ScannerError {
@@ -30,7 +30,7 @@ impl Iterator for Scanner {
         if self.is_done {
             return None;
         }
-        
+
         while !self.is_at_end() {
             self.start = self.current;
 
@@ -41,7 +41,7 @@ impl Iterator for Scanner {
                         return Some(Ok(self.token_buffer.pop_front().unwrap()));
                     }
                 }
-                Ok(None) => { /* non-indentation whitespace or comment */ },
+                Ok(None) => { /* non-indentation whitespace or comment */ }
                 Err(e) => return Some(Err(e)),
             }
         }
@@ -79,7 +79,7 @@ impl Scanner {
                 // after newlines we need to consider beginning-of-line whitespace
                 // since python uses semantic indentation
                 return self.scan_indentation();
-            },
+            }
             // beginning-of-line indentation is consumed with self.scan_indentation
             // in '\n' pattern, so this is whitespace elsewhere in the line
             ' ' | '\t' | '\r' => return Ok(None),
@@ -96,42 +96,48 @@ impl Scanner {
                 if self.advance_if_match('=') {
                     TokenKind::BangEqual
                 } else {
-                    return Err(ScannerError::UnexpectedCharacter(self.line, c))
+                    return Err(ScannerError::UnexpectedCharacter(self.line, c));
                 }
-            },
+            }
             '=' => {
                 if self.advance_if_match('=') {
                     TokenKind::EqualEqual
                 } else {
                     TokenKind::Equal
                 }
-            },
+            }
             '<' => {
                 if self.advance_if_match('=') {
                     TokenKind::LessEqual
                 } else {
                     TokenKind::Less
                 }
-            },
+            }
             '>' => {
                 if self.advance_if_match('=') {
                     TokenKind::GreaterEqual
                 } else {
                     TokenKind::Greater
                 }
-            },
+            }
             '#' => return self.scan_comment(),
             '"' => return self.scan_string_literal(),
             '0'..='9' => return self.scan_number_literal(),
-            _ => return Err(ScannerError::UnexpectedCharacter(self.line, c))
+            _ => return Err(ScannerError::UnexpectedCharacter(self.line, c)),
         };
 
-        Ok(Some(vec![Token::new(kind, self.current_lexeme(), self.line)]))
+        Ok(Some(vec![Token::new(
+            kind,
+            self.current_lexeme(),
+            self.line,
+        )]))
     }
 
     fn scan_indentation(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
         let mut num_spaces: usize = 0;
-        while self.advance_if_match(' ') { num_spaces += 1 }
+        while self.advance_if_match(' ') {
+            num_spaces += 1
+        }
         let level = num_spaces / 4;
 
         // println!("num_spaces = {num_spaces}, new level = {}, old level = {}", level, self.indent_level);
@@ -139,19 +145,11 @@ impl Scanner {
         let mut generated_tokens = vec![];
 
         if level == self.indent_level + 1 {
-            generated_tokens.push(Token::new(
-                TokenKind::Indent,
-                String::from(""),
-                self.line
-            ));
+            generated_tokens.push(Token::new(TokenKind::Indent, String::from(""), self.line));
         } else if level < self.indent_level {
             let num_dedents = self.indent_level - level;
             for _ in 0..num_dedents {
-                generated_tokens.push(Token::new(
-                    TokenKind::Dedent,
-                    String::from(""),
-                    self.line
-                ));
+                generated_tokens.push(Token::new(TokenKind::Dedent, String::from(""), self.line));
             }
         } else if level != self.indent_level {
             let how_many = level - self.indent_level;
@@ -182,10 +180,10 @@ impl Scanner {
         }
 
         self.advance(); // eat the closing "
-        
+
         let lexeme = self.current_lexeme();
-        let literal = lexeme.get(1..lexeme.len()-1).unwrap().to_string();
-        
+        let literal = lexeme.get(1..lexeme.len() - 1).unwrap().to_string();
+
         return Ok(Some(vec![Token::with_literal(
             TokenKind::String,
             lexeme,
@@ -199,7 +197,10 @@ impl Scanner {
             self.advance();
         }
 
-        if !self.is_at_end() && self.peek().unwrap() == '.' && self.is_digit(self.peek_next().unwrap()) {
+        if !self.is_at_end()
+            && self.peek().unwrap() == '.'
+            && self.is_digit(self.peek_next().unwrap())
+        {
             self.advance();
         }
 
@@ -211,14 +212,15 @@ impl Scanner {
             self.advance();
         }
 
-        let float = self.current_lexeme()
-            .parse().expect("Scanner guarantees a well-formed numeric value in earlier part of this method.");
+        let float = self.current_lexeme().parse().expect(
+            "Scanner guarantees a well-formed numeric value in earlier part of this method.",
+        );
 
         Ok(Some(vec![Token::with_literal(
             TokenKind::Number,
             self.current_lexeme(),
             Literal::Float(float),
-            self.line
+            self.line,
         )]))
     }
 
@@ -234,8 +236,8 @@ impl Scanner {
             Some(c) => {
                 self.current += 1;
                 Some(c)
-            },
-            None => None
+            }
+            None => None,
         }
     }
 
@@ -244,7 +246,7 @@ impl Scanner {
             Some(c) if c == expected => {
                 self.current += 1;
                 true
-            },
+            }
             _ => false,
         }
     }
@@ -264,7 +266,11 @@ impl Scanner {
     }
 
     fn current_lexeme(&self) -> String {
-        self.source.get(self.start..self.current).unwrap().iter().collect()
+        self.source
+            .get(self.start..self.current)
+            .unwrap()
+            .iter()
+            .collect()
     }
 
     fn is_at_end(&self) -> bool {
