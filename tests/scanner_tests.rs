@@ -180,3 +180,60 @@ test_no_errors!(
         Token::new(TokenKind::Eof, String::from(""), 1),
     ]
 );
+
+test_no_errors!(
+    scan_single_char_identifier,
+    "x",
+    vec![
+        Token::with_literal(
+            TokenKind::Identifier,
+            String::from("x"),
+            Literal::None,
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_pascal_identifier,
+    "PascalCase",
+    vec![
+        Token::with_literal(
+            TokenKind::Identifier,
+            String::from("PascalCase"),
+            Literal::None,
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_snake_identifier,
+    "snake_case",
+    vec![
+        Token::with_literal(
+            TokenKind::Identifier,
+            String::from("snake_case"),
+            Literal::None,
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+
+test_no_errors!(
+    scan_alphanum_identifier,
+    "a1_B2_c3_D4",
+    vec![
+        Token::with_literal(
+            TokenKind::Identifier,
+            String::from("a1_B2_c3_D4"),
+            Literal::None,
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
+    ]
+);
+

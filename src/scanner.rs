@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use crate::token::{Literal, Token, TokenKind};
 
@@ -123,6 +123,7 @@ impl Scanner {
             '#' => return self.scan_comment(),
             '"' => return self.scan_string_literal(),
             '0'..='9' => return self.scan_number_literal(),
+            'a'..='z' | 'A'..='Z' | '_' => return self.scan_indentifier(),
             _ => return Err(ScannerError::UnexpectedCharacter(self.line, c)),
         };
 
@@ -224,11 +225,34 @@ impl Scanner {
         )]))
     }
 
+    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+        while self.peek().map_or(false, |c| self.is_alpha_numeric(c)) {
+            self.advance();
+        }
+
+        Ok(Some(vec![Token::new(
+            TokenKind::Identifier,
+            self.current_lexeme(),
+            self.line
+        )]))
+    }
+
+    fn is_alpha(&self, c: char) -> bool {
+        match c {
+            'a'..='z' | 'A'..='Z' | '_' => true,
+            _ => false,
+        }
+    }
+
     fn is_digit(&self, c: char) -> bool {
         match c {
             '0'..='9' => true,
             _ => false,
         }
+    }
+
+    fn is_alpha_numeric(&self, c: char) -> bool {
+        self.is_alpha(c) || self.is_digit(c)
     }
 
     fn advance(&mut self) -> Option<char> {

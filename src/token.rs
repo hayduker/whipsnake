@@ -39,8 +39,8 @@ pub enum TokenKind {
     Or,
     Print,
     Return,
-    Selph,
     Super,
+    This,
     True,
     While,
 
