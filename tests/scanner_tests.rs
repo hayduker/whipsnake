@@ -1,5 +1,5 @@
 use whipsnake::scanner::Scanner;
-use whipsnake::token::{Token, TokenKind};
+use whipsnake::token::{Token, TokenKind, Literal};
 
 macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
@@ -110,5 +110,19 @@ test_no_errors!(
         Token::new(TokenKind::Colon, String::from(":"), 6),
         Token::new(TokenKind::Colon, String::from(":"), 7),
         Token::new(TokenKind::Eof, String::from(""), 7),
+    ]
+);
+
+test_no_errors!(
+    scan_string,
+    "\"hello!\"",
+    vec![
+        Token::with_literal(
+            TokenKind::String,
+            String::from("\"hello!\""),
+            Literal::String(String::from("hello!")),
+            1
+        ),
+        Token::new(TokenKind::Eof, String::from(""), 1),
     ]
 );

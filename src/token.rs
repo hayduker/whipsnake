@@ -55,7 +55,7 @@ pub enum TokenKind {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Literal {
     None,
-    String,
+    String(String),
 }
 
 #[derive(Debug, PartialEq, Eq)]

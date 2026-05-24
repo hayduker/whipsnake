@@ -120,26 +120,8 @@ impl Scanner {
                     TokenKind::Greater
                 }
             },
-            // a python comment
-            '#' => {
-                while self.peek() != Some('\n') && !self.is_at_end() {
-                    self.advance();
-                }
-                return Ok(None);
-            }
-            // '"' => {
-            //     while self.peek() != Some('"') {
-            //         if self.peek() == '\n' || self.is_at_end() {
-            //             return Err(ScannerError::UnterminatedString((self.line)));
-            //         }
-            //         self.advance();
-            //     }
-
-            //     self.advance(); // eat the closing "
-                
-            //     let value = self.source.get(self.start..self.current);
-            //     return self.build_token(TokenKind::String, value);
-            // }
+            '#' => return self.scan_comment(),
+            '"' => return self.scan_string_literal(),
             _ => return Err(ScannerError::UnexpectedCharacter(self.line, c))
         };
 
@@ -181,6 +163,34 @@ impl Scanner {
         } else {
             Ok(Some(generated_tokens))
         }
+    }
+
+    fn scan_comment(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+        while self.peek() != Some('\n') && !self.is_at_end() {
+            self.advance();
+        }
+        return Ok(None);
+    }
+
+    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+        while self.peek() != Some('"') {
+            if self.peek() == Some('\n') || self.is_at_end() {
+                return Err(ScannerError::UnterminatedString(self.line));
+            }
+            self.advance();
+        }
+
+        self.advance(); // eat the closing "
+        
+        let lexeme = self.current_lexeme();
+        let literal = lexeme.get(1..lexeme.len()-1).unwrap().to_string();
+        
+        return Ok(Some(vec![Token::with_literal(
+            TokenKind::String,
+            lexeme,
+            Literal::String(literal),
+            self.line,
+        )]));
     }
 
     fn advance(&mut self) -> Option<char> {
