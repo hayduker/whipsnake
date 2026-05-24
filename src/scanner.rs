@@ -230,8 +230,12 @@ impl Scanner {
             self.advance();
         }
 
+        let kind = self.lookup_keyword(
+            &self.current_lexeme(),
+        ).unwrap_or(TokenKind::Identifier);
+
         Ok(Some(vec![Token::new(
-            TokenKind::Identifier,
+            kind,
             self.current_lexeme(),
             self.line
         )]))
@@ -300,4 +304,25 @@ impl Scanner {
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
+
+    fn lookup_keyword(&self, identifier: &str) -> Option<TokenKind> {
+        match identifier {
+            "and"    => Some(TokenKind::And),
+            "class"  => Some(TokenKind::Class),
+            "def"    => Some(TokenKind::Def),
+            "elif"   => Some(TokenKind::Elif),
+            "else"   => Some(TokenKind::Else),
+            "for"    => Some(TokenKind::For),
+            "if"     => Some(TokenKind::If),
+            "not"    => Some(TokenKind::Not),
+            "or"     => Some(TokenKind::Or),
+            "print"  => Some(TokenKind::Print),
+            "return" => Some(TokenKind::Return),
+            "super"  => Some(TokenKind::Super),
+            "self"   => Some(TokenKind::This),
+            "while"  => Some(TokenKind::While),
+            _        => None,
+        }
+    }
+
 }

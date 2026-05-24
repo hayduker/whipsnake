@@ -25,6 +25,19 @@ macro_rules! test_single_char {
     };
 }
 
+macro_rules! test_suite_no_errors {
+    ([ $( ($name:ident, $input:expr, $expected:expr) ),* $(,)? ]) => {
+        $(
+            #[test]
+            fn $name() {
+                let tokens: Vec<Token> = Scanner::new($input).map(|r| r.unwrap()).collect();
+
+                assert_eq!(tokens, $expected);
+            }
+        )*
+    };
+}
+
 test_single_char!(scan_left_paren, "(", TokenKind::LeftParen);
 test_single_char!(scan_right_paren, ")", TokenKind::RightParen);
 test_single_char!(scan_colon, ":", TokenKind::Colon);
@@ -237,3 +250,32 @@ test_no_errors!(
     ]
 );
 
+macro_rules! tok {
+    ($kind:ident, $lexeme:expr, $line:expr) => {
+        Token::new(TokenKind::$kind, String::from($lexeme), $line)
+    };
+}
+
+test_suite_no_errors!([
+    // (test_empty_input, "", vec![]),
+    (scan_and, "and", vec![
+        tok![And, "and", 1],
+        tok![Eof, "", 1],
+    ]),
+]);
+
+
+            // "and"    => Some(TokenKind::And),
+            // "class"  => Some(TokenKind::Class),
+            // "def"    => Some(TokenKind::Def),
+            // "elif"   => Some(TokenKind::Elif),
+            // "else"   => Some(TokenKind::Else),
+            // "for"    => Some(TokenKind::For),
+            // "if"     => Some(TokenKind::If),
+            // "not"    => Some(TokenKind::Not),
+            // "or"     => Some(TokenKind::Or),
+            // "print"  => Some(TokenKind::Print),
+            // "return" => Some(TokenKind::Return),
+            // "super"  => Some(TokenKind::Super),
+            // "self"   => Some(TokenKind::This),
+            // "while"  => Some(TokenKind::While),
