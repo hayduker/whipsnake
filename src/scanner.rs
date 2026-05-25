@@ -312,14 +312,17 @@ impl Scanner {
             "def"    => Some(TokenKind::Def),
             "elif"   => Some(TokenKind::Elif),
             "else"   => Some(TokenKind::Else),
+            "False"  => Some(TokenKind::False), // really a literal
             "for"    => Some(TokenKind::For),
             "if"     => Some(TokenKind::If),
+            "None"   => Some(TokenKind::None), // really a literal
             "not"    => Some(TokenKind::Not),
             "or"     => Some(TokenKind::Or),
             "print"  => Some(TokenKind::Print),
             "return" => Some(TokenKind::Return),
             "super"  => Some(TokenKind::Super),
             "self"   => Some(TokenKind::This),
+            "True"   => Some(TokenKind::True), // really a literal
             "while"  => Some(TokenKind::While),
             _        => None,
         }

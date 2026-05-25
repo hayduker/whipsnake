@@ -156,7 +156,7 @@ test_suite_no_errors!([
         tok!(BangEqual, "!=", 2),
         tok!(Eof, "", 2),
     ]),
-    
+
     (scan_internal_whitespace, "+ *\t<\r>   =\n.!=", vec![
         tok!(Plus, "+", 1),
         tok!(Star, "*", 1),
@@ -167,7 +167,7 @@ test_suite_no_errors!([
         tok!(BangEqual, "!=", 2),
         tok!(Eof, "", 2),
     ]),
-    
+
     (scan_comments, "+*<>=# blah blah blah", vec![
         tok!(Plus, "+", 1),
         tok!(Star, "*", 1),
@@ -175,7 +175,7 @@ test_suite_no_errors!([
         tok!(GreaterEqual, ">=", 1),
         tok!(Eof, "", 1),
     ]),
-    
+
     (scan_indentation, ":\n    :\n        :\n    :\n        :\n:\n:", vec![
         tok!(Colon, ":", 1),
         tok!(Indent, "", 2),
@@ -192,95 +192,110 @@ test_suite_no_errors!([
         tok!(Colon, ":", 7),
         tok!(Eof, "", 7),
     ]),
-    
+
     (scan_single_char_identifier, "x", vec![
         tok_with_literal![Identifier, "x", None, 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_pascal_identifier, "PascalCase", vec![
         tok_with_literal![Identifier, "PascalCase", None, 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_snake_identifier, "snake_case", vec![
         tok_with_literal![Identifier, "snake_case", None, 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_alphanum_identifier, "a1_B2_c3_D4", vec![
         tok_with_literal![Identifier, "a1_B2_c3_D4", None, 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_and, "and", vec![
         tok![And, "and", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_class, "class", vec![
         tok![Class, "class", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_def, "def", vec![
         tok![Def, "def", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_elif, "elif", vec![
         tok![Elif, "elif", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_else, "else", vec![
         tok![Else, "else", 1],
         tok![Eof, "", 1],
     ]),
-    
+
+    (scan_false, "False", vec![
+        tok![False, "False", 1],
+        tok![Eof, "", 1],
+    ]),
+
     (scan_for, "for", vec![
         tok![For, "for", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_if, "if", vec![
         tok![If, "if", 1],
         tok![Eof, "", 1],
     ]),
-    
+
+    (scan_none, "None", vec![
+        tok![None, "None", 1],
+        tok![Eof, "", 1],
+    ]),
+
     (scan_not, "not", vec![
         tok![Not, "not", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_or, "or", vec![
         tok![Or, "or", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_print, "print", vec![
         tok![Print, "print", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_return, "return", vec![
         tok![Return, "return", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_super, "super", vec![
         tok![Super, "super", 1],
         tok![Eof, "", 1],
     ]),
-    
+
     (scan_self, "self", vec![
         tok![This, "self", 1],
         tok![Eof, "", 1],
     ]),
-    
+
+    (scan_true, "True", vec![
+        tok![True, "True", 1],
+        tok![Eof, "", 1],
+    ]),
+
     (scan_while, "while", vec![
         tok![While, "while", 1],
         tok![Eof, "", 1],
     ]),
-    
+
 ]);
