@@ -197,7 +197,8 @@ impl<'a> Scanner<'a> {
         self.advance(); // eat the closing "
 
         let lexeme = self.current_lexeme();
-        let literal = lexeme.get(1..lexeme.len() - 1).unwrap().to_string();
+        let literal = lexeme.get(1..lexeme.len() - 1)
+            .expect("String literal should be the same as the lexeme without the quotes on either side");
 
         return Ok(Some(vec![Token::with_literal(
             TokenKind::String,
@@ -283,7 +284,7 @@ impl<'a> Scanner<'a> {
             self.current = idx + c.len_utf8();
             Some(c)
         } else {
-            // self.current = self.source.len();
+            self.current = self.source.len();
             None
         }
     }
@@ -302,26 +303,10 @@ impl<'a> Scanner<'a> {
     }
 
     fn peek(&mut self) -> Option<char> {
-        // if self.is_at_end() {
-            // return None;
-        // }
-        // Some(*self.source.get(self.current).unwrap())
         self.chars.peek().map(|&(_, c)| c)
     }
 
-    // fn peek_next(&self) -> Option<char> {
-    //     if self.current + 1 >= self.source.len() {
-    //         return None;
-    //     }
-    //     Some(*self.source.get(self.current + 1).unwrap())
-    // }
-
     fn current_lexeme(&self) -> &'a str {
-        // self.source
-        //     .get(self.start..self.current)
-        //     .unwrap()
-        //     .iter()
-        //     .collect()
         &self.source[self.start..self.current]
     }
 

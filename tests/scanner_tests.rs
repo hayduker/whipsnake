@@ -57,7 +57,7 @@ test_no_errors!(
         Token::with_literal(
             TokenKind::String,
             "\"hello!\"",
-            Literal::String(String::from("hello!")),
+            Literal::String("hello!"),
             1
         ),
         Token::new(TokenKind::Eof, "", 1),
@@ -71,7 +71,7 @@ test_no_errors!(
         Token::with_literal(
             TokenKind::String,
             "\"\"",
-            Literal::String(String::from("")),
+            Literal::String(""),
             1
         ),
         Token::new(TokenKind::Eof, "", 1),

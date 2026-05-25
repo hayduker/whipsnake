@@ -53,9 +53,9 @@ pub enum TokenKind {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Literal {
+pub enum Literal<'a> {
     None,
-    String(String),
+    String(&'a str),
     Float(f64),
 }
 
@@ -63,7 +63,7 @@ pub enum Literal {
 pub struct Token<'a> {
     pub kind: TokenKind,
     pub lexeme: &'a str,
-    pub literal: Literal,
+    pub literal: Literal<'a>,
     pub line: usize,
 }
 
@@ -75,7 +75,7 @@ impl<'a> Token<'a> {
     pub fn with_literal(
         kind: TokenKind,
         lexeme: &'a str,
-        literal: Literal,
+        literal: Literal<'a>,
         line: usize,
     ) -> Token<'a> {
         Self {
