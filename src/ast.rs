@@ -1,10 +1,10 @@
 use crate::token::{Token, Literal};
 
-enum Expr {
+enum Expr<'a> {
     Literal(Literal),
-    Grouping(Box<Expr>),
-    Unary { operator: Token, right: Box<Expr> },
-    Binary { left: Box<Expr>, operator: Token, right: Box<Expr> },
+    Grouping(Box<Expr<'a>>),
+    Unary { operator: Token<'a>, right: Box<Expr<'a>> },
+    Binary { left: Box<Expr<'a>>, operator: Token<'a>, right: Box<Expr<'a>> },
 }
 
 

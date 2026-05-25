@@ -60,19 +60,24 @@ pub enum Literal {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Token {
+pub struct Token<'a> {
     pub kind: TokenKind,
-    pub lexeme: String,
+    pub lexeme: &'a str,
     pub literal: Literal,
     pub line: usize,
 }
 
-impl Token {
-    pub fn new(kind: TokenKind, lexeme: String, line: usize) -> Self {
+impl<'a> Token<'a> {
+    pub fn new(kind: TokenKind, lexeme: &'a str, line: usize) -> Self {
         Self::with_literal(kind, lexeme, Literal::None, line)
     }
 
-    pub fn with_literal(kind: TokenKind, lexeme: String, literal: Literal, line: usize) -> Token {
+    pub fn with_literal(
+        kind: TokenKind,
+        lexeme: &'a str,
+        literal: Literal,
+        line: usize,
+    ) -> Token<'a> {
         Self {
             kind,
             lexeme,

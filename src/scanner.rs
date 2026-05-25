@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, str::CharIndices, iter::Peekable};
 
 use crate::token::{Literal, Token, TokenKind};
 
@@ -7,20 +7,22 @@ pub enum ScannerError {
     UnexpectedCharacter(usize, char),
     UnterminatedString(usize),
     TooManyIndentations(usize, usize),
+    MalformedNumberLiteral(usize),
 }
 
-pub struct Scanner {
-    source: Vec<char>,
-    indent_level: usize,
+pub struct Scanner<'a> {
+    source: &'a str,
+    chars: Peekable<CharIndices<'a>>,
     start: usize,
     current: usize,
     line: usize,
-    token_buffer: VecDeque<Token>,
+    indent_level: usize,
+    token_buffer: VecDeque<Token<'a>>,
     is_done: bool,
 }
 
-impl Iterator for Scanner {
-    type Item = Result<Token, ScannerError>;
+impl<'a> Iterator for Scanner<'a> {
+    type Item = Result<Token<'a>, ScannerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if !self.token_buffer.is_empty() {
@@ -49,29 +51,31 @@ impl Iterator for Scanner {
         self.is_done = true;
         Some(Ok(Token {
             kind: TokenKind::Eof,
-            lexeme: String::from(""),
+            lexeme: "",
             literal: Literal::None,
             line: self.line,
         }))
     }
 }
 
-impl Scanner {
-    pub fn new(source: &str) -> Scanner {
+impl<'a> Scanner<'a> {
+    pub fn new(source: &'a str) -> Scanner<'a> {
         Scanner {
-            source: source.chars().collect(),
-            // tokens: vec![],
-            indent_level: 0,
+            source,
+            chars: source.char_indices().peekable(),
             start: 0,
             current: 0,
             line: 1,
+            indent_level: 0,
             token_buffer: VecDeque::new(),
             is_done: false,
         }
     }
 
-    fn next_token_group(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+    fn next_token_group(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
         let c = self.advance().unwrap();
+
+        // println!("next_token_group called and got c = {c}");
 
         let kind = match c {
             '\n' => {
@@ -134,7 +138,7 @@ impl Scanner {
         )]))
     }
 
-    fn scan_indentation(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+    fn scan_indentation(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
         let mut num_spaces: usize = 0;
         while self.advance_if_match(' ') {
             num_spaces += 1
@@ -146,11 +150,21 @@ impl Scanner {
         let mut generated_tokens = vec![];
 
         if level == self.indent_level + 1 {
-            generated_tokens.push(Token::new(TokenKind::Indent, String::from(""), self.line));
+            generated_tokens.push(
+                Token::new(
+                    TokenKind::Indent,
+                    "",
+                    self.line
+                ));
         } else if level < self.indent_level {
             let num_dedents = self.indent_level - level;
             for _ in 0..num_dedents {
-                generated_tokens.push(Token::new(TokenKind::Dedent, String::from(""), self.line));
+                generated_tokens.push(
+                    Token::new(
+                        TokenKind::Dedent,
+                        "",
+                        self.line
+                    ));
             }
         } else if level != self.indent_level {
             let how_many = level - self.indent_level;
@@ -165,14 +179,14 @@ impl Scanner {
         }
     }
 
-    fn scan_comment(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+    fn scan_comment(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
         while self.peek() != Some('\n') && !self.is_at_end() {
             self.advance();
         }
         return Ok(None);
     }
 
-    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
         while self.peek() != Some('"') {
             if self.peek() == Some('\n') || self.is_at_end() {
                 return Err(ScannerError::UnterminatedString(self.line));
@@ -193,24 +207,19 @@ impl Scanner {
         )]));
     }
 
-    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
-        while self.peek().map_or(false, |c| self.is_digit(c)) {
-            self.advance();
-        }
+    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
+        while self.peek_is_digit() { self.advance(); }
 
-        if !self.is_at_end()
-            && self.peek().unwrap() == '.'
-            && self.is_digit(self.peek_next().unwrap())
-        {
-            self.advance();
-        }
+        println!("got first (and maybe only) digit clump");
 
-        if self.peek() == Some('.') && self.peek_next().map_or(false, |c| self.is_digit(c)) {
+        if self.peek() == Some('.') {
             self.advance();
-        }
 
-        while self.peek().map_or(false, |c| self.is_digit(c)) {
-            self.advance();
+            if !self.peek_is_digit() {
+                return Err(ScannerError::MalformedNumberLiteral(self.line));
+            }
+
+            while self.peek_is_digit() { self.advance(); }
         }
 
         let float = self.current_lexeme().parse().expect(
@@ -225,7 +234,16 @@ impl Scanner {
         )]))
     }
 
-    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token>>, ScannerError> {
+    fn peek_is_digit(&mut self) -> bool {
+        // println!("peek_is_digit called");
+        self.peek().map_or(false, |c| self.is_digit(c))
+    }
+
+    // fn peek_next_is_digit(&mut self) -> bool {
+    //     self.peek_next().map_or(false, |c| self.is_digit(c))
+    // }
+
+    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
         while self.peek().map_or(false, |c| self.is_alpha_numeric(c)) {
             self.advance();
         }
@@ -260,45 +278,51 @@ impl Scanner {
     }
 
     fn advance(&mut self) -> Option<char> {
-        match self.peek() {
-            Some(c) => {
-                self.current += 1;
-                Some(c)
-            }
-            None => None,
+        if let Some((idx, c)) = self.chars.next() {
+            // update current to the *end* byte of this character
+            self.current = idx + c.len_utf8();
+            Some(c)
+        } else {
+            // self.current = self.source.len();
+            None
         }
     }
 
     fn advance_if_match(&mut self, expected: char) -> bool {
-        match self.peek() {
-            Some(c) if c == expected => {
-                self.current += 1;
-                true
+        if let Some((idx, c)) = self.chars.next_if(|&(_, c)| c == expected) {
+            // update current to the *end* byte of this character
+            self.current = idx + c.len_utf8();
+            true
+        } else {
+            if self.chars.peek().is_none() {
+                self.current = self.source.len();
             }
-            _ => false,
+            false
         }
     }
 
-    fn peek(&self) -> Option<char> {
-        if self.is_at_end() {
-            return None;
-        }
-        Some(*self.source.get(self.current).unwrap())
+    fn peek(&mut self) -> Option<char> {
+        // if self.is_at_end() {
+            // return None;
+        // }
+        // Some(*self.source.get(self.current).unwrap())
+        self.chars.peek().map(|&(_, c)| c)
     }
 
-    fn peek_next(&self) -> Option<char> {
-        if self.current + 1 >= self.source.len() {
-            return None;
-        }
-        Some(*self.source.get(self.current + 1).unwrap())
-    }
+    // fn peek_next(&self) -> Option<char> {
+    //     if self.current + 1 >= self.source.len() {
+    //         return None;
+    //     }
+    //     Some(*self.source.get(self.current + 1).unwrap())
+    // }
 
-    fn current_lexeme(&self) -> String {
-        self.source
-            .get(self.start..self.current)
-            .unwrap()
-            .iter()
-            .collect()
+    fn current_lexeme(&self) -> &'a str {
+        // self.source
+        //     .get(self.start..self.current)
+        //     .unwrap()
+        //     .iter()
+        //     .collect()
+        &self.source[self.start..self.current]
     }
 
     fn is_at_end(&self) -> bool {

@@ -3,13 +3,13 @@ use whipsnake::token::{Literal, Token, TokenKind};
 
 macro_rules! tok {
     ($kind:ident, $lexeme:expr, $line:expr) => {
-        Token::new(TokenKind::$kind, String::from($lexeme), $line)
+        Token::new(TokenKind::$kind, $lexeme, $line)
     };
 }
 
 macro_rules! tok_with_literal {
     ($kind:ident, $lexeme:expr, $lit:ident, $line:expr) => {
-        Token::with_literal(TokenKind::$kind, String::from($lexeme), Literal::$lit, $line)
+        Token::with_literal(TokenKind::$kind, $lexeme, Literal::$lit, $line)
     };
 }
 
@@ -30,8 +30,8 @@ macro_rules! test_single_char {
             $name,
             $input,
             vec![
-                Token::new(TokenKind::$kind, String::from($input), 1),
-                Token::new(TokenKind::Eof, String::from(""), 1),
+                Token::new(TokenKind::$kind, $input, 1),
+                Token::new(TokenKind::Eof, "", 1),
             ]
         ];
     };
@@ -56,11 +56,11 @@ test_no_errors!(
     vec![
         Token::with_literal(
             TokenKind::String,
-            String::from("\"hello!\""),
+            "\"hello!\"",
             Literal::String(String::from("hello!")),
             1
         ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
+        Token::new(TokenKind::Eof, "", 1),
     ]
 );
 
@@ -70,11 +70,11 @@ test_no_errors!(
     vec![
         Token::with_literal(
             TokenKind::String,
-            String::from("\"\""),
+            "\"\"",
             Literal::String(String::from("")),
             1
         ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
+        Token::new(TokenKind::Eof, "", 1),
     ]
 );
 
@@ -84,11 +84,11 @@ test_no_errors!(
     vec![
         Token::with_literal(
             TokenKind::Number,
-            String::from("3.14159"),
+            "3.14159",
             Literal::Float(3.14159),
             1
         ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
+        Token::new(TokenKind::Eof, "", 1),
     ]
 );
 
@@ -98,11 +98,11 @@ test_no_errors!(
     vec![
         Token::with_literal(
             TokenKind::Number,
-            String::from("39401.1"),
+            "39401.1",
             Literal::Float(39401.1),
             1
         ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
+        Token::new(TokenKind::Eof, "", 1),
     ]
 );
 
@@ -112,11 +112,11 @@ test_no_errors!(
     vec![
         Token::with_literal(
             TokenKind::Number,
-            String::from("3"),
+            "3",
             Literal::Float(3 as f64),
             1
         ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
+        Token::new(TokenKind::Eof, "", 1),
     ]
 );
 

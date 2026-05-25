@@ -49,15 +49,18 @@ fn run(source: String) {
             Ok(token) => println!("{token:?}"),
             Err(ScannerError::UnexpectedCharacter(l, c)) => {
                 eprintln!("ScannerError: unexpected character {c} at line {l}");
-            }
+            },
             Err(ScannerError::TooManyIndentations(l, n)) => {
                 eprintln!(
                     "ScannerError: too many indentations at line {l}, got {n} more than previous line"
                 );
-            }
+            },
             Err(ScannerError::UnterminatedString(l)) => {
                 eprintln!("ScannerError: unterminated string at line {l}");
-            }
+            },
+            Err(ScannerError::MalformedNumberLiteral(l)) => {
+                eprintln!("ScannerError: malformed number literal at line {l}");
+            },
         }
     }
 }
