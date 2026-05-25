@@ -1,6 +1,18 @@
 use whipsnake::scanner::Scanner;
 use whipsnake::token::{Literal, Token, TokenKind};
 
+macro_rules! tok {
+    ($kind:ident, $lexeme:expr, $line:expr) => {
+        Token::new(TokenKind::$kind, String::from($lexeme), $line)
+    };
+}
+
+macro_rules! tok_with_literal {
+    ($kind:ident, $lexeme:expr, $lit:ident, $line:expr) => {
+        Token::with_literal(TokenKind::$kind, String::from($lexeme), Literal::$lit, $line)
+    };
+}
+
 macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]
@@ -13,12 +25,12 @@ macro_rules! test_no_errors {
 }
 
 macro_rules! test_single_char {
-    ($name:ident, $input:expr, $kind:expr) => {
+    ($name:ident, $input:expr, $kind:ident) => {
         test_no_errors![
             $name,
             $input,
             vec![
-                Token::new($kind, String::from($input), 1),
+                Token::new(TokenKind::$kind, String::from($input), 1),
                 Token::new(TokenKind::Eof, String::from(""), 1),
             ]
         ];
@@ -37,92 +49,6 @@ macro_rules! test_suite_no_errors {
         )*
     };
 }
-
-test_single_char!(scan_left_paren, "(", TokenKind::LeftParen);
-test_single_char!(scan_right_paren, ")", TokenKind::RightParen);
-test_single_char!(scan_colon, ":", TokenKind::Colon);
-test_single_char!(scan_comma, ",", TokenKind::Comma);
-test_single_char!(scan_dot, ".", TokenKind::Dot);
-test_single_char!(scan_minus, "-", TokenKind::Minus);
-test_single_char!(scan_plus, "+", TokenKind::Plus);
-test_single_char!(scan_slash, "/", TokenKind::Slash);
-test_single_char!(scan_star, "*", TokenKind::Star);
-
-test_no_errors!(
-    scan_multiple_chars,
-    "()!==+-",
-    vec![
-        Token::new(TokenKind::LeftParen, String::from("("), 1),
-        Token::new(TokenKind::RightParen, String::from(")"), 1),
-        Token::new(TokenKind::BangEqual, String::from("!="), 1),
-        Token::new(TokenKind::Equal, String::from("="), 1),
-        Token::new(TokenKind::Plus, String::from("+"), 1),
-        Token::new(TokenKind::Minus, String::from("-"), 1),
-        Token::new(TokenKind::Eof, String::from(""), 1),
-    ]
-);
-
-test_no_errors!(
-    scan_multiple_lines,
-    "+*<>=\n.!=",
-    vec![
-        Token::new(TokenKind::Plus, String::from("+"), 1),
-        Token::new(TokenKind::Star, String::from("*"), 1),
-        Token::new(TokenKind::Less, String::from("<"), 1),
-        Token::new(TokenKind::GreaterEqual, String::from(">="), 1),
-        Token::new(TokenKind::Dot, String::from("."), 2),
-        Token::new(TokenKind::BangEqual, String::from("!="), 2),
-        Token::new(TokenKind::Eof, String::from(""), 2),
-    ]
-);
-
-test_no_errors!(
-    scan_internal_whitespace,
-    "+ *\t<\r>   =\n.!=",
-    vec![
-        Token::new(TokenKind::Plus, String::from("+"), 1),
-        Token::new(TokenKind::Star, String::from("*"), 1),
-        Token::new(TokenKind::Less, String::from("<"), 1),
-        Token::new(TokenKind::Greater, String::from(">"), 1),
-        Token::new(TokenKind::Equal, String::from("="), 1),
-        Token::new(TokenKind::Dot, String::from("."), 2),
-        Token::new(TokenKind::BangEqual, String::from("!="), 2),
-        Token::new(TokenKind::Eof, String::from(""), 2),
-    ]
-);
-
-test_no_errors!(
-    scan_comments,
-    "+*<>=# blah blah blah",
-    vec![
-        Token::new(TokenKind::Plus, String::from("+"), 1),
-        Token::new(TokenKind::Star, String::from("*"), 1),
-        Token::new(TokenKind::Less, String::from("<"), 1),
-        Token::new(TokenKind::GreaterEqual, String::from(">="), 1),
-        Token::new(TokenKind::Eof, String::from(""), 1),
-    ]
-);
-
-test_no_errors!(
-    scan_indentation,
-    ":\n    :\n        :\n    :\n        :\n:\n:",
-    vec![
-        Token::new(TokenKind::Colon, String::from(":"), 1),
-        Token::new(TokenKind::Indent, String::from(""), 2),
-        Token::new(TokenKind::Colon, String::from(":"), 2),
-        Token::new(TokenKind::Indent, String::from(""), 3),
-        Token::new(TokenKind::Colon, String::from(":"), 3),
-        Token::new(TokenKind::Dedent, String::from(""), 4),
-        Token::new(TokenKind::Colon, String::from(":"), 4),
-        Token::new(TokenKind::Indent, String::from(""), 5),
-        Token::new(TokenKind::Colon, String::from(":"), 5),
-        Token::new(TokenKind::Dedent, String::from(""), 6),
-        Token::new(TokenKind::Dedent, String::from(""), 6),
-        Token::new(TokenKind::Colon, String::from(":"), 6),
-        Token::new(TokenKind::Colon, String::from(":"), 7),
-        Token::new(TokenKind::Eof, String::from(""), 7),
-    ]
-);
 
 test_no_errors!(
     scan_string,
@@ -194,88 +120,167 @@ test_no_errors!(
     ]
 );
 
-test_no_errors!(
-    scan_single_char_identifier,
-    "x",
-    vec![
-        Token::with_literal(
-            TokenKind::Identifier,
-            String::from("x"),
-            Literal::None,
-            1
-        ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
-    ]
-);
+
+test_single_char!(scan_left_paren, "(", LeftParen);
+test_single_char!(scan_right_paren, ")", RightParen);
+test_single_char!(scan_colon, ":", Colon);
+test_single_char!(scan_comma, ",", Comma);
+test_single_char!(scan_dot, ".", Dot);
+test_single_char!(scan_minus, "-", Minus);
+test_single_char!(scan_plus, "+", Plus);
+test_single_char!(scan_slash, "/", Slash);
+test_single_char!(scan_star, "*", Star);
 
 test_no_errors!(
-    scan_pascal_identifier,
-    "PascalCase",
+    scan_multiple_chars,
+    "()!==+-",
     vec![
-        Token::with_literal(
-            TokenKind::Identifier,
-            String::from("PascalCase"),
-            Literal::None,
-            1
-        ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
+        tok!(LeftParen, "(", 1),
+        tok!(RightParen, ")", 1),
+        tok!(BangEqual, "!=", 1),
+        tok!(Equal, "=", 1),
+        tok!(Plus, "+", 1),
+        tok!(Minus, "-", 1),
+        tok!(Eof, "", 1),
     ]
 );
-
-test_no_errors!(
-    scan_snake_identifier,
-    "snake_case",
-    vec![
-        Token::with_literal(
-            TokenKind::Identifier,
-            String::from("snake_case"),
-            Literal::None,
-            1
-        ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
-    ]
-);
-
-test_no_errors!(
-    scan_alphanum_identifier,
-    "a1_B2_c3_D4",
-    vec![
-        Token::with_literal(
-            TokenKind::Identifier,
-            String::from("a1_B2_c3_D4"),
-            Literal::None,
-            1
-        ),
-        Token::new(TokenKind::Eof, String::from(""), 1),
-    ]
-);
-
-macro_rules! tok {
-    ($kind:ident, $lexeme:expr, $line:expr) => {
-        Token::new(TokenKind::$kind, String::from($lexeme), $line)
-    };
-}
 
 test_suite_no_errors!([
-    // (test_empty_input, "", vec![]),
+
+    (scan_multiple_lines, "+*<>=\n.!=", vec![
+        tok!(Plus, "+", 1),
+        tok!(Star, "*", 1),
+        tok!(Less, "<", 1),
+        tok!(GreaterEqual, ">=", 1),
+        tok!(Dot, ".", 2),
+        tok!(BangEqual, "!=", 2),
+        tok!(Eof, "", 2),
+    ]),
+    
+    (scan_internal_whitespace, "+ *\t<\r>   =\n.!=", vec![
+        tok!(Plus, "+", 1),
+        tok!(Star, "*", 1),
+        tok!(Less, "<", 1),
+        tok!(Greater, ">", 1),
+        tok!(Equal, "=", 1),
+        tok!(Dot, ".", 2),
+        tok!(BangEqual, "!=", 2),
+        tok!(Eof, "", 2),
+    ]),
+    
+    (scan_comments, "+*<>=# blah blah blah", vec![
+        tok!(Plus, "+", 1),
+        tok!(Star, "*", 1),
+        tok!(Less, "<", 1),
+        tok!(GreaterEqual, ">=", 1),
+        tok!(Eof, "", 1),
+    ]),
+    
+    (scan_indentation, ":\n    :\n        :\n    :\n        :\n:\n:", vec![
+        tok!(Colon, ":", 1),
+        tok!(Indent, "", 2),
+        tok!(Colon, ":", 2),
+        tok!(Indent, "", 3),
+        tok!(Colon, ":", 3),
+        tok!(Dedent, "", 4),
+        tok!(Colon, ":", 4),
+        tok!(Indent, "", 5),
+        tok!(Colon, ":", 5),
+        tok!(Dedent, "", 6),
+        tok!(Dedent, "", 6),
+        tok!(Colon, ":", 6),
+        tok!(Colon, ":", 7),
+        tok!(Eof, "", 7),
+    ]),
+    
+    (scan_single_char_identifier, "x", vec![
+        tok_with_literal![Identifier, "x", None, 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_pascal_identifier, "PascalCase", vec![
+        tok_with_literal![Identifier, "PascalCase", None, 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_snake_identifier, "snake_case", vec![
+        tok_with_literal![Identifier, "snake_case", None, 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_alphanum_identifier, "a1_B2_c3_D4", vec![
+        tok_with_literal![Identifier, "a1_B2_c3_D4", None, 1],
+        tok![Eof, "", 1],
+    ]),
+    
     (scan_and, "and", vec![
         tok![And, "and", 1],
         tok![Eof, "", 1],
     ]),
+    
+    (scan_class, "class", vec![
+        tok![Class, "class", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_def, "def", vec![
+        tok![Def, "def", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_elif, "elif", vec![
+        tok![Elif, "elif", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_else, "else", vec![
+        tok![Else, "else", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_for, "for", vec![
+        tok![For, "for", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_if, "if", vec![
+        tok![If, "if", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_not, "not", vec![
+        tok![Not, "not", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_or, "or", vec![
+        tok![Or, "or", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_print, "print", vec![
+        tok![Print, "print", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_return, "return", vec![
+        tok![Return, "return", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_super, "super", vec![
+        tok![Super, "super", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_self, "self", vec![
+        tok![This, "self", 1],
+        tok![Eof, "", 1],
+    ]),
+    
+    (scan_while, "while", vec![
+        tok![While, "while", 1],
+        tok![Eof, "", 1],
+    ]),
+    
 ]);
-
-
-            // "and"    => Some(TokenKind::And),
-            // "class"  => Some(TokenKind::Class),
-            // "def"    => Some(TokenKind::Def),
-            // "elif"   => Some(TokenKind::Elif),
-            // "else"   => Some(TokenKind::Else),
-            // "for"    => Some(TokenKind::For),
-            // "if"     => Some(TokenKind::If),
-            // "not"    => Some(TokenKind::Not),
-            // "or"     => Some(TokenKind::Or),
-            // "print"  => Some(TokenKind::Print),
-            // "return" => Some(TokenKind::Return),
-            // "super"  => Some(TokenKind::Super),
-            // "self"   => Some(TokenKind::This),
-            // "while"  => Some(TokenKind::While),
