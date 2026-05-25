@@ -60,7 +60,7 @@ test_no_errors!(
             Literal::String("hello!"),
             1
         ),
-        Token::new(TokenKind::Eof, "", 1),
+        tok![Eof, "", 1],
     ]
 );
 
@@ -74,7 +74,7 @@ test_no_errors!(
             Literal::String(""),
             1
         ),
-        Token::new(TokenKind::Eof, "", 1),
+        tok![Eof, "", 1],
     ]
 );
 
@@ -88,7 +88,7 @@ test_no_errors!(
             Literal::Float(3.14159),
             1
         ),
-        Token::new(TokenKind::Eof, "", 1),
+        tok![Eof, "", 1],
     ]
 );
 
@@ -102,7 +102,7 @@ test_no_errors!(
             Literal::Float(39401.1),
             1
         ),
-        Token::new(TokenKind::Eof, "", 1),
+        tok![Eof, "", 1],
     ]
 );
 
