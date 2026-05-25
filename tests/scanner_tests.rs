@@ -1,11 +1,7 @@
 use whipsnake::scanner::Scanner;
 use whipsnake::token::{Literal, Token, TokenKind};
 
-macro_rules! tok {
-    ($kind:ident, $lexeme:expr, $line:expr) => {
-        Token::new(TokenKind::$kind, $lexeme, $line)
-    };
-}
+mod common;
 
 macro_rules! tok_with_literal {
     ($kind:ident, $lexeme:expr, $lit:ident, $line:expr) => {

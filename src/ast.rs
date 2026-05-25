@@ -12,7 +12,7 @@ pub struct PrettyPrinter;
 impl PrettyPrinter {
     pub fn pprint_expr(&self, e: &Expr) -> String {
         match e {
-            Expr::Literal(Literal::String(s)) => s.to_string(),
+            Expr::Literal(Literal::String(s)) => format!("\"{s}\""),
             Expr::Literal(Literal::Float(f)) => format!("{f}").to_string(),
             Expr::Grouping(expr) => self.parenthesize("group", &[expr]), 
             Expr::Unary { operator, right } => {
