@@ -4,12 +4,6 @@ use whipsnake::error::ErrorReporter;
 
 mod common;
 
-macro_rules! tok_with_literal {
-    ($kind:ident, $lexeme:expr, $lit:ident, $line:expr) => {
-        Token::with_literal(TokenKind::$kind, $lexeme, Literal::$lit, $line)
-    };
-}
-
 macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]

@@ -1,5 +1,6 @@
 use crate::token::{Token, Literal};
 
+#[derive(Debug, PartialEq)]
 pub enum Expr<'src> {
     Literal(Literal<'src>),
     Grouping(Box<Expr<'src>>),
