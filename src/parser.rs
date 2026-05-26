@@ -8,18 +8,18 @@ use crate::{
 
 use std::iter::Peekable;
 
-struct Parser<'a, 'b> {
-    scanner: Peekable<Scanner<'a, 'b>>,
-    previous: Token<'a>,
-    error_reporter: &'b mut ErrorReporter,
+struct Parser<'src, 'err> {
+    scanner: Peekable<Scanner<'src, 'err>>,
+    previous: Token<'src>,
+    error_reporter: &'err mut ErrorReporter,
 }
 
-impl<'a, 'b> Parser<'a, 'b> {
-    fn expression(&mut self) -> Expr<'a> {
+impl<'src, 'err> Parser<'src, 'err> {
+    fn expression(&mut self) -> Expr<'src> {
         self.equality()
     }
 
-    fn equality(&mut self) -> Expr<'a> {
+    fn equality(&mut self) -> Expr<'src> {
         let mut expr = self.comparison();
 
         while self.match_any(&[TokenKind::BangEqual, TokenKind::EqualEqual]) {
@@ -35,7 +35,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         return expr;
     }
 
-    fn comparison(&mut self) -> Expr<'a> {
+    fn comparison(&mut self) -> Expr<'src> {
         let mut expr = self.term();
 
         while self.match_any(&[
@@ -56,7 +56,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         return expr;
     }
 
-    fn term(&mut self) -> Expr<'a> {
+    fn term(&mut self) -> Expr<'src> {
         let mut expr = self.factor();
 
         while self.match_any(&[
@@ -75,7 +75,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         return expr;
     }
 
-    fn factor(&mut self) -> Expr<'a> {
+    fn factor(&mut self) -> Expr<'src> {
         let mut expr = self.unary();
 
         while self.match_any(&[
@@ -94,7 +94,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         return expr;
     }
 
-    fn unary(&mut self) -> Expr<'a> {
+    fn unary(&mut self) -> Expr<'src> {
         if self.match_any(&[
             TokenKind::Not,
             TokenKind::Minus,
@@ -110,7 +110,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         return self.primary();
     }
 
-    fn primary(&mut self) -> Expr<'a> {
+    fn primary(&mut self) -> Expr<'src> {
         if self.match_any(&[TokenKind::False]) {
             return Expr::Literal(Literal::Bool(false));
         }
@@ -136,7 +136,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         panic!("WTF how did I get here?!");
     }
 
-    fn consume(&mut self, kind: TokenKind, error: &str) -> Token<'a> {
+    fn consume(&mut self, kind: TokenKind, error: &str) -> Token<'src> {
         if self.check(kind) {
             return self.advance();
         }
@@ -144,7 +144,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         panic!("ParseError: {error}");
     }
 
-    fn advance(&mut self) -> Token<'a> {
+    fn advance(&mut self) -> Token<'src> {
         if let Some(next_token) = self.scanner.next() {
             self.previous = next_token;
         }

@@ -10,20 +10,20 @@ pub enum ScannerError {
     MalformedNumberLiteral(usize),
 }
 
-pub struct Scanner<'a, 'b> {
-    source: &'a str,
-    chars: Peekable<CharIndices<'a>>,
+pub struct Scanner<'src, 'err> {
+    source: &'src str,
+    chars: Peekable<CharIndices<'src>>,
     start: usize,
     current: usize,
     line: usize,
     indent_level: usize,
-    token_buffer: VecDeque<Token<'a>>,
+    token_buffer: VecDeque<Token<'src>>,
     is_done: bool,
-    error_reporter: &'b mut ErrorReporter,
+    error_reporter: &'err mut ErrorReporter,
 }
 
-impl<'a, 'b> Iterator for Scanner<'a, 'b> {
-    type Item = Token<'a>;
+impl<'src, 'err> Iterator for Scanner<'src, 'err> {
+    type Item = Token<'src>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if !self.token_buffer.is_empty() {
@@ -59,8 +59,8 @@ impl<'a, 'b> Iterator for Scanner<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Scanner<'a, 'b> {
-    pub fn new(source: &'a str, error_reporter: &'b mut ErrorReporter) -> Scanner<'a, 'b> {
+impl<'src, 'err> Scanner<'src, 'err> {
+    pub fn new(source: &'src str, error_reporter: &'err mut ErrorReporter) -> Scanner<'src, 'err> {
         Scanner {
             source,
             chars: source.char_indices().peekable(),
@@ -74,7 +74,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
         }
     }
 
-    fn next_token_group(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
+    fn next_token_group(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
         let c = self.advance().unwrap();
 
         let kind = match c {
@@ -138,7 +138,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
         )]))
     }
 
-    fn scan_indentation(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
+    fn scan_indentation(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
         let mut num_spaces: usize = 0;
         while self.advance_if_match(' ') {
             num_spaces += 1
@@ -179,14 +179,14 @@ impl<'a, 'b> Scanner<'a, 'b> {
         }
     }
 
-    fn scan_comment(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
+    fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
         while self.peek() != Some('\n') && !self.is_at_end() {
             self.advance();
         }
         return Ok(None);
     }
 
-    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
+    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
         while self.peek() != Some('"') {
             if self.peek() == Some('\n') || self.is_at_end() {
                 return Err(ScannerError::UnterminatedString(self.line));
@@ -208,7 +208,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
         )]));
     }
 
-    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
+    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
         while self.peek_is_digit() { self.advance(); }
 
         println!("got first (and maybe only) digit clump");
@@ -244,7 +244,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
     //     self.peek_next().map_or(false, |c| self.is_digit(c))
     // }
 
-    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
+    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
         while self.peek().map_or(false, |c| self.is_alpha_numeric(c)) {
             self.advance();
         }
@@ -306,7 +306,7 @@ impl<'a, 'b> Scanner<'a, 'b> {
         self.chars.peek().map(|&(_, c)| c)
     }
 
-    fn current_lexeme(&self) -> &'a str {
+    fn current_lexeme(&self) -> &'src str {
         &self.source[self.start..self.current]
     }
 
