@@ -41,7 +41,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.comparison(tokens);
 
-        while self.match_any(tokens,&[TokenKind::BangEqual, TokenKind::EqualEqual]) {
+        while self.match_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual]) {
             let operator = self.previous.unwrap();
             let right = self.comparison(tokens);
             expr = Expr::Binary {
@@ -60,7 +60,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.term(tokens);
 
-        while self.match_any(tokens,&[
+        while self.match_any(tokens, &[
             TokenKind::Greater,
             TokenKind::GreaterEqual,
             TokenKind::Less,
@@ -84,7 +84,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.factor(tokens);
 
-        while self.match_any(tokens,&[
+        while self.match_any(tokens, &[
             TokenKind::Plus,
             TokenKind::Minus,
         ]) {
@@ -106,7 +106,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.unary(tokens);
 
-        while self.match_any(tokens,&[
+        while self.match_any(tokens, &[
             TokenKind::Star,
             TokenKind::Slash,
         ]) {
@@ -126,7 +126,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.match_any(tokens,&[
+        if self.match_any(tokens, &[
             TokenKind::Not,
             TokenKind::Minus,
         ]) {
@@ -141,27 +141,32 @@ impl<'src, 'err> Parser<'src, 'err> {
         return self.primary(tokens);
     }
 
+    // TODO: currently the scanner doesn't fill out the literal field of 
+    // tokens representing None, True, or False in Python. But the parser
+    // does put a Literal in the AST here. This means I have Literal variants
+    // that are never used in Token. Maybe this is ok, but it seems a little
+    // weird. Let's think about it some more later.
     fn primary<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.match_any(tokens,&[TokenKind::False]) {
+        if self.match_any(tokens, &[TokenKind::False]) {
             return Expr::Literal(Literal::Bool(false));
         }
 
-        if self.match_any(tokens,&[TokenKind::True]) {
+        if self.match_any(tokens, &[TokenKind::True]) {
             return Expr::Literal(Literal::Bool(true));
         }
 
-        if self.match_any(tokens,&[TokenKind::None]) {
+        if self.match_any(tokens, &[TokenKind::None]) {
             return Expr::Literal(Literal::None);
         }
 
-        if self.match_any(tokens,&[TokenKind::Number, TokenKind::String]) {
+        if self.match_any(tokens, &[TokenKind::Number, TokenKind::String]) {
             return Expr::Literal(self.previous.unwrap().literal);
         }
 
-        if self.match_any(tokens,&[TokenKind::LeftParen]) {
+        if self.match_any(tokens, &[TokenKind::LeftParen]) {
             let expr = self.expression(tokens);
             self.consume(tokens, TokenKind::RightParen, "Expected ')' after expression");
             return Expr::Grouping(Box::new(expr));

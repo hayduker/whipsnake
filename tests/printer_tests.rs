@@ -15,19 +15,19 @@ macro_rules! test_no_errors {
 }
 
 test_no_errors!(
-    test_pprint_literal_string_expr,
+    pretty_print_literal_string_expr,
     Expr::Literal(Literal::String("hey")),
     "\"hey\""
 );
 
 test_no_errors!(
-    test_pprint_literal_float_expr,
+    pretty_print_literal_float_expr,
     Expr::Literal(Literal::Float(1.2345)),
     "1.2345"
 );
 
 test_no_errors!(
-    test_pprint_group_float_expr,
+    pretty_print_group_float_expr,
     Expr::Grouping(
         Box::new(Expr::Literal(Literal::Float(9.876)))
     ),
@@ -35,7 +35,7 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    test_pprint_unary_expr,
+    pretty_print_unary_expr,
     Expr::Unary {
         operator: tok!(Minus, "-", 1),
         right: Box::new(Expr::Literal(Literal::Float(3.14))),
@@ -44,7 +44,7 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    test_pprint_binary_expr,
+    pretty_print_binary_expr,
     Expr::Binary {
         left: Box::new(Expr::Literal(Literal::Float(2.0))),
         operator: tok!(Star, "*", 1),
@@ -54,7 +54,7 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    test_pprint_nested_exprs,
+    pretty_print_nested_exprs,
     Expr::Binary {
         left: Box::new(Expr::Unary {
             operator: tok!(Minus, "-", 1),

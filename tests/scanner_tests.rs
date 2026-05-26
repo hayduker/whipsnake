@@ -1,8 +1,10 @@
 use whipsnake::scanner::Scanner;
-use whipsnake::token::{Literal, Token, TokenKind};
+use whipsnake::token::{Token, TokenKind};
 use whipsnake::error::ErrorReporter;
 
 mod common;
+
+use common::*;
 
 macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
@@ -47,12 +49,7 @@ test_no_errors!(
     scan_string,
     "\"hello!\"",
     vec![
-        Token::with_literal(
-            TokenKind::String,
-            "\"hello!\"",
-            Literal::String("hello!"),
-            1
-        ),
+        tok_string("hello!", 1),
         tok![Eof, "", 1],
     ]
 );
@@ -61,12 +58,7 @@ test_no_errors!(
     scan_empty_string,
     "\"\"",
     vec![
-        Token::with_literal(
-            TokenKind::String,
-            "\"\"",
-            Literal::String(""),
-            1
-        ),
+        tok_string("", 1),
         tok![Eof, "", 1],
     ]
 );
@@ -75,12 +67,7 @@ test_no_errors!(
     scan_float,
     "3.14159",
     vec![
-        Token::with_literal(
-            TokenKind::Number,
-            "3.14159",
-            Literal::Float(3.14159),
-            1
-        ),
+        tok_float(3.14159, 1),
         tok![Eof, "", 1],
     ]
 );
@@ -89,12 +76,7 @@ test_no_errors!(
     scan_big_float,
     "39401.1",
     vec![
-        Token::with_literal(
-            TokenKind::Number,
-            "39401.1",
-            Literal::Float(39401.1),
-            1
-        ),
+        tok_float(39401.1, 1),
         tok![Eof, "", 1],
     ]
 );
@@ -103,12 +85,7 @@ test_no_errors!(
     scan_integer,
     "3",
     vec![
-        Token::with_literal(
-            TokenKind::Number,
-            "3",
-            Literal::Float(3 as f64),
-            1
-        ),
+        tok_float(3 as f64, 1),
         Token::new(TokenKind::Eof, "", 1),
     ]
 );
@@ -187,22 +164,22 @@ test_suite_no_errors!([
     ]),
 
     (scan_single_char_identifier, "x", vec![
-        tok_with_literal![Identifier, "x", None, 1],
+        tok!(Identifier, "x", 1),
         tok![Eof, "", 1],
     ]),
 
     (scan_pascal_identifier, "PascalCase", vec![
-        tok_with_literal![Identifier, "PascalCase", None, 1],
+        tok!(Identifier, "PascalCase", 1),
         tok![Eof, "", 1],
     ]),
 
     (scan_snake_identifier, "snake_case", vec![
-        tok_with_literal![Identifier, "snake_case", None, 1],
+        tok!(Identifier, "snake_case", 1),
         tok![Eof, "", 1],
     ]),
 
     (scan_alphanum_identifier, "a1_B2_c3_D4", vec![
-        tok_with_literal![Identifier, "a1_B2_c3_D4", None, 1],
+        tok!(Identifier, "a1_B2_c3_D4", 1),
         tok![Eof, "", 1],
     ]),
 
