@@ -5,7 +5,7 @@ use whipsnake::{
     ast::Expr,
 };
 
-use crate::common::{tok_false, tok_float, tok_string, tok_true};
+use common::*;
 
 mod common;
 
@@ -33,9 +33,9 @@ macro_rules! test_binary_numeric_no_errors {
                 tok_float(9.876, 1),
             ],
             Expr::Binary {
-                left: Box::new(Expr::Literal(Literal::Float(1.234))),
+                left: expr_float_box(1.234),
                 operator: tok!($kind, $lexeme, 1),
-                right: Box::new(Expr::Literal(Literal::Float(9.876)))
+                right: expr_float_box(9.876)
             }
         );
     };
@@ -46,7 +46,7 @@ test_no_errors!(
     vec![
         tok_string("hi", 1),
     ],
-    Expr::Literal(Literal::String("hi"))
+    expr_string("hi")
 );
 
 test_no_errors!(
@@ -54,7 +54,7 @@ test_no_errors!(
     vec![
         tok_float(1.234, 1),
     ],
-    Expr::Literal(Literal::Float(1.234))
+    expr_float(1.234)
 );
 
 test_no_errors!(
@@ -62,7 +62,7 @@ test_no_errors!(
     vec![
         tok_true(1),
     ],
-    Expr::Literal(Literal::Bool(true))
+    expr_true()
 );
 
 test_no_errors!(
@@ -70,7 +70,7 @@ test_no_errors!(
     vec![
         tok_false(1),
     ],
-    Expr::Literal(Literal::Bool(false))
+    expr_false()
 );
 
 test_no_errors!(
@@ -78,7 +78,7 @@ test_no_errors!(
     vec![
         tok!(None, "None", 1),
     ],
-    Expr::Literal(Literal::None)
+    expr_none()
 );
 
 test_no_errors!(
@@ -89,7 +89,7 @@ test_no_errors!(
         tok!(RightParen, ")", 1),
     ],
     Expr::Grouping(
-        Box::new(Expr::Literal(Literal::None))
+        expr_none_box()
     )
 );
 
@@ -101,7 +101,7 @@ test_no_errors!(
     ],
     Expr::Unary {
         operator: tok!(Not, "not", 1),
-        right: Box::new(Expr::Literal(Literal::Bool(true)))
+        right: expr_true_box()
     }
 );
 
@@ -113,7 +113,7 @@ test_no_errors!(
     ],
     Expr::Unary {
         operator: tok!(Minus, "-", 1),
-        right: Box::new(Expr::Literal(Literal::Float(1.234)))
+        right: expr_float_box(1.234)
     }
 );
 

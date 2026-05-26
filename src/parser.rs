@@ -1,5 +1,4 @@
 use crate::{
-    scanner::Scanner,
     token::{Token, TokenKind, Literal},
     ast::Expr,
     error::ErrorReporter,
@@ -144,8 +143,11 @@ impl<'src, 'err> Parser<'src, 'err> {
     // TODO: currently the scanner doesn't fill out the literal field of 
     // tokens representing None, True, or False in Python. But the parser
     // does put a Literal in the AST here. This means I have Literal variants
-    // that are never used in Token. Maybe this is ok, but it seems a little
-    // weird. Let's think about it some more later.
+    // that are never used in Token. Also I think I'm using Literal::None for
+    // multiple purposes, 1) to represent a token that doesn't need a literal
+    // value (most of them) and 2) to represent the Python literal None in an
+    // AST. I should probably use Option<Literal> and the outer None variant
+    // can represent a Token without a literal.
     fn primary<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
     where
         I: Iterator<Item = Token<'src>>,

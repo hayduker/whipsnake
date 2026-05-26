@@ -46,11 +46,3 @@ fn tok_false_fn() {
         Token::new(TokenKind::False, "False", 12)
     )
 }
-
-#[test]
-fn tok_eof_macro() {
-    assert_eq!(
-        tok_eof(33),
-        Token::with_literal(TokenKind::Eof, "", Literal::None, 33)
-    )
-}
