@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::Error, iter::Peekable, str::CharIndices};
+use std::{collections::VecDeque, iter::Peekable, str::CharIndices};
 
 use crate::{error::ErrorReporter, token::{Literal, Token, TokenKind}};
 

@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     // single-character tokens
     LeftParen,
@@ -52,14 +52,15 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Literal<'a> {
     None,
     String(&'a str),
     Float(f64),
+    Bool(bool),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token<'a> {
     pub kind: TokenKind,
     pub lexeme: &'a str,
