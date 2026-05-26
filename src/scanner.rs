@@ -1,8 +1,8 @@
-use std::{collections::VecDeque, str::CharIndices, iter::Peekable};
+use std::{collections::VecDeque, fmt::Error, iter::Peekable, str::CharIndices};
 
-use crate::token::{Literal, Token, TokenKind};
+use crate::{error::ErrorReporter, token::{Literal, Token, TokenKind}};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ScannerError {
     UnexpectedCharacter(usize, char),
     UnterminatedString(usize),
@@ -10,7 +10,7 @@ pub enum ScannerError {
     MalformedNumberLiteral(usize),
 }
 
-pub struct Scanner<'a> {
+pub struct Scanner<'a, 'b> {
     source: &'a str,
     chars: Peekable<CharIndices<'a>>,
     start: usize,
@@ -19,14 +19,15 @@ pub struct Scanner<'a> {
     indent_level: usize,
     token_buffer: VecDeque<Token<'a>>,
     is_done: bool,
+    error_reporter: &'b mut ErrorReporter,
 }
 
-impl<'a> Iterator for Scanner<'a> {
-    type Item = Result<Token<'a>, ScannerError>;
+impl<'a, 'b> Iterator for Scanner<'a, 'b> {
+    type Item = Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if !self.token_buffer.is_empty() {
-            return Some(Ok(self.token_buffer.pop_front().unwrap()));
+            return Some(self.token_buffer.pop_front().unwrap());
         }
 
         if self.is_done {
@@ -40,26 +41,26 @@ impl<'a> Iterator for Scanner<'a> {
                 Ok(Some(tokens)) => {
                     self.token_buffer.extend(tokens);
                     if !self.token_buffer.is_empty() {
-                        return Some(Ok(self.token_buffer.pop_front().unwrap()));
+                        return Some(self.token_buffer.pop_front().unwrap());
                     }
                 }
                 Ok(None) => { /* non-indentation whitespace or comment */ }
-                Err(e) => return Some(Err(e)),
+                Err(e) => self.error_reporter.register_error(e),
             }
         }
 
         self.is_done = true;
-        Some(Ok(Token {
+        Some(Token {
             kind: TokenKind::Eof,
             lexeme: "",
             literal: Literal::None,
             line: self.line,
-        }))
+        })
     }
 }
 
-impl<'a> Scanner<'a> {
-    pub fn new(source: &'a str) -> Scanner<'a> {
+impl<'a, 'b> Scanner<'a, 'b> {
+    pub fn new(source: &'a str, error_reporter: &'b mut ErrorReporter) -> Scanner<'a, 'b> {
         Scanner {
             source,
             chars: source.char_indices().peekable(),
@@ -69,13 +70,12 @@ impl<'a> Scanner<'a> {
             indent_level: 0,
             token_buffer: VecDeque::new(),
             is_done: false,
+            error_reporter,
         }
     }
 
     fn next_token_group(&mut self) -> Result<Option<Vec<Token<'a>>>, ScannerError> {
         let c = self.advance().unwrap();
-
-        // println!("next_token_group called and got c = {c}");
 
         let kind = match c {
             '\n' => {

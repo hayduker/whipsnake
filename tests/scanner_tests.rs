@@ -1,5 +1,6 @@
 use whipsnake::scanner::Scanner;
 use whipsnake::token::{Literal, Token, TokenKind};
+use whipsnake::error::ErrorReporter;
 
 mod common;
 
@@ -13,7 +14,8 @@ macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]
         fn $name() {
-            let tokens: Vec<Token> = Scanner::new($input).map(|r| r.unwrap()).collect();
+            let mut reporter = ErrorReporter::new();
+            let tokens: Vec<Token> = Scanner::new($input, &mut reporter).map(|r| r).collect();
 
             assert_eq!(tokens, $expected);
         }
@@ -38,7 +40,8 @@ macro_rules! test_suite_no_errors {
         $(
             #[test]
             fn $name() {
-                let tokens: Vec<Token> = Scanner::new($input).map(|r| r.unwrap()).collect();
+                let mut reporter = ErrorReporter::new();
+                let tokens: Vec<Token> = Scanner::new($input, &mut reporter).map(|r| r).collect();
 
                 assert_eq!(tokens, $expected);
             }

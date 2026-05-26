@@ -3,7 +3,11 @@ use std::{
     fs::read_to_string,
     io::{self, Write},
 };
-use whipsnake::scanner::{Scanner, ScannerError};
+use whipsnake::{
+    error::ErrorReporter,
+    scanner::Scanner,
+    token::Token
+};
 
 fn main() -> Result<(), &'static str> {
     let args: Vec<String> = env::args().collect();
@@ -43,25 +47,18 @@ fn run_file(filename: &str) {
 }
 
 fn run(source: String) {
-    let scanner = Scanner::new(source.as_str());
-    for result in scanner {
-        match result {
-            Ok(token) => println!("{token:?}"),
-            Err(ScannerError::UnexpectedCharacter(l, c)) => {
-                eprintln!("ScannerError: unexpected character {c} at line {l}");
-            },
-            Err(ScannerError::TooManyIndentations(l, n)) => {
-                eprintln!(
-                    "ScannerError: too many indentations at line {l}, got {n} more than previous line"
-                );
-            },
-            Err(ScannerError::UnterminatedString(l)) => {
-                eprintln!("ScannerError: unterminated string at line {l}");
-            },
-            Err(ScannerError::MalformedNumberLiteral(l)) => {
-                eprintln!("ScannerError: malformed number literal at line {l}");
-            },
-        }
+    let mut reporter = ErrorReporter::new();
+
+    let scanner = Scanner::new(source.as_str(), &mut reporter);
+    let tokens: Vec<Token> = scanner.collect();
+
+    if reporter.has_errors() {
+        reporter.print_errors();
+        return;
+    }
+
+    for token in tokens {
+        println!("{token:?}");
     }
 }
 
