@@ -8,23 +8,42 @@ use crate::{
 
 use std::iter::Peekable;
 
-struct Parser<'src, 'err> {
-    scanner: Peekable<Scanner<'src, 'err>>,
-    previous: Token<'src>,
+pub struct Parser<'src, 'err> {
+    previous: Option<Token<'src>>,
     error_reporter: &'err mut ErrorReporter,
 }
 
 impl<'src, 'err> Parser<'src, 'err> {
-    fn expression(&mut self) -> Expr<'src> {
-        self.equality()
+    pub fn new(error_reporter: &'err mut ErrorReporter) -> Self {
+        Parser {
+            previous: None,
+            error_reporter
+        }
     }
 
-    fn equality(&mut self) -> Expr<'src> {
-        let mut expr = self.comparison();
+    pub fn parse<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        self.expression(tokens)
+    }
 
-        while self.match_any(&[TokenKind::BangEqual, TokenKind::EqualEqual]) {
-            let operator = self.previous;
-            let right = self.comparison();
+    fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        self.equality(tokens)
+    }
+
+    fn equality<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.comparison(tokens);
+
+        while self.match_any(tokens,&[TokenKind::BangEqual, TokenKind::EqualEqual]) {
+            let operator = self.previous.unwrap();
+            let right = self.comparison(tokens);
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -35,17 +54,20 @@ impl<'src, 'err> Parser<'src, 'err> {
         return expr;
     }
 
-    fn comparison(&mut self) -> Expr<'src> {
-        let mut expr = self.term();
+    fn comparison<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.term(tokens);
 
-        while self.match_any(&[
+        while self.match_any(tokens,&[
             TokenKind::Greater,
             TokenKind::GreaterEqual,
             TokenKind::Less,
             TokenKind::LessEqual,
         ]) {
-            let operator = self.previous;
-            let right = self.term();
+            let operator = self.previous.unwrap();
+            let right = self.term(tokens);
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -56,15 +78,18 @@ impl<'src, 'err> Parser<'src, 'err> {
         return expr;
     }
 
-    fn term(&mut self) -> Expr<'src> {
-        let mut expr = self.factor();
+    fn term<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.factor(tokens);
 
-        while self.match_any(&[
+        while self.match_any(tokens,&[
             TokenKind::Plus,
             TokenKind::Minus,
         ]) {
-            let operator = self.previous;
-            let right = self.factor();
+            let operator = self.previous.unwrap();
+            let right = self.factor(tokens);
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -75,15 +100,18 @@ impl<'src, 'err> Parser<'src, 'err> {
         return expr;
     }
 
-    fn factor(&mut self) -> Expr<'src> {
-        let mut expr = self.unary();
+    fn factor<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.unary(tokens);
 
-        while self.match_any(&[
+        while self.match_any(tokens,&[
             TokenKind::Star,
             TokenKind::Slash,
         ]) {
-            let operator = self.previous;
-            let right = self.unary();
+            let operator = self.previous.unwrap();
+            let right = self.unary(tokens);
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -94,74 +122,92 @@ impl<'src, 'err> Parser<'src, 'err> {
         return expr;
     }
 
-    fn unary(&mut self) -> Expr<'src> {
-        if self.match_any(&[
+    fn unary<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        if self.match_any(tokens,&[
             TokenKind::Not,
             TokenKind::Minus,
         ]) {
-            let operator = self.previous;
-            let right = self.unary();
+            let operator = self.previous.unwrap();
+            let right = self.unary(tokens);
             return Expr::Unary {
                 operator,
                 right: Box::new(right),
             };
         }
 
-        return self.primary();
+        return self.primary(tokens);
     }
 
-    fn primary(&mut self) -> Expr<'src> {
-        if self.match_any(&[TokenKind::False]) {
+    fn primary<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        if self.match_any(tokens,&[TokenKind::False]) {
             return Expr::Literal(Literal::Bool(false));
         }
 
-        if self.match_any(&[TokenKind::True]) {
+        if self.match_any(tokens,&[TokenKind::True]) {
             return Expr::Literal(Literal::Bool(true));
         }
 
-        if self.match_any(&[TokenKind::None]) {
+        if self.match_any(tokens,&[TokenKind::None]) {
             return Expr::Literal(Literal::None);
         }
 
-        if self.match_any(&[TokenKind::Number, TokenKind::String]) {
-            return Expr::Literal(self.previous.literal);
+        if self.match_any(tokens,&[TokenKind::Number, TokenKind::String]) {
+            return Expr::Literal(self.previous.unwrap().literal);
         }
 
-        if self.match_any(&[TokenKind::LeftParen]) {
-            let expr = self.expression();
-            self.consume(TokenKind::RightParen, "Expected ')' after expression");
+        if self.match_any(tokens,&[TokenKind::LeftParen]) {
+            let expr = self.expression(tokens);
+            self.consume(tokens, TokenKind::RightParen, "Expected ')' after expression");
             return Expr::Grouping(Box::new(expr));
         }
 
         panic!("WTF how did I get here?!");
     }
 
-    fn consume(&mut self, kind: TokenKind, error: &str) -> Token<'src> {
-        if self.check(kind) {
-            return self.advance();
+    fn consume<I>(&mut self, tokens: &mut Peekable<I>, kind: TokenKind, error: &str) -> Token<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        if self.check(tokens, kind) {
+            return self.advance(tokens);
         }
 
         panic!("ParseError: {error}");
     }
 
-    fn advance(&mut self) -> Token<'src> {
-        if let Some(next_token) = self.scanner.next() {
-            self.previous = next_token;
+    fn advance<I>(&mut self, tokens: &mut Peekable<I>) -> Token<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        if let Some(next_token) = tokens.next() {
+            self.previous = Some(next_token);
         }
-        self.previous
+        self.previous.unwrap()
     }
 
-    fn match_any(&mut self, kinds: &[TokenKind]) -> bool {
+    fn match_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
         for kind in kinds {
-            if self.check(*kind) {
-                self.advance();
+            if self.check(tokens, *kind) {
+                self.advance(tokens);
                 return true;
             }
         }
         false
     }
 
-    fn check(&mut self, kind: TokenKind) -> bool {
-        self.scanner.peek().map_or(false, |t| t.kind == kind)
+    fn check<I>(&mut self, tokens: &mut Peekable<I>, kind: TokenKind) -> bool
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        tokens.peek().map_or(false, |t| t.kind == kind)
     }
 }

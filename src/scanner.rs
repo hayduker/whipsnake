@@ -60,7 +60,10 @@ impl<'src, 'err> Iterator for Scanner<'src, 'err> {
 }
 
 impl<'src, 'err> Scanner<'src, 'err> {
-    pub fn new(source: &'src str, error_reporter: &'err mut ErrorReporter) -> Scanner<'src, 'err> {
+    pub fn new(
+        source: &'src str,
+        error_reporter: &'err mut ErrorReporter
+    ) -> Scanner<'src, 'err> {
         Scanner {
             source,
             chars: source.char_indices().peekable(),
