@@ -45,7 +45,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.comparison(tokens);
 
-        while self.advance_if_match_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual]) {
+        while self.advance_if_peek_matches_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual]) {
             let operator = self.previous.unwrap();
             let right = self.comparison(tokens);
             expr = Expr::Binary {
@@ -64,7 +64,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.term(tokens);
 
-        while self.advance_if_match_any(tokens, &[
+        while self.advance_if_peek_matches_any(tokens, &[
             TokenKind::Greater,
             TokenKind::GreaterEqual,
             TokenKind::Less,
@@ -88,7 +88,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.factor(tokens);
 
-        while self.advance_if_match_any(tokens, &[
+        while self.advance_if_peek_matches_any(tokens, &[
             TokenKind::Plus,
             TokenKind::Minus,
         ]) {
@@ -110,7 +110,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.unary(tokens);
 
-        while self.advance_if_match_any(tokens, &[
+        while self.advance_if_peek_matches_any(tokens, &[
             TokenKind::Star,
             TokenKind::Slash,
         ]) {
@@ -130,7 +130,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.advance_if_match_any(tokens, &[
+        if self.advance_if_peek_matches_any(tokens, &[
             TokenKind::Not,
             TokenKind::Minus,
         ]) {
@@ -153,40 +153,34 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.advance_if_match_any(tokens, &[TokenKind::False]) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::False]) {
             return Expr::Literal(Literal::Bool(false));
         }
 
-        if self.advance_if_match_any(tokens, &[TokenKind::True]) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::True]) {
             return Expr::Literal(Literal::Bool(true));
         }
 
-        if self.advance_if_match_any(tokens, &[TokenKind::None]) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::None]) {
             return Expr::Literal(Literal::None);
         }
 
-        if self.advance_if_match_any(tokens, &[TokenKind::Number, TokenKind::String]) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Number, TokenKind::String]) {
             return Expr::Literal(self.previous.unwrap().literal);
         }
 
-        if self.advance_if_match_any(tokens, &[TokenKind::LeftParen]) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::LeftParen]) {
             let expr = self.expression(tokens);
-            self.consume(tokens, TokenKind::RightParen, "Expected ')' after expression");
-            return Expr::Grouping(Box::new(expr));
+
+            if self.peek_matches(tokens, TokenKind::RightParen) {
+                self.advance(tokens);
+                return Expr::Grouping(Box::new(expr));
+            } else {
+                panic!("Expected ')' here.");
+            }
         }
 
         panic!("WTF how did I get here?!");
-    }
-
-    fn consume<I>(&mut self, tokens: &mut Peekable<I>, kind: TokenKind, error: &str) -> Token<'src>
-    where
-        I: Iterator<Item = Token<'src>>,
-    {
-        if self.peek_matches(tokens, kind) {
-            return self.advance(tokens);
-        }
-
-        panic!("ParseError: {error}");
     }
 
     fn advance<I>(&mut self, tokens: &mut Peekable<I>) -> Token<'src>
@@ -199,7 +193,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         self.previous.unwrap()
     }
 
-    fn advance_if_match_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
+    fn advance_if_peek_matches_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
     where
         I: Iterator<Item = Token<'src>>,
     {

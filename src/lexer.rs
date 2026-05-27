@@ -87,7 +87,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
                 ];
 
                 self.line += 1;
-                
+
                 // After newlines, whitespace is semantic in Python
                 match self.scan_indentation(&mut generated_tokens) {
                     Ok(()) => return Ok(Some(generated_tokens)),
@@ -218,8 +218,6 @@ impl<'src, 'err> Lexer<'src, 'err> {
     fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
         while self.peek_is_digit() { self.advance(); }
 
-        println!("got first (and maybe only) digit clump");
-
         if self.peek() == Some('.') {
             self.advance();
 
@@ -243,7 +241,6 @@ impl<'src, 'err> Lexer<'src, 'err> {
     }
 
     fn peek_is_digit(&mut self) -> bool {
-        // println!("peek_is_digit called");
         self.peek().map_or(false, |c| self.is_digit(c))
     }
 

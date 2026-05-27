@@ -50,6 +50,11 @@ fn run(source: String) {
     let lexer = Lexer::new(source.as_str(), &mut reporter);
     let tokens: Vec<Token> = lexer.collect();
 
+    println!("Tokens:");
+    for token in tokens.clone() {
+        println!("{token:?}");
+    }
+
     if reporter.has_errors() {
         reporter.print_errors();
         return;
@@ -58,6 +63,7 @@ fn run(source: String) {
     let mut parser = Parser::new(&mut reporter);
     let expr = parser.parse(&mut tokens.into_iter().peekable());
 
+    println!("\nParsed AST:");
     println!("{}",PrettyPrinter::print(&expr));
 }
 
