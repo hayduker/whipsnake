@@ -243,10 +243,6 @@ impl<'src, 'err> Scanner<'src, 'err> {
         self.peek().map_or(false, |c| self.is_digit(c))
     }
 
-    // fn peek_next_is_digit(&mut self) -> bool {
-    //     self.peek_next().map_or(false, |c| self.is_digit(c))
-    // }
-
     fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
         while self.peek().map_or(false, |c| self.is_alpha_numeric(c)) {
             self.advance();

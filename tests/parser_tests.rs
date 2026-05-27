@@ -1,5 +1,5 @@
 use whipsnake::{
-    token::{Literal, Token, TokenKind},
+    token::{Token, TokenKind},
     parser::Parser,
     error::ErrorReporter,
     ast::Expr,
@@ -128,3 +128,42 @@ test_binary_numeric_no_errors!(parse_less_equal_equality, LessEqual, "<=");
 test_binary_numeric_no_errors!(parse_bang_equal_equality, BangEqual, "!=");
 test_binary_numeric_no_errors!(parse_equal_equal_equality, EqualEqual, "==");
 
+test_no_errors!(
+    parse_precedence_0,
+    vec![
+        tok_float(1.2, 1),
+        tok!(Star, "*", 1),
+        tok_float(2.3, 1),
+        tok!(Plus, "+", 1),
+        tok_float(3.4, 1),
+    ],
+    Expr::Binary {
+        left: Box::new(Expr::Binary {
+            left: expr_float_box(1.2),
+            operator: tok!(Star, "*", 1),
+            right: expr_float_box(2.3)
+        }),
+        operator: tok!(Plus, "+", 1),
+        right: expr_float_box(3.4)
+    }
+);
+
+test_no_errors!(
+    parse_precedence_1,
+    vec![
+        tok_float(1.2, 1),
+        tok!(Plus, "+", 1),
+        tok_float(2.3, 1),
+        tok!(Star, "*", 1),
+        tok_float(3.4, 1),
+    ],
+    Expr::Binary {
+        left: expr_float_box(1.2),
+        operator: tok!(Plus, "+", 1),
+        right: Box::new(Expr::Binary {
+            left: expr_float_box(2.3),
+            operator: tok!(Star, "*", 1),
+            right: expr_float_box(3.4)
+        })
+    }
+);
