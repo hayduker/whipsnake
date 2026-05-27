@@ -7,6 +7,9 @@ impl PrettyPrinter {
         match e {
             Expr::Literal(Literal::String(s)) => format!("\"{s}\""),
             Expr::Literal(Literal::Float(f)) => format!("{f}").to_string(),
+            Expr::Literal(Literal::Bool(true)) => format!("True"),
+            Expr::Literal(Literal::Bool(false)) => format!("False"),
+            Expr::Literal(Literal::None) => format!("None"),
             Expr::Grouping(expr) => PrettyPrinter::parenthesize("group", &[expr]), 
             Expr::Unary { operator, right } => {
                 PrettyPrinter::parenthesize(operator.lexeme, &[right])

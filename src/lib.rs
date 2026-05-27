@@ -4,3 +4,5 @@ pub mod token;
 pub mod ast;
 pub mod printer;
 pub mod parser;
+pub mod object;
+pub mod interpreter;

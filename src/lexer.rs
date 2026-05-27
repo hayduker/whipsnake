@@ -158,8 +158,6 @@ impl<'src, 'err> Lexer<'src, 'err> {
         }
         let level = num_spaces / 4;
 
-        // let mut generated_tokens = vec![];
-
         if level == self.indent_level + 1 {
             generated_tokens.push(
                 Token::new(
