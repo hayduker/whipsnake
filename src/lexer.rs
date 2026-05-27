@@ -3,14 +3,14 @@ use std::{collections::VecDeque, iter::Peekable, str::CharIndices};
 use crate::{error::ErrorReporter, token::{Literal, Token, TokenKind}};
 
 #[derive(Debug, PartialEq)]
-pub enum ScannerError {
+pub enum LexerError {
     UnexpectedCharacter(usize, char),
     UnterminatedString(usize),
     TooManyIndentations(usize, usize),
     MalformedNumberLiteral(usize),
 }
 
-pub struct Scanner<'src, 'err> {
+pub struct Lexer<'src, 'err> {
     source: &'src str,
     chars: Peekable<CharIndices<'src>>,
     start: usize,
@@ -22,7 +22,7 @@ pub struct Scanner<'src, 'err> {
     error_reporter: &'err mut ErrorReporter,
 }
 
-impl<'src, 'err> Iterator for Scanner<'src, 'err> {
+impl<'src, 'err> Iterator for Lexer<'src, 'err> {
     type Item = Token<'src>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -59,12 +59,12 @@ impl<'src, 'err> Iterator for Scanner<'src, 'err> {
     }
 }
 
-impl<'src, 'err> Scanner<'src, 'err> {
+impl<'src, 'err> Lexer<'src, 'err> {
     pub fn new(
         source: &'src str,
         error_reporter: &'err mut ErrorReporter
-    ) -> Scanner<'src, 'err> {
-        Scanner {
+    ) -> Lexer<'src, 'err> {
+        Lexer {
             source,
             chars: source.char_indices().peekable(),
             start: 0,
@@ -77,7 +77,7 @@ impl<'src, 'err> Scanner<'src, 'err> {
         }
     }
 
-    fn next_token_group(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
+    fn next_token_group(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
         let c = self.advance().unwrap();
 
         let kind = match c {
@@ -103,7 +103,7 @@ impl<'src, 'err> Scanner<'src, 'err> {
                 if self.advance_if_match('=') {
                     TokenKind::BangEqual
                 } else {
-                    return Err(ScannerError::UnexpectedCharacter(self.line, c));
+                    return Err(LexerError::UnexpectedCharacter(self.line, c));
                 }
             }
             '=' => {
@@ -131,7 +131,7 @@ impl<'src, 'err> Scanner<'src, 'err> {
             '"' => return self.scan_string_literal(),
             '0'..='9' => return self.scan_number_literal(),
             'a'..='z' | 'A'..='Z' | '_' => return self.scan_indentifier(),
-            _ => return Err(ScannerError::UnexpectedCharacter(self.line, c)),
+            _ => return Err(LexerError::UnexpectedCharacter(self.line, c)),
         };
 
         Ok(Some(vec![Token::new(
@@ -141,7 +141,7 @@ impl<'src, 'err> Scanner<'src, 'err> {
         )]))
     }
 
-    fn scan_indentation(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
+    fn scan_indentation(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
         let mut num_spaces: usize = 0;
         while self.advance_if_match(' ') {
             num_spaces += 1
@@ -171,7 +171,7 @@ impl<'src, 'err> Scanner<'src, 'err> {
             }
         } else if level != self.indent_level {
             let how_many = level - self.indent_level;
-            return Err(ScannerError::TooManyIndentations(self.line, how_many));
+            return Err(LexerError::TooManyIndentations(self.line, how_many));
         }
         self.indent_level = level;
 
@@ -182,17 +182,17 @@ impl<'src, 'err> Scanner<'src, 'err> {
         }
     }
 
-    fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
+    fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
         while self.peek() != Some('\n') && !self.is_at_end() {
             self.advance();
         }
         return Ok(None);
     }
 
-    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
+    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
         while self.peek() != Some('"') {
             if self.peek() == Some('\n') || self.is_at_end() {
-                return Err(ScannerError::UnterminatedString(self.line));
+                return Err(LexerError::UnterminatedString(self.line));
             }
             self.advance();
         }
@@ -211,7 +211,7 @@ impl<'src, 'err> Scanner<'src, 'err> {
         )]));
     }
 
-    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
+    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
         while self.peek_is_digit() { self.advance(); }
 
         println!("got first (and maybe only) digit clump");
@@ -220,14 +220,14 @@ impl<'src, 'err> Scanner<'src, 'err> {
             self.advance();
 
             if !self.peek_is_digit() {
-                return Err(ScannerError::MalformedNumberLiteral(self.line));
+                return Err(LexerError::MalformedNumberLiteral(self.line));
             }
 
             while self.peek_is_digit() { self.advance(); }
         }
 
         let float = self.current_lexeme().parse().expect(
-            "Scanner guarantees a well-formed numeric value in earlier part of this method.",
+            "Lexer guarantees a well-formed numeric value in earlier part of this method.",
         );
 
         Ok(Some(vec![Token::with_literal(
@@ -243,7 +243,7 @@ impl<'src, 'err> Scanner<'src, 'err> {
         self.peek().map_or(false, |c| self.is_digit(c))
     }
 
-    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'src>>>, ScannerError> {
+    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
         while self.peek().map_or(false, |c| self.is_alpha_numeric(c)) {
             self.advance();
         }

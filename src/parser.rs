@@ -140,7 +140,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         return self.primary(tokens);
     }
 
-    // TODO: currently the scanner doesn't fill out the literal field of 
+    // TODO: currently the lexer doesn't fill out the literal field of 
     // tokens representing None, True, or False in Python. But the parser
     // does put a Literal in the AST here. This means I have Literal variants
     // that are never used in Token. Also I think I'm using Literal::None for

@@ -5,7 +5,7 @@ use std::{
 };
 use whipsnake::{
     error::ErrorReporter,
-    scanner::Scanner,
+    lexer::Lexer,
     token::Token
 };
 
@@ -49,8 +49,8 @@ fn run_file(filename: &str) {
 fn run(source: String) {
     let mut reporter = ErrorReporter::new();
 
-    let scanner = Scanner::new(source.as_str(), &mut reporter);
-    let tokens: Vec<Token> = scanner.collect();
+    let lexer = Lexer::new(source.as_str(), &mut reporter);
+    let tokens: Vec<Token> = lexer.collect();
 
     if reporter.has_errors() {
         reporter.print_errors();

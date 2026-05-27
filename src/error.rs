@@ -1,7 +1,7 @@
-use crate::scanner::ScannerError;
+use crate::lexer::LexerError;
 
 pub struct ErrorReporter {
-    pub errors: Vec<ScannerError>,
+    pub errors: Vec<LexerError>,
 }
 
 impl ErrorReporter {
@@ -9,7 +9,7 @@ impl ErrorReporter {
         ErrorReporter { errors: Vec::new() }
     }
 
-    pub fn register_error(&mut self, error: ScannerError) {
+    pub fn register_error(&mut self, error: LexerError) {
         self.errors.push(error);
     }
 
@@ -20,19 +20,19 @@ impl ErrorReporter {
     pub fn print_errors(&self) {
         for err in self.errors.as_slice() {
             match err {
-                ScannerError::UnexpectedCharacter(l, c) => {
-                    eprintln!("ScannerError: unexpected character {c} at line {l}");
+                LexerError::UnexpectedCharacter(l, c) => {
+                    eprintln!("LexerError: unexpected character {c} at line {l}");
                 },
-                ScannerError::TooManyIndentations(l, n) => {
+                LexerError::TooManyIndentations(l, n) => {
                     eprintln!(
-                        "ScannerError: too many indentations at line {l}, got {n} more than previous line"
+                        "LexerError: too many indentations at line {l}, got {n} more than previous line"
                     );
                 },
-                ScannerError::UnterminatedString(l) => {
-                    eprintln!("ScannerError: unterminated string at line {l}");
+                LexerError::UnterminatedString(l) => {
+                    eprintln!("LexerError: unterminated string at line {l}");
                 },
-                ScannerError::MalformedNumberLiteral(l) => {
-                    eprintln!("ScannerError: malformed number literal at line {l}");
+                LexerError::MalformedNumberLiteral(l) => {
+                    eprintln!("LexerError: malformed number literal at line {l}");
                 },
             }
         }

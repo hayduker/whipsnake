@@ -1,5 +1,5 @@
 pub mod error;
-pub mod scanner;
+pub mod lexer;
 pub mod token;
 pub mod ast;
 pub mod printer;
