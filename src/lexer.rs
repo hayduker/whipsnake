@@ -87,6 +87,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
                 ];
 
                 self.line += 1;
+                
                 // After newlines, whitespace is semantic in Python
                 match self.scan_indentation(&mut generated_tokens) {
                     Ok(()) => return Ok(Some(generated_tokens)),

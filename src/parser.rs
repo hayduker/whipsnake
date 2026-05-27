@@ -24,6 +24,11 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
+        // Eventually this will optionally call a method for parsing
+        // statements. This is where we need to catch parse errors
+        // so we can synchronize at this point and skip ahead to the
+        // next statement. The lower-level methods will probably need
+        // to return Result instead of a raw Expr to do this.
         self.expression(tokens)
     }
 
@@ -40,7 +45,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.comparison(tokens);
 
-        while self.match_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual]) {
+        while self.advance_if_match_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual]) {
             let operator = self.previous.unwrap();
             let right = self.comparison(tokens);
             expr = Expr::Binary {
@@ -59,7 +64,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.term(tokens);
 
-        while self.match_any(tokens, &[
+        while self.advance_if_match_any(tokens, &[
             TokenKind::Greater,
             TokenKind::GreaterEqual,
             TokenKind::Less,
@@ -83,7 +88,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.factor(tokens);
 
-        while self.match_any(tokens, &[
+        while self.advance_if_match_any(tokens, &[
             TokenKind::Plus,
             TokenKind::Minus,
         ]) {
@@ -105,7 +110,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.unary(tokens);
 
-        while self.match_any(tokens, &[
+        while self.advance_if_match_any(tokens, &[
             TokenKind::Star,
             TokenKind::Slash,
         ]) {
@@ -125,7 +130,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.match_any(tokens, &[
+        if self.advance_if_match_any(tokens, &[
             TokenKind::Not,
             TokenKind::Minus,
         ]) {
@@ -148,23 +153,23 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.match_any(tokens, &[TokenKind::False]) {
+        if self.advance_if_match_any(tokens, &[TokenKind::False]) {
             return Expr::Literal(Literal::Bool(false));
         }
 
-        if self.match_any(tokens, &[TokenKind::True]) {
+        if self.advance_if_match_any(tokens, &[TokenKind::True]) {
             return Expr::Literal(Literal::Bool(true));
         }
 
-        if self.match_any(tokens, &[TokenKind::None]) {
+        if self.advance_if_match_any(tokens, &[TokenKind::None]) {
             return Expr::Literal(Literal::None);
         }
 
-        if self.match_any(tokens, &[TokenKind::Number, TokenKind::String]) {
+        if self.advance_if_match_any(tokens, &[TokenKind::Number, TokenKind::String]) {
             return Expr::Literal(self.previous.unwrap().literal);
         }
 
-        if self.match_any(tokens, &[TokenKind::LeftParen]) {
+        if self.advance_if_match_any(tokens, &[TokenKind::LeftParen]) {
             let expr = self.expression(tokens);
             self.consume(tokens, TokenKind::RightParen, "Expected ')' after expression");
             return Expr::Grouping(Box::new(expr));
@@ -177,7 +182,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.check(tokens, kind) {
+        if self.peek_matches(tokens, kind) {
             return self.advance(tokens);
         }
 
@@ -194,12 +199,12 @@ impl<'src, 'err> Parser<'src, 'err> {
         self.previous.unwrap()
     }
 
-    fn match_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
+    fn advance_if_match_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
     where
         I: Iterator<Item = Token<'src>>,
     {
         for kind in kinds {
-            if self.check(tokens, *kind) {
+            if self.peek_matches(tokens, *kind) {
                 self.advance(tokens);
                 return true;
             }
@@ -207,10 +212,66 @@ impl<'src, 'err> Parser<'src, 'err> {
         false
     }
 
-    fn check<I>(&mut self, tokens: &mut Peekable<I>, kind: TokenKind) -> bool
+    fn peek_matches_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let peeked = tokens.peek();
+        for kind in kinds {
+            if peeked.map_or(false, |t| t.kind == *kind) {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn previous_matches_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        for kind in kinds {
+            if self.previous.map_or(false, |t| t.kind == *kind) {
+                return true;
+            }
+        }
+        false
+    }
+
+    fn peek_matches<I>(&mut self, tokens: &mut Peekable<I>, kind: TokenKind) -> bool
     where
         I: Iterator<Item = Token<'src>>,
     {
         tokens.peek().map_or(false, |t| t.kind == kind)
+    }
+
+    fn is_at_end<I>(&mut self, tokens: &mut Peekable<I>) -> bool
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        self.peek_matches(tokens, TokenKind::Eof)
+    }
+
+    fn synchronize<I>(&mut self, tokens: &mut Peekable<I>)
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        // Consume tokens until we are probably at the beginning of
+        // another statement. Not sure if skipping indentation like
+        // this will cause issues with parsing down the line though.
+        self.advance(tokens);
+
+        while !self.is_at_end(tokens) {
+            if self.previous_matches_any(tokens, &[
+                TokenKind::NewLine, TokenKind::Indent, TokenKind::Dedent
+            ]) {
+                if self.peek_matches_any(tokens, &[
+                    TokenKind::Return, TokenKind::Def, TokenKind::If,
+                    TokenKind::Class, TokenKind::For, TokenKind::While,
+                    TokenKind::Print
+                ]) {
+                    return;
+                }
+            }
+        }
     }
 }

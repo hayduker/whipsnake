@@ -8,8 +8,7 @@ macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]
         fn $name() {
-            let p = PrettyPrinter;
-            assert_eq!(p.pprint_expr(&$input), String::from($expected));
+            assert_eq!(PrettyPrinter::print(&$input), String::from($expected));
         }
     };
 }

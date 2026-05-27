@@ -4,9 +4,7 @@ use std::{
     io::{self, Write},
 };
 use whipsnake::{
-    error::ErrorReporter,
-    lexer::Lexer,
-    token::Token
+    error::ErrorReporter, lexer::Lexer, parser::Parser, printer::PrettyPrinter, token::Token
 };
 
 fn main() -> Result<(), &'static str> {
@@ -57,9 +55,10 @@ fn run(source: String) {
         return;
     }
 
-    for token in tokens {
-        println!("{token:?}");
-    }
+    let mut parser = Parser::new(&mut reporter);
+    let expr = parser.parse(&mut tokens.into_iter().peekable());
+
+    println!("{}",PrettyPrinter::print(&expr));
 }
 
 fn _error(line: u32, message: &str) {
