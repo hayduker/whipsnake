@@ -47,6 +47,7 @@ pub enum TokenKind {
     // python uses whitespace, I guess
     Indent,
     Dedent,
+    NewLine,
 
     // makes the parser cleaner
     Eof,

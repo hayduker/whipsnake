@@ -82,10 +82,16 @@ impl<'src, 'err> Lexer<'src, 'err> {
 
         let kind = match c {
             '\n' => {
+                let mut generated_tokens = vec![
+                    Token::new(TokenKind::NewLine, "\n", self.line)
+                ];
+
                 self.line += 1;
-                // after newlines we need to consider beginning-of-line whitespace
-                // since python uses semantic indentation
-                return self.scan_indentation();
+                // After newlines, whitespace is semantic in Python
+                match self.scan_indentation(&mut generated_tokens) {
+                    Ok(()) => return Ok(Some(generated_tokens)),
+                    Err(e) => return Err(e),
+                }
             }
             // beginning-of-line indentation is consumed with self.scan_indentation
             // in '\n' pattern, so this is whitespace elsewhere in the line
@@ -141,16 +147,17 @@ impl<'src, 'err> Lexer<'src, 'err> {
         )]))
     }
 
-    fn scan_indentation(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
+    fn scan_indentation(
+        &mut self,
+        generated_tokens: &mut Vec<Token<'src>>
+    ) -> Result<(), LexerError> {
         let mut num_spaces: usize = 0;
         while self.advance_if_match(' ') {
             num_spaces += 1
         }
         let level = num_spaces / 4;
 
-        // println!("num_spaces = {num_spaces}, new level = {}, old level = {}", level, self.indent_level);
-
-        let mut generated_tokens = vec![];
+        // let mut generated_tokens = vec![];
 
         if level == self.indent_level + 1 {
             generated_tokens.push(
@@ -175,11 +182,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
         }
         self.indent_level = level;
 
-        if generated_tokens.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(generated_tokens))
-        }
+        Ok(())
     }
 
     fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
