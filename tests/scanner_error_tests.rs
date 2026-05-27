@@ -1,10 +1,8 @@
 use whipsnake::scanner::{Scanner, ScannerError};
-use whipsnake::token::{Token, TokenKind};
+use whipsnake::token::Token;
 use whipsnake::error::ErrorReporter;
 
 mod common;
-
-use common::*;
 
 #[test]
 fn scan_unexpected_character_error() {
