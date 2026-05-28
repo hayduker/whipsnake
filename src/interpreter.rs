@@ -22,7 +22,7 @@ impl<'err> Interpreter<'err> {
 
     pub fn interpret(&self, expr: &Expr) {
         match self.evaluate(expr) {
-            Ok(value) => println!("{:?}", value),
+            Ok(value) => println!("{}", value),
             Err(e) => () //self.error_reporter.register_error(e),
         }
     }

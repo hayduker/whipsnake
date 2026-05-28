@@ -7,6 +7,11 @@ use crate::{
 
 use std::iter::Peekable;
 
+#[derive(Debug)]
+pub struct ParseError {
+    message:  String,
+}
+
 pub struct Parser<'src, 'err> {
     previous: Option<Token<'src>>,
     error_reporter: &'err mut ErrorReporter,

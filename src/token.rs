@@ -1,3 +1,7 @@
+pub struct SourceLocation {
+    pub line: usize,
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     // single-character tokens

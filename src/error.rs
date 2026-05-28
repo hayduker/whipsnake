@@ -1,7 +1,42 @@
-use crate::lexer::LexerError;
+use std::fmt;
+
+use crate::token::SourceLocation;
+
+// #[derive(Debug, PartialEq)]
+pub enum LexError {
+    UnexpectedCharacter(SourceLocation,char),
+    UnterminatedString(SourceLocation),
+    TooManyIndentations(SourceLocation, usize),
+    MalformedNumberLiteral(SourceLocation),
+}
+
+impl fmt::Display for LexError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LexError::UnexpectedCharacter(l, c) => {
+                write!(f, "unexpected character '{}' at line {}", c, l.line)
+            },
+            LexError::TooManyIndentations(l, n) => {
+                write!(f, "too many indentations on line {}, got {} more than previous line", l.line, n)
+            },
+            LexError::UnterminatedString(l) => {
+                write!(f, "unterminated string at line {}", l.line)
+            },
+            LexError::MalformedNumberLiteral(l) => {
+                write!(f, "malformed number literal at line {}", l.line)
+            },
+        }
+    }
+}
+
+pub enum CompilerError {
+    Lex(LexError),
+    // Parse { location: usize, error: ParseError }, 
+    // Runtime { lcoation: usize, error: RuntimeError },
+}
 
 pub struct ErrorReporter {
-    pub errors: Vec<LexerError>,
+    pub errors: Vec<CompilerError>
 }
 
 impl ErrorReporter {
@@ -9,8 +44,12 @@ impl ErrorReporter {
         ErrorReporter { errors: Vec::new() }
     }
 
-    pub fn register_error(&mut self, error: LexerError) {
+    fn register_error(&mut self, error: CompilerError) {
         self.errors.push(error);
+    }
+
+    pub fn register_lex_error(&mut self, error: LexError) {
+        self.register_error(CompilerError::Lex(error));
     }
 
     pub fn has_errors(&self) -> bool {
@@ -18,22 +57,9 @@ impl ErrorReporter {
     }
 
     pub fn print_errors(&self) {
-        for err in self.errors.as_slice() {
+        for err in &self.errors {
             match err {
-                LexerError::UnexpectedCharacter(l, c) => {
-                    eprintln!("LexerError: unexpected character {c} at line {l}");
-                },
-                LexerError::TooManyIndentations(l, n) => {
-                    eprintln!(
-                        "LexerError: too many indentations at line {l}, got {n} more than previous line"
-                    );
-                },
-                LexerError::UnterminatedString(l) => {
-                    eprintln!("LexerError: unterminated string at line {l}");
-                },
-                LexerError::MalformedNumberLiteral(l) => {
-                    eprintln!("LexerError: malformed number literal at line {l}");
-                },
+                CompilerError::Lex(error) => eprintln!("LexError: {error}"),
             }
         }
     }

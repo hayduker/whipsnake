@@ -72,10 +72,10 @@ fn run(source: String) {
     println!("{}", PrettyPrinter::print(&expr));
 
     let interpreter = Interpreter::new(&mut reporter);
-    let result = interpreter.evaluate(&expr);
+    let result = interpreter.evaluate(&expr).unwrap();
 
     println!("\nEvaluated result:");
-    println!("{result:?}");
+    println!("{result}");
 }
 
 fn _error(line: u32, message: &str) {

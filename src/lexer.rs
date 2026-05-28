@@ -1,14 +1,9 @@
 use std::{collections::VecDeque, iter::Peekable, str::CharIndices};
 
-use crate::{error::ErrorReporter, token::{Literal, Token, TokenKind}};
-
-#[derive(Debug, PartialEq)]
-pub enum LexerError {
-    UnexpectedCharacter(usize, char),
-    UnterminatedString(usize),
-    TooManyIndentations(usize, usize),
-    MalformedNumberLiteral(usize),
-}
+use crate::{
+    error::{ErrorReporter, LexError},
+    token::{Literal, Token, TokenKind, SourceLocation}
+};
 
 pub struct Lexer<'src, 'err> {
     source: &'src str,
@@ -45,7 +40,7 @@ impl<'src, 'err> Iterator for Lexer<'src, 'err> {
                     }
                 }
                 Ok(None) => { /* non-indentation whitespace or comment */ }
-                Err(e) => self.error_reporter.register_error(e),
+                Err(e) => self.error_reporter.register_lex_error(e),
             }
         }
 
@@ -77,7 +72,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
         }
     }
 
-    fn next_token_group(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
+    fn next_token_group(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
         let c = self.advance().unwrap();
 
         let kind = match c {
@@ -110,7 +105,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
                 if self.advance_if_match('=') {
                     TokenKind::BangEqual
                 } else {
-                    return Err(LexerError::UnexpectedCharacter(self.line, c));
+                    return Err(LexError::UnexpectedCharacter(SourceLocation { line: self.line }, c));
                 }
             }
             '=' => {
@@ -138,7 +133,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             '"' => return self.scan_string_literal(),
             '0'..='9' => return self.scan_number_literal(),
             'a'..='z' | 'A'..='Z' | '_' => return self.scan_indentifier(),
-            _ => return Err(LexerError::UnexpectedCharacter(self.line, c)),
+            _ => return Err(LexError::UnexpectedCharacter(SourceLocation { line: self.line }, c)),
         };
 
         Ok(Some(vec![Token::new(
@@ -151,7 +146,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
     fn scan_indentation(
         &mut self,
         generated_tokens: &mut Vec<Token<'src>>
-    ) -> Result<(), LexerError> {
+    ) -> Result<(), LexError> {
         let mut num_spaces: usize = 0;
         while self.advance_if_match(' ') {
             num_spaces += 1
@@ -177,24 +172,24 @@ impl<'src, 'err> Lexer<'src, 'err> {
             }
         } else if level != self.indent_level {
             let how_many = level - self.indent_level;
-            return Err(LexerError::TooManyIndentations(self.line, how_many));
+            return Err(LexError::TooManyIndentations(SourceLocation { line: self.line }, how_many));
         }
         self.indent_level = level;
 
         Ok(())
     }
 
-    fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
+    fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
         while self.peek() != Some('\n') && !self.is_at_end() {
             self.advance();
         }
         return Ok(None);
     }
 
-    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
+    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
         while self.peek() != Some('"') {
             if self.peek() == Some('\n') || self.is_at_end() {
-                return Err(LexerError::UnterminatedString(self.line));
+                return Err(LexError::UnterminatedString(SourceLocation { line: self.line }));
             }
             self.advance();
         }
@@ -213,14 +208,14 @@ impl<'src, 'err> Lexer<'src, 'err> {
         )]));
     }
 
-    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
+    fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
         while self.peek_is_digit() { self.advance(); }
 
         if self.peek() == Some('.') {
             self.advance();
 
             if !self.peek_is_digit() {
-                return Err(LexerError::MalformedNumberLiteral(self.line));
+                return Err(LexError::MalformedNumberLiteral(SourceLocation { line: self.line }));
             }
 
             while self.peek_is_digit() { self.advance(); }
@@ -242,7 +237,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
         self.peek().map_or(false, |c| self.is_digit(c))
     }
 
-    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'src>>>, LexerError> {
+    fn scan_indentifier(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
         while self.peek().map_or(false, |c| self.is_alpha_numeric(c)) {
             self.advance();
         }

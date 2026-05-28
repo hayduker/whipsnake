@@ -1,6 +1,6 @@
-use whipsnake::lexer::{Lexer, LexerError};
-use whipsnake::token::Token;
-use whipsnake::error::ErrorReporter;
+use whipsnake::lexer::Lexer;
+use whipsnake::token::{SourceLocation, Token};
+use whipsnake::error::{ErrorReporter, CompilerError, LexError};
 
 mod common;
 
@@ -13,7 +13,10 @@ fn scan_unexpected_character_error() {
     ).map(|r| r).collect();
 
     assert_eq!(reporter.errors.len(), 1);
-    assert!(matches!(reporter.errors.pop().unwrap(), LexerError::UnexpectedCharacter(1, '&')));
+    assert!(matches!(
+        reporter.errors.pop().unwrap(),
+        CompilerError::Lex(LexError::UnexpectedCharacter(SourceLocation { line: 1 }, '&'))
+    ));
 }
 
 #[test]
@@ -25,7 +28,10 @@ fn scan_unterminated_string_error() {
     ).map(|r| r).collect();
 
     assert_eq!(reporter.errors.len(), 1);
-    assert!(matches!(reporter.errors.pop().unwrap(), LexerError::UnterminatedString(2)));
+    assert!(matches!(
+        reporter.errors.pop().unwrap(),
+        CompilerError::Lex(LexError::UnterminatedString(SourceLocation { line: 2 }))
+    ));
 }
 
 #[test]
@@ -37,7 +43,10 @@ fn scan_too_many_indentations_error() {
     ).map(|r| r).collect();
 
     assert_eq!(reporter.errors.len(), 1);
-    assert!(matches!(reporter.errors.pop().unwrap(), LexerError::TooManyIndentations(3, 2)));
+    assert!(matches!(
+        reporter.errors.pop().unwrap(),
+        CompilerError::Lex(LexError::TooManyIndentations(SourceLocation { line: 3 }, 2))
+    ));
 }
 
 #[test]
@@ -49,5 +58,8 @@ fn scan_malformed_number_literal_error() {
     ).map(|r| r).collect();
 
     assert_eq!(reporter.errors.len(), 1);
-    assert!(matches!(reporter.errors.pop().unwrap(), LexerError::MalformedNumberLiteral(1)));
+    assert!(matches!(
+        reporter.errors.pop().unwrap(),
+        CompilerError::Lex(LexError::MalformedNumberLiteral(SourceLocation { line: 1 }))
+    ));
 }
