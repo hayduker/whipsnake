@@ -80,6 +80,44 @@ impl Interpreter {
                             panic!("Can't divide two objects of those types!")
                         }
                     },
+                    TokenKind::Greater => {
+                        if let (Object::Float(fl), Object::Float(fr)) = (left, right) {
+                            return Object::Bool(fl > fr);
+                        }
+                        else {
+                            panic!("Can't compare two objects of those types!")
+                        }
+                    },
+                    TokenKind::GreaterEqual => {
+                        if let (Object::Float(fl), Object::Float(fr)) = (left, right) {
+                            return Object::Bool(fl >= fr);
+                        }
+                        else {
+                            panic!("Can't compare two objects of those types!")
+                        }
+                    },
+                    TokenKind::Less => {
+                        if let (Object::Float(fl), Object::Float(fr)) = (left, right) {
+                            return Object::Bool(fl < fr);
+                        }
+                        else {
+                            panic!("Can't compare two objects of those types!")
+                        }
+                    },
+                    TokenKind::LessEqual => {
+                        if let (Object::Float(fl), Object::Float(fr)) = (left, right) {
+                            return Object::Bool(fl <= fr);
+                        }
+                        else {
+                            panic!("Can't compare two objects of those types!")
+                        }
+                    },
+                    TokenKind::EqualEqual => {
+                        return Object::Bool(right == left);
+                    },
+                    TokenKind::BangEqual => {
+                        return Object::Bool(right != left);
+                    },
                     _ => panic!("Got an invalid binary operator {:?}", operator.kind)
                 }
             },
