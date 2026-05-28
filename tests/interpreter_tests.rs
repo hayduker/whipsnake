@@ -1,5 +1,5 @@
 use whipsnake::{
-    ast::Expr, interpreter::Interpreter, object::Object, token::{Literal, Token, TokenKind}
+    ast::Expr, interpreter::Interpreter, object::Object, token::{Literal, Token, TokenKind}, error::ErrorReporter
 };
 
 use common::*;
@@ -10,9 +10,15 @@ macro_rules! test_no_errors {
     ($name:ident, $input:expr, $expected:expr) => {
         #[test]
         fn $name() {
-            let interpreter = Interpreter;
-            let result = interpreter.evaluate(&$input);
-            assert_eq!(result, $expected);
+            let mut error_reporter = ErrorReporter::new();
+            let interpreter = Interpreter::new(&mut error_reporter);
+            match interpreter.evaluate(&$input) {
+                Ok(value) => assert_eq!(value, $expected),
+                Err(e) => {
+                    eprintln!("RuntimeError: {:?}", e);
+                    assert!(false);
+                }
+            }
         }
     };
 }

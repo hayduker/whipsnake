@@ -71,7 +71,7 @@ fn run(source: String) {
     println!("\nParsed AST:");
     println!("{}", PrettyPrinter::print(&expr));
 
-    let interpreter = Interpreter;
+    let interpreter = Interpreter::new(&mut reporter);
     let result = interpreter.evaluate(&expr);
 
     println!("\nEvaluated result:");
