@@ -2,7 +2,6 @@ use std::fmt;
 
 use crate::token::SourceLocation;
 
-// #[derive(Debug, PartialEq)]
 pub enum LexError {
     UnexpectedCharacter(SourceLocation,char),
     UnterminatedString(SourceLocation),
@@ -29,10 +28,29 @@ impl fmt::Display for LexError {
     }
 }
 
+#[derive(Debug)]
+pub enum RuntimeError {
+    TypeError(SourceLocation, String),
+    CrazyError(SourceLocation, String),
+}
+
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RuntimeError::TypeError(location, message) => {
+                write!(f, "TypeError at line {}: {}", location.line, message)
+            },
+            RuntimeError::CrazyError(location, message) => {
+                write!(f, "CrazyError at line {}: {}", location.line, message)
+            },
+        }
+    }
+}
+
 pub enum CompilerError {
     Lex(LexError),
     // Parse { location: usize, error: ParseError }, 
-    // Runtime { lcoation: usize, error: RuntimeError },
+    Runtime(RuntimeError),
 }
 
 pub struct ErrorReporter {
@@ -52,6 +70,10 @@ impl ErrorReporter {
         self.register_error(CompilerError::Lex(error));
     }
 
+    pub fn register_runtime_error(&mut self, error: RuntimeError) {
+        self.register_error(CompilerError::Runtime(error));
+    }
+
     pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
@@ -59,7 +81,8 @@ impl ErrorReporter {
     pub fn print_errors(&self) {
         for err in &self.errors {
             match err {
-                CompilerError::Lex(error) => eprintln!("LexError: {error}"),
+                CompilerError::Lex(error) => eprintln!("{error}"),
+                CompilerError::Runtime(error) => eprintln!("{error}"),
             }
         }
     }

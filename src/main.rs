@@ -71,11 +71,13 @@ fn run(source: String) {
     println!("\nParsed AST:");
     println!("{}", PrettyPrinter::print(&expr));
 
-    let interpreter = Interpreter::new(&mut reporter);
-    let result = interpreter.evaluate(&expr).unwrap();
+    let mut interpreter = Interpreter::new(&mut reporter);
+    interpreter.interpret(&expr);
 
-    println!("\nEvaluated result:");
-    println!("{result}");
+    if reporter.has_errors() {
+        reporter.print_errors();
+        return;
+    }
 }
 
 fn _error(line: u32, message: &str) {

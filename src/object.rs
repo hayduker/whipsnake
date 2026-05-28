@@ -17,6 +17,15 @@ impl Object {
             Object::String(s) => !s.is_empty(),
         }
     }
+
+    pub fn py_type(&self) -> &str {
+        match self {
+            Object::None => "NoneType",
+            Object::Bool(_) => "bool",
+            Object::Float(_) => "float",
+            Object::String(_) => "str",
+        }
+    }
 }
 
 impl fmt::Display for Object {

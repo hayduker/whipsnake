@@ -1,15 +1,9 @@
 use crate::{
     ast::Expr,
     object::Object,
-    token::{Token, TokenKind, Literal},
-    error::ErrorReporter,
+    token::{Token, TokenKind, Literal, SourceLocation},
+    error::{ErrorReporter, RuntimeError},
 };
-
-#[derive(Debug)]
-pub struct RuntimeError<'src> {
-    token: Token<'src>,
-    message:  String,
-}
 
 pub struct Interpreter<'err> {
     error_reporter: &'err mut ErrorReporter,
@@ -20,14 +14,14 @@ impl<'err> Interpreter<'err> {
         Interpreter { error_reporter }
     }
 
-    pub fn interpret(&self, expr: &Expr) {
+    pub fn interpret(&mut self, expr: &Expr) {
         match self.evaluate(expr) {
-            Ok(value) => println!("{}", value),
-            Err(e) => () //self.error_reporter.register_error(e),
+            Ok(value) => println!("\nEvaluated result:\n{}", value),
+            Err(e) => self.error_reporter.register_runtime_error(e),
         }
     }
     
-    pub fn evaluate<'src>(&self, expr: &Expr<'src>) -> Result<Object, RuntimeError<'src>> {
+    pub fn evaluate(&self, expr: &Expr) -> Result<Object, RuntimeError> {
         let value = match expr {
             Expr::Literal(literal) => {
                 match literal {
@@ -47,11 +41,17 @@ impl<'err> Interpreter<'err> {
                             TokenKind::Minus => {
                                 match right {
                                     Object::Float(float) => Object::Float(-float),
-                                    _ => panic!("Can't negate something that isn't a number!")
+                                    _ => return Err(RuntimeError::TypeError(
+                                        SourceLocation { line: operator.line },
+                                        format!("bad operand type for unary -: '{}'", right.py_type())
+                                    ))
                                 }
                             },
                             TokenKind::Not => Object::Bool(!right.is_truthy()),
-                            _ => panic!("Got an invalid unary operator {:?}", operator.kind)
+                            _ => return Err(RuntimeError::TypeError(
+                                SourceLocation { line: operator.line },
+                                format!("invalid unary operator: '{}'", operator.lexeme)
+                            ))
                         }
                     },
                     Err(e) => return Err(e)
@@ -66,10 +66,10 @@ impl<'err> Interpreter<'err> {
                     TokenKind::Plus => match (&left, &right) {
                         (Object::Float(fl), Object::Float(fr)) => Object::Float(fl + fr),
                         (Object::String(sl), Object::String(sr)) => Object::String(format!("{}{}", sl, sr)),
-                        _ => return Err(RuntimeError {
-                            token: *operator,
-                            message: format!("TypeError: unsupported operand type(s) for +: '{:?}' and '{:?}'", left, right)
-                        })
+                        _ => return Err(RuntimeError::TypeError(
+                            SourceLocation { line: operator.line },
+                            format!("unsupported operand of type(s) for +: '{}' and '{}'", left.py_type(), right.py_type())
+                        ))
                     }
                     TokenKind::EqualEqual => Object::Bool(right == left),
                     TokenKind::BangEqual => Object::Bool(right != left),
@@ -77,10 +77,10 @@ impl<'err> Interpreter<'err> {
                     TokenKind::Greater | TokenKind::GreaterEqual | TokenKind::Less | TokenKind::LessEqual => {
                          self.evaluate_binary_float_expr(&left, &operator, &right)?
                     }
-                    _ => return Err(RuntimeError {
-                        token: *operator,
-                        message: format!("Got an invalid binary operator {:?}", operator.kind)
-                    })
+                    _ => return Err(RuntimeError::TypeError(
+                        SourceLocation { line: operator.line },
+                        format!("got an invalid binary operator {:?}", operator.kind)
+                    ))
                 }
             },
         };
@@ -93,7 +93,7 @@ impl<'err> Interpreter<'err> {
         left: &Object,
         operator: &Token<'src>,
         right: &Object
-    ) -> Result<Object, RuntimeError<'src>> {
+    ) -> Result<Object, RuntimeError> {
         if let (Object::Float(fl), Object::Float(fr)) = (left, right) {
             let value = match operator.kind {
                 TokenKind::Minus => Object::Float(fl - fr),
@@ -103,18 +103,18 @@ impl<'err> Interpreter<'err> {
                 TokenKind::GreaterEqual => Object::Bool(fl >= fr),
                 TokenKind::Less => Object::Bool(fl < fr),
                 TokenKind::LessEqual => Object::Bool(fl <= fr),
-                _ => return Err(RuntimeError {
-                    token: *operator,
-                    message: format!("Can't use operator {operator:?} on two floats!")
-                })                    
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand of type(s) for {operator:?}: 'float' and 'floar'")
+                ))
             };
 
             Ok(value)
         } else {
-            Err(RuntimeError {
-                token: *operator,
-                message: format!("Somehow hit binary float expression with incompatible operator {:?}", operator)
-            })
+            Err(RuntimeError::CrazyError(
+                SourceLocation { line: operator.line },
+                format!("somehow hit binary float expression with incompatible operator {:?}", operator)
+            ))
         }
     }
 }
