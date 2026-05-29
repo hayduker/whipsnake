@@ -3,15 +3,20 @@ use crate::{
     object::Object,
     token::{Token, TokenKind, Literal, SourceLocation},
     error::{ErrorReporter, RuntimeError},
+    environment::Environment,
 };
 
 pub struct Interpreter<'err> {
+    environment: Environment,
     error_reporter: &'err mut ErrorReporter,
 }
 
 impl<'err> Interpreter<'err> {
     pub fn new(error_reporter: &'err mut ErrorReporter) -> Self {
-        Interpreter { error_reporter }
+        Interpreter {
+            environment: Environment::new(),
+            error_reporter
+        }
     }
 
     pub fn interpret(&mut self, statements: &Vec<Stmt>) {
@@ -28,12 +33,27 @@ impl<'err> Interpreter<'err> {
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
             },
+            
             Stmt::Expression(expr) => {
                 match self.evaluate(&expr) {
                     Err(e) => self.error_reporter.register_runtime_error(e),
                     _ => (),
                 }
             },
+            
+            Stmt::Assignment { name, initializer } => {
+                match self.evaluate(initializer) {
+                    Ok(value) => self.environment.define(name.lexeme.to_string(), value),
+                    Err(e) => self.error_reporter.register_runtime_error(e),
+                }
+            }
+            
+            _ => self.error_reporter.register_runtime_error(
+                RuntimeError::RuntimeError(
+                    SourceLocation { line: 0 },
+                    format!("don't know how to evaluate statement {:?}", statement)
+                )
+            )
         }
     }
     
@@ -99,6 +119,21 @@ impl<'err> Interpreter<'err> {
                     ))
                 }
             },
+
+            Expr::Variable(token) => {
+                match self.environment.get(token.lexeme) {
+                    Some(object) => object.clone(),
+                    None => return Err(RuntimeError::NameError(
+                        SourceLocation { line: token.line },
+                        format!("name '{}' is not defined", token.lexeme)
+                    )),
+                }
+            }
+
+            _ => return Err(RuntimeError::RuntimeError(
+                SourceLocation { line: 0 },
+                format!("don't know how to evaluate expression {:?}", expr)
+            ))
         };
 
         Ok(value)
@@ -127,7 +162,7 @@ impl<'err> Interpreter<'err> {
 
             Ok(value)
         } else {
-            Err(RuntimeError::CrazyError(
+            Err(RuntimeError::RuntimeError(
                 SourceLocation { line: operator.line },
                 format!("somehow hit binary float expression with incompatible operator {:?}", operator)
             ))

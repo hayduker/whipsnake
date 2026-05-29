@@ -17,7 +17,8 @@ impl PrettyPrinter {
     pub fn print_stmt(s: &Stmt) -> String {
         match s {
             Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &[expr]),
-            Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &[expr])
+            Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &[expr]),
+            Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(format!("assign {}", name.lexeme).as_str(), &[initializer]),
         }
     }
 
@@ -35,6 +36,7 @@ impl PrettyPrinter {
             Expr::Binary { left, operator, right } => {
                 PrettyPrinter::parenthesize(operator.lexeme, &[left, right])
             },
+            Expr::Variable(token) => format!("{}", token.lexeme),
             _ => String::from(""), 
         }
     }

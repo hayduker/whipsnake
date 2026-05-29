@@ -1,2 +1,2 @@
-print "hey!"
-print "yo!"
+x = 3 * 4
+print(x + 2)

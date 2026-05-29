@@ -29,9 +29,25 @@ impl fmt::Display for LexError {
 }
 
 #[derive(Debug)]
+pub enum ParseError {
+    ParseError(SourceLocation, String),
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseError::ParseError(location, message) => {
+                write!(f, "ParseError at line {}: {}", location.line, message)
+            },
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum RuntimeError {
     TypeError(SourceLocation, String),
-    CrazyError(SourceLocation, String),
+    NameError(SourceLocation, String),
+    RuntimeError(SourceLocation, String),
 }
 
 impl fmt::Display for RuntimeError {
@@ -40,8 +56,11 @@ impl fmt::Display for RuntimeError {
             RuntimeError::TypeError(location, message) => {
                 write!(f, "TypeError at line {}: {}", location.line, message)
             },
-            RuntimeError::CrazyError(location, message) => {
-                write!(f, "CrazyError at line {}: {}", location.line, message)
+            RuntimeError::NameError(location, message) => {
+                write!(f, "NameError at line {}: {}", location.line, message)
+            }
+            RuntimeError::RuntimeError(location, message) => {
+                write!(f, "RuntimeError at line {}: {}", location.line, message)
             },
         }
     }
@@ -49,7 +68,7 @@ impl fmt::Display for RuntimeError {
 
 pub enum CompilerError {
     Lex(LexError),
-    // Parse { location: usize, error: ParseError }, 
+    Parse(ParseError),
     Runtime(RuntimeError),
 }
 
@@ -70,6 +89,10 @@ impl ErrorReporter {
         self.register_error(CompilerError::Lex(error));
     }
 
+    pub fn register_parse_error(&mut self, error: ParseError) {
+        self.register_error(CompilerError::Parse(error));
+    }
+
     pub fn register_runtime_error(&mut self, error: RuntimeError) {
         self.register_error(CompilerError::Runtime(error));
     }
@@ -82,6 +105,7 @@ impl ErrorReporter {
         for err in &self.errors {
             match err {
                 CompilerError::Lex(error) => eprintln!("{error}"),
+                CompilerError::Parse(error) => eprintln!("{error}"),
                 CompilerError::Runtime(error) => eprintln!("{error}"),
             }
         }
