@@ -1,5 +1,5 @@
 use crate::{
-    ast::Expr,
+    ast::{Stmt, Expr},
     object::Object,
     token::{Token, TokenKind, Literal, SourceLocation},
     error::{ErrorReporter, RuntimeError},
@@ -14,10 +14,26 @@ impl<'err> Interpreter<'err> {
         Interpreter { error_reporter }
     }
 
-    pub fn interpret(&mut self, expr: &Expr) {
-        match self.evaluate(expr) {
-            Ok(value) => println!("\nEvaluated result:\n{}", value),
-            Err(e) => self.error_reporter.register_runtime_error(e),
+    pub fn interpret(&mut self, statements: &Vec<Stmt>) {
+        for statement in statements {
+            self.execute(statement);
+        }
+    }
+
+    pub fn execute(&mut self, statement: &Stmt) {
+        match statement {
+            Stmt::Print(expr) => {
+                match self.evaluate(&expr) {
+                    Ok(value) => println!("{}", value),
+                    Err(e) => self.error_reporter.register_runtime_error(e),
+                }
+            },
+            Stmt::Expression(expr) => {
+                match self.evaluate(&expr) {
+                    Err(e) => self.error_reporter.register_runtime_error(e),
+                    _ => (),
+                }
+            },
         }
     }
     

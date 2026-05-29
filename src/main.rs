@@ -66,13 +66,13 @@ fn run(source: String) {
     }
 
     let mut parser = Parser::new(&mut reporter);
-    let expr = parser.parse(&mut tokens.into_iter().peekable());
+    let statements = parser.parse(&mut tokens.into_iter().peekable());
 
     println!("\nParsed AST:");
-    println!("{}", PrettyPrinter::print(&expr));
+    println!("{}", PrettyPrinter::print(&statements));
 
     let mut interpreter = Interpreter::new(&mut reporter);
-    interpreter.interpret(&expr);
+    interpreter.interpret(&statements);
 
     if reporter.has_errors() {
         reporter.print_errors();

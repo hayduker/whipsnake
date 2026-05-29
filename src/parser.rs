@@ -1,6 +1,6 @@
 use crate::{
     token::{Token, TokenKind, Literal},
-    ast::Expr,
+    ast::{Stmt, Expr},
     error::ErrorReporter,
 
 };
@@ -25,16 +25,57 @@ impl<'src, 'err> Parser<'src, 'err> {
         }
     }
 
-    pub fn parse<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
+    pub fn parse<I>(&mut self, tokens: &mut Peekable<I>) -> Vec<Stmt<'src>>
     where
         I: Iterator<Item = Token<'src>>,
     {
-        // Eventually this will optionally call a method for parsing
-        // statements. This is where we need to catch parse errors
-        // so we can synchronize at this point and skip ahead to the
-        // next statement. The lower-level methods will probably need
-        // to return Result instead of a raw Expr to do this.
-        self.expression(tokens)
+        let mut statements = Vec::new();
+
+        while !self.is_at_end(tokens) {
+            let statement = self.statement(tokens);
+            statements.push(statement);
+        }
+
+        statements
+    }
+
+    fn statement<I>(&mut self, tokens: &mut Peekable<I>) -> Stmt<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Print]) {
+            return self.print_statement(tokens);
+        }
+
+        return self.expression_statement(tokens);
+    }
+
+    fn print_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Stmt<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let value = self.expression(tokens);
+
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) ||
+            self.is_at_end(tokens) {
+            return Stmt::Print(value);
+        }
+
+        panic!("Parse error! Expected newline or EOF after print statement.");
+    }
+
+    fn expression_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Stmt<'src>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let value = self.expression(tokens);
+
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) ||
+            self.is_at_end(tokens) {
+            return Stmt::Expression(value);
+        }
+
+        panic!("Parse error! Expected newline or EOF after expression statement.");
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Expr<'src>
@@ -185,7 +226,7 @@ impl<'src, 'err> Parser<'src, 'err> {
             }
         }
 
-        panic!("WTF how did I get here?!");
+        panic!("WTF how did I get here?! peek = {:?}", tokens.peek());
     }
 
     fn advance<I>(&mut self, tokens: &mut Peekable<I>) -> Token<'src>

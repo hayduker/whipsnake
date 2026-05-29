@@ -1,9 +1,27 @@
-use crate::{token::Literal, ast::Expr};
+use crate::{token::Literal, ast::{Stmt, Expr}};
 
 pub struct PrettyPrinter;
 
 impl PrettyPrinter {
-    pub fn print(e: &Expr) -> String {
+    pub fn print(statements: &Vec<Stmt>) -> String {
+        let mut output = String::from("");
+
+        for s in statements {
+            output += PrettyPrinter::print_stmt(&s).as_str();
+            output += "\n";
+        }
+
+        output
+    }
+
+    pub fn print_stmt(s: &Stmt) -> String {
+        match s {
+            Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &[expr]),
+            Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &[expr])
+        }
+    }
+
+    pub fn print_expr(e: &Expr) -> String {
         match e {
             Expr::Literal(Literal::String(s)) => format!("\"{s}\""),
             Expr::Literal(Literal::Float(f)) => format!("{f}").to_string(),
@@ -26,7 +44,7 @@ impl PrettyPrinter {
 
         for expr in exprs {
             s.push(' ');
-            s.push_str(PrettyPrinter::print(expr).as_str());
+            s.push_str(PrettyPrinter::print_expr(expr).as_str());
         }
 
         s.push(')');
