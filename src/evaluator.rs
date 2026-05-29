@@ -6,14 +6,14 @@ use crate::{
     environment::Environment,
 };
 
-pub struct Interpreter<'err> {
+pub struct Evaluator<'err> {
     environment: Environment,
     error_reporter: &'err mut ErrorReporter,
 }
 
-impl<'err> Interpreter<'err> {
+impl<'err> Evaluator<'err> {
     pub fn new(error_reporter: &'err mut ErrorReporter) -> Self {
-        Interpreter {
+        Evaluator {
             environment: Environment::new(),
             error_reporter
         }

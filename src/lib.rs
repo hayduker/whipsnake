@@ -6,4 +6,4 @@ pub mod printer;
 pub mod parser;
 pub mod object;
 pub mod environment;
-pub mod interpreter;
+pub mod evaluator;

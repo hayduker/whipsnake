@@ -72,6 +72,10 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
+        // This function is sort of a hack. It consumes open and close parens to make
+        // the print statement look like the Python standard library function 'print'
+        // without actually having functions implemented yet.
+        
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::LeftParen]) {
             return Err(ParseError::ParseError(
                 SourceLocation { line: tokens.peek().unwrap().line },

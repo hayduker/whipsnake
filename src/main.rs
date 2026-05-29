@@ -9,7 +9,7 @@ use whipsnake::{
     parser::Parser,
     printer::PrettyPrinter,
     token::Token,
-    interpreter::Interpreter
+    evaluator::Evaluator
 };
 
 fn main() -> Result<(), &'static str> {
@@ -71,10 +71,10 @@ fn run(source: String) {
     println!("\nSyntax tree:");
     println!("{}", PrettyPrinter::print(&statements));
 
-    let mut interpreter = Interpreter::new(&mut reporter);
+    let mut evaluator = Evaluator::new(&mut reporter);
     
     println!("Value:");
-    interpreter.interpret(&statements);
+    evaluator.interpret(&statements);
 
     if reporter.has_errors() {
         reporter.print_errors();
