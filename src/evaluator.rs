@@ -1,49 +1,43 @@
 use crate::{
-    ast::{Stmt, Expr},
-    object::Object,
-    token::{Token, TokenKind, Literal, SourceLocation},
-    error::{ErrorReporter, RuntimeError},
-    environment::Environment,
+    ast::{Expr, Stmt}, environment::{self, Environment}, error::{ErrorReporter, RuntimeError}, object::Object, token::{Literal, SourceLocation, Token, TokenKind}
 };
 
 pub struct Evaluator<'err> {
-    environment: Environment,
     error_reporter: &'err mut ErrorReporter,
 }
 
 impl<'err> Evaluator<'err> {
     pub fn new(error_reporter: &'err mut ErrorReporter) -> Self {
         Evaluator {
-            environment: Environment::new(),
             error_reporter
         }
     }
 
-    pub fn interpret(&mut self, statements: &Vec<Stmt>) {
+    pub fn interpret(&mut self, statements: &Vec<Stmt>, environment: &mut Environment, interactive: bool) {
         for statement in statements {
-            self.execute(statement);
+            self.execute(statement, environment, interactive);
         }
     }
 
-    pub fn execute(&mut self, statement: &Stmt) {
+    pub fn execute(&mut self, statement: &Stmt, environment: &mut Environment, interactive: bool) {
         match statement {
             Stmt::Print(expr) => {
-                match self.evaluate(&expr) {
+                match self.evaluate(&expr, environment) {
                     Ok(value) => println!("{}", value),
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
             },
             
             Stmt::Expression(expr) => {
-                match self.evaluate(&expr) {
+                match self.evaluate(&expr, environment) {
                     Err(e) => self.error_reporter.register_runtime_error(e),
-                    _ => (),
+                    Ok(value) => if interactive { println!("{}", value) },
                 }
             },
             
             Stmt::Assignment { name, initializer } => {
-                match self.evaluate(initializer) {
-                    Ok(value) => self.environment.define(name.lexeme.to_string(), value),
+                match self.evaluate(initializer, environment) {
+                    Ok(value) => environment.define(name.lexeme.to_string(), value),
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
             }
@@ -57,7 +51,7 @@ impl<'err> Evaluator<'err> {
         }
     }
     
-    pub fn evaluate(&self, expr: &Expr) -> Result<Object, RuntimeError> {
+    pub fn evaluate(&self, expr: &Expr, environment: &Environment) -> Result<Object, RuntimeError> {
         let value = match expr {
             Expr::Literal(literal) => {
                 match literal {
@@ -68,10 +62,10 @@ impl<'err> Evaluator<'err> {
                 }
             },
             
-            Expr::Grouping(inner_expr) => self.evaluate(inner_expr)?,
+            Expr::Grouping(inner_expr) => self.evaluate(inner_expr, environment)?,
 
             Expr::Unary { operator, right } => {
-                match self.evaluate(right) {
+                match self.evaluate(right, environment) {
                     Ok(right) => {
                         match operator.kind {
                             TokenKind::Minus => {
@@ -95,8 +89,8 @@ impl<'err> Evaluator<'err> {
             },
 
             Expr::Binary { left, operator, right} => {
-                let left = self.evaluate(left)?;
-                let right = self.evaluate(right)?;
+                let left = self.evaluate(left, environment)?;
+                let right = self.evaluate(right, environment)?;
 
                 match operator.kind {
                     TokenKind::Plus => match (&left, &right) {
@@ -121,7 +115,7 @@ impl<'err> Evaluator<'err> {
             },
 
             Expr::Variable(token) => {
-                match self.environment.get(token.lexeme) {
+                match environment.get(token.lexeme) {
                     Some(object) => object.clone(),
                     None => return Err(RuntimeError::NameError(
                         SourceLocation { line: token.line },
@@ -129,11 +123,6 @@ impl<'err> Evaluator<'err> {
                     )),
                 }
             }
-
-            _ => return Err(RuntimeError::RuntimeError(
-                SourceLocation { line: 0 },
-                format!("don't know how to evaluate expression {:?}", expr)
-            ))
         };
 
         Ok(value)

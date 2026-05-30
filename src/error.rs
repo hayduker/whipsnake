@@ -110,4 +110,8 @@ impl ErrorReporter {
             }
         }
     }
+
+    pub fn clear(&mut self) {
+        self.errors.clear();
+    }
 }

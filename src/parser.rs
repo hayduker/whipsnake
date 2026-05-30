@@ -27,6 +27,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         let mut statements = Vec::new();
 
         while !self.is_at_end(tokens) {
+            println!("parsing next statement");
             match self.statement(tokens) {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
@@ -43,8 +44,14 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
+        println!("definitely parsing next statement");
+
         if self.advance_if_peek_matches_any(tokens, &[TokenKind::Print]) {
             return self.print_statement(tokens);
+        }
+
+        if self.peek_matches(tokens, TokenKind::If) {
+            return self.if_statement(tokens);
         }
 
         // Didn't match keyword, we must have expression or assignment
@@ -75,7 +82,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         // This function is sort of a hack. It consumes open and close parens to make
         // the print statement look like the Python standard library function 'print'
         // without actually having functions implemented yet.
-        
+
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::LeftParen]) {
             return Err(ParseError::ParseError(
                 SourceLocation { line: tokens.peek().unwrap().line },
@@ -127,12 +134,38 @@ impl<'src, 'err> Parser<'src, 'err> {
         ))
     }
 
-    fn expression_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
+    fn if_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
     where
         I: Iterator<Item = Token<'src>>,
     {
-        let expr = self.expression(tokens)?;
-        Ok(Stmt::Expression(expr))
+        self.advance(tokens); // consume "if"
+
+        let condition = self.expression(tokens)?;
+        
+        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
+            return Err(ParseError::ParseError(
+                SourceLocation { line: tokens.peek().unwrap().line },
+                String::from("expected ':' after if conditional"),
+            ));
+        }
+
+        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) {
+            return Err(ParseError::ParseError(
+                SourceLocation { line: tokens.peek().unwrap().line },
+                String::from("expected newline after ':'"),
+            ));
+        }     
+
+        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Indent]) {
+            return Err(ParseError::ParseError(
+                SourceLocation { line: tokens.peek().unwrap().line },
+                String::from("expected indent after if conditional line"),
+            ));
+        }
+
+        let body = self.expression(tokens)?;
+
+        Ok(Stmt::If { condition, body })
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>

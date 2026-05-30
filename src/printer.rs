@@ -19,6 +19,7 @@ impl PrettyPrinter {
             Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &[expr]),
             Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &[expr]),
             Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(format!("assign {}", name.lexeme).as_str(), &[initializer]),
+            Stmt::If { condition, body } => PrettyPrinter::parenthesize("if", &[&Box::new(condition.clone()), &Box::new(body.clone())]),
         }
     }
 

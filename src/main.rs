@@ -4,19 +4,14 @@ use std::{
     io::{self, Write},
 };
 use whipsnake::{
-    error::ErrorReporter,
-    lexer::Lexer,
-    parser::Parser,
-    printer::PrettyPrinter,
-    token::Token,
-    evaluator::Evaluator
+    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer, parser::Parser, printer::PrettyPrinter, token::Token
 };
 
 fn main() -> Result<(), &'static str> {
     let args: Vec<String> = env::args().collect();
 
     match args.len() {
-        1 => run_prompt(),
+        1 => run_repl(),
         2 => run_file(&args[1]),
         _ => {
             eprintln!("Usage: whipsnake [script]");
@@ -27,8 +22,9 @@ fn main() -> Result<(), &'static str> {
     Ok(())
 }
 
-fn run_prompt() {
+fn run_repl() {
     let mut input = String::new();
+    let mut environment = Environment::new();
 
     loop {
         print!("> ");
@@ -39,18 +35,44 @@ fn run_prompt() {
             .read_line(&mut input)
             .expect("Failed to read line");
 
-        let input = input.trim_end().to_string();
-        run(input);
+        let mut reporter = ErrorReporter::new();
+        let lexer = Lexer::new(input.as_str(), &mut reporter);
+        let tokens: Vec<Token> = lexer.collect();
+
+        println!("Tokens:");
+        for token in tokens.clone() {
+            println!("{token:?}");
+        }
+
+        if reporter.has_errors() {
+            reporter.print_errors();
+            continue;
+        }
+
+        let mut parser = Parser::new(&mut reporter);
+        let statements = parser.parse(&mut tokens.into_iter().peekable());
+
+        println!("\nSyntax tree:");
+        println!("{}", PrettyPrinter::print(&statements));
+
+        println!("Value:");
+        let mut evaluator = Evaluator::new(&mut reporter);
+        evaluator.interpret(&statements, &mut environment, true);
+
+        if reporter.has_errors() {
+            reporter.print_errors();
+            return;
+        }
+
+        reporter.clear();
     }
 }
 
 fn run_file(filename: &str) {
     let source = read_to_string(filename).unwrap();
-    run(source);
-}
 
-fn run(source: String) {
     let mut reporter = ErrorReporter::new();
+    let mut environment = Environment::new();
 
     let lexer = Lexer::new(source.as_str(), &mut reporter);
     let tokens: Vec<Token> = lexer.collect();
@@ -72,9 +94,7 @@ fn run(source: String) {
     println!("{}", PrettyPrinter::print(&statements));
 
     let mut evaluator = Evaluator::new(&mut reporter);
-    
-    println!("Value:");
-    evaluator.interpret(&statements);
+    evaluator.interpret(&statements, &mut environment, false);
 
     if reporter.has_errors() {
         reporter.print_errors();
