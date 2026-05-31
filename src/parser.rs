@@ -181,10 +181,9 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        self.advance(tokens); // consume "if"
+        self.advance(tokens); // consume "if" or "elif"
 
         let condition = self.expression(tokens)?;
-
        
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
             return Err(ParseError::ParseError(
@@ -193,9 +192,32 @@ impl<'src, 'err> Parser<'src, 'err> {
             ));
         }
 
-        let body = self.block(tokens)?;
+        let true_body = self.block(tokens)?;
 
-        Ok(Stmt::If { condition, body: Box::new(body) })
+        let mut false_body: Vec<Stmt> = vec![];
+
+        if self.peek_matches(tokens, TokenKind::Elif) {
+            false_body.push(self.if_statement(tokens)?);
+        }
+
+        if self.peek_matches(tokens, TokenKind::Else) {
+            self.advance(tokens); // consume "else"
+
+            if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
+                return Err(ParseError::ParseError(
+                    SourceLocation { line: tokens.peek().unwrap().line },
+                    String::from("expected ':' after 'else'"),
+                ));
+            }
+
+            false_body = self.block(tokens)?;
+        }
+
+        Ok(Stmt::If {
+            condition,
+            true_body: Box::new(true_body),
+            false_body: Box::new(false_body),
+        })
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>

@@ -1,5 +1,6 @@
-if 1 < 2:
-    y = 1
-    print(y)
-
-print(y)
+if False:
+    print(1)
+elif False:
+    print(2)
+else:
+    print(3)
