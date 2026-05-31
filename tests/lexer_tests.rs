@@ -11,7 +11,8 @@ macro_rules! test_no_errors {
         #[test]
         fn $name() {
             let mut reporter = ErrorReporter::new();
-            let tokens: Vec<Token> = Lexer::new($input, &mut reporter).map(|r| r).collect();
+            let mut lexer = Lexer::new(&mut reporter);
+            let tokens: Vec<Token> = lexer.lex($input);
 
             assert_eq!(tokens, $expected);
         }
@@ -25,7 +26,8 @@ macro_rules! test_single_char {
             $input,
             vec![
                 Token::new(TokenKind::$kind, $input, 1),
-                Token::new(TokenKind::Eof, "", 1),
+                tok![NewLine, "\n", 1],
+                tok![Eof, "", 2],
             ]
         ];
     };
@@ -37,7 +39,8 @@ macro_rules! test_suite_no_errors {
             #[test]
             fn $name() {
                 let mut reporter = ErrorReporter::new();
-                let tokens: Vec<Token> = Lexer::new($input, &mut reporter).map(|r| r).collect();
+                let mut lexer = Lexer::new(&mut reporter);
+                let tokens: Vec<Token> = lexer.lex($input);
 
                 assert_eq!(tokens, $expected);
             }
@@ -46,63 +49,68 @@ macro_rules! test_suite_no_errors {
 }
 
 test_no_errors!(
-    scan_string,
+    lex_string,
     "\"hello!\"",
     vec![
         tok_string("hello!", 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]
 );
 
 test_no_errors!(
-    scan_empty_string,
+    lex_empty_string,
     "\"\"",
     vec![
         tok_string("", 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]
 );
 
 test_no_errors!(
-    scan_float,
+    lex_float,
     "3.14159",
     vec![
         tok_float(3.14159, 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]
 );
 
 test_no_errors!(
-    scan_big_float,
+    lex_big_float,
     "39401.1",
     vec![
         tok_float(39401.1, 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]
 );
 
 test_no_errors!(
-    scan_integer,
+    lex_integer,
     "3",
     vec![
         tok_float(3 as f64, 1),
-        Token::new(TokenKind::Eof, "", 1),
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]
 );
 
 
-test_single_char!(scan_left_paren, "(", LeftParen);
-test_single_char!(scan_right_paren, ")", RightParen);
-test_single_char!(scan_colon, ":", Colon);
-test_single_char!(scan_comma, ",", Comma);
-test_single_char!(scan_dot, ".", Dot);
-test_single_char!(scan_minus, "-", Minus);
-test_single_char!(scan_plus, "+", Plus);
-test_single_char!(scan_slash, "/", Slash);
-test_single_char!(scan_star, "*", Star);
+test_single_char!(lex_left_paren, "(", LeftParen);
+test_single_char!(lex_right_paren, ")", RightParen);
+test_single_char!(lex_colon, ":", Colon);
+test_single_char!(lex_comma, ",", Comma);
+test_single_char!(lex_dot, ".", Dot);
+test_single_char!(lex_minus, "-", Minus);
+test_single_char!(lex_plus, "+", Plus);
+test_single_char!(lex_slash, "/", Slash);
+test_single_char!(lex_star, "*", Star);
 
 test_no_errors!(
-    scan_multiple_chars,
+    lex_multiple_chars,
     "()!==+-",
     vec![
         tok!(LeftParen, "(", 1),
@@ -111,13 +119,14 @@ test_no_errors!(
         tok!(Equal, "=", 1),
         tok!(Plus, "+", 1),
         tok!(Minus, "-", 1),
-        tok!(Eof, "", 1),
+        tok![NewLine, "\n", 1],
+        tok!(Eof, "", 2),
     ]
 );
 
 test_suite_no_errors!([
 
-    (scan_multiple_lines, "+*<>=\n.!=", vec![
+    (lex_multiple_lines, "+*<>=\n.!=", vec![
         tok!(Plus, "+", 1),
         tok!(Star, "*", 1),
         tok!(Less, "<", 1),
@@ -125,10 +134,11 @@ test_suite_no_errors!([
         tok!(NewLine, "\n", 1),
         tok!(Dot, ".", 2),
         tok!(BangEqual, "!=", 2),
-        tok!(Eof, "", 2),
+        tok![NewLine, "\n", 2],
+        tok!(Eof, "", 3),
     ]),
 
-    (scan_internal_whitespace, "+ *\t<\r>   =\n.!=", vec![
+    (lex_internal_whitespace, "+ *\t<\r>   =\n.!=", vec![
         tok!(Plus, "+", 1),
         tok!(Star, "*", 1),
         tok!(Less, "<", 1),
@@ -137,18 +147,20 @@ test_suite_no_errors!([
         tok!(NewLine, "\n", 1),
         tok!(Dot, ".", 2),
         tok!(BangEqual, "!=", 2),
-        tok!(Eof, "", 2),
+        tok![NewLine, "\n", 2],
+        tok!(Eof, "", 3),
     ]),
 
-    (scan_comments, "+*<>=# blah blah blah", vec![
+    (lex_comments, "+*<>=# blah blah blah", vec![
         tok!(Plus, "+", 1),
         tok!(Star, "*", 1),
         tok!(Less, "<", 1),
         tok!(GreaterEqual, ">=", 1),
-        tok!(Eof, "", 1),
+        tok![NewLine, "\n", 1],
+        tok!(Eof, "", 2),
     ]),
 
-    (scan_indentation, ":\n    :\n        :\n    :\n        :\n:\n:", vec![
+    (lex_indentation, ":\n    :\n        :\n    :\n        :\n:\n:", vec![
         tok!(Colon, ":", 1),
         tok!(NewLine, "\n", 1),
         tok!(Indent, "", 2),
@@ -168,112 +180,151 @@ test_suite_no_errors!([
         tok!(Colon, ":", 6),
         tok!(NewLine, "\n", 6),
         tok!(Colon, ":", 7),
-        tok!(Eof, "", 7),
+        tok![NewLine, "\n", 7],
+        tok!(Eof, "", 8),
     ]),
 
-    (scan_single_char_identifier, "x", vec![
+    (lex_implicit_ending_dedents, ":\n    :\n        :\n            :", vec![
+        tok!(Colon, ":", 1),
+        tok!(NewLine, "\n", 1),
+        tok!(Indent, "", 2),
+        tok!(Colon, ":", 2),
+        tok!(NewLine, "\n", 2),
+        tok!(Indent, "", 3),
+        tok!(Colon, ":", 3),
+        tok!(NewLine, "\n", 3),
+        tok!(Indent, "", 4),
+        tok!(Colon, ":", 4),
+        tok!(NewLine, "\n", 4),
+        tok!(Dedent, "", 5),
+        tok!(Dedent, "", 5),
+        tok!(Dedent, "", 5),
+        tok!(Eof, "", 5),
+    ]),
+
+    (lex_single_char_identifier, "x", vec![
         tok!(Identifier, "x", 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_pascal_identifier, "PascalCase", vec![
+    (lex_pascal_identifier, "PascalCase", vec![
         tok!(Identifier, "PascalCase", 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_snake_identifier, "snake_case", vec![
+    (lex_snake_identifier, "snake_case", vec![
         tok!(Identifier, "snake_case", 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_alphanum_identifier, "a1_B2_c3_D4", vec![
+    (lex_alphanum_identifier, "a1_B2_c3_D4", vec![
         tok!(Identifier, "a1_B2_c3_D4", 1),
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_and, "and", vec![
+    (lex_and, "and", vec![
         tok![And, "and", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_class, "class", vec![
+    (lex_class, "class", vec![
         tok![Class, "class", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_def, "def", vec![
+    (lex_def, "def", vec![
         tok![Def, "def", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_elif, "elif", vec![
+    (lex_elif, "elif", vec![
         tok![Elif, "elif", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_else, "else", vec![
+    (lex_else, "else", vec![
         tok![Else, "else", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_false, "False", vec![
+    (lex_false, "False", vec![
         tok![False, "False", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_for, "for", vec![
+    (lex_for, "for", vec![
         tok![For, "for", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_if, "if", vec![
+    (lex_if, "if", vec![
         tok![If, "if", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_none, "None", vec![
+    (lex_none, "None", vec![
         tok![None, "None", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_not, "not", vec![
+    (lex_not, "not", vec![
         tok![Not, "not", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_or, "or", vec![
+    (lex_or, "or", vec![
         tok![Or, "or", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_print, "print", vec![
+    (lex_print, "print", vec![
         tok![Print, "print", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_return, "return", vec![
+    (lex_return, "return", vec![
         tok![Return, "return", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_super, "super", vec![
+    (lex_super, "super", vec![
         tok![Super, "super", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_self, "self", vec![
+    (lex_self, "self", vec![
         tok![This, "self", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_true, "True", vec![
+    (lex_true, "True", vec![
         tok![True, "True", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
 
-    (scan_while, "while", vec![
+    (lex_while, "while", vec![
         tok![While, "while", 1],
-        tok![Eof, "", 1],
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
     ]),
-
 ]);

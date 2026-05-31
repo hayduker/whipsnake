@@ -9,8 +9,8 @@ fn interpret_string_literal() {
 
     let source = "\"Hello, world!\"";
 
-    let lexer = Lexer::new(source, &mut reporter);
-    let tokens: Vec<Token> = lexer.collect();
+    let mut lexer = Lexer::new(&mut reporter);
+    let tokens = lexer.lex(source);
 
     if reporter.has_errors() {
         reporter.print_errors();
@@ -26,7 +26,7 @@ fn interpret_string_literal() {
     }
 
     let mut evaluator = Evaluator::new(&mut reporter);
-    evaluator.interpret(&statements, &mut environment);
+    evaluator.interpret(&statements, &mut environment, false);
 
     if reporter.has_errors() {
         reporter.print_errors();

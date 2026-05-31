@@ -4,6 +4,7 @@ use whipsnake::{
     object::Object,
     token::{Literal, Token, TokenKind},
     error::ErrorReporter,
+    environment::Environment,
 };
 
 use common::*;
@@ -16,7 +17,8 @@ macro_rules! test_no_errors {
         fn $name() {
             let mut error_reporter = ErrorReporter::new();
             let interpreter = Evaluator::new(&mut error_reporter);
-            match interpreter.evaluate(&$input) {
+            let mut environment = Environment::new();
+            match interpreter.evaluate(&$input, &mut environment) {
                 Ok(value) => assert_eq!(value, $expected),
                 Err(e) => {
                     eprintln!("RuntimeError: {:?}", e);
