@@ -2,10 +2,11 @@ use std::fmt;
 
 use crate::token::SourceLocation;
 
+#[derive(Debug, PartialEq)]
 pub enum LexError {
     UnexpectedCharacter(SourceLocation,char),
     UnterminatedString(SourceLocation),
-    TooManyIndentations(SourceLocation, usize),
+    IndentationError(SourceLocation, String),
     MalformedNumberLiteral(SourceLocation),
 }
 
@@ -15,8 +16,8 @@ impl fmt::Display for LexError {
             LexError::UnexpectedCharacter(l, c) => {
                 write!(f, "unexpected character '{}' at line {}", c, l.line)
             },
-            LexError::TooManyIndentations(l, n) => {
-                write!(f, "too many indentations on line {}, got {} more than previous line", l.line, n)
+            LexError::IndentationError(location, message) => {
+                write!(f, "IndentationError at line {}: {}", location.line, message)
             },
             LexError::UnterminatedString(l) => {
                 write!(f, "unterminated string at line {}", l.line)
@@ -28,7 +29,7 @@ impl fmt::Display for LexError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ParseError {
     ParseError(SourceLocation, String),
 }
@@ -43,7 +44,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RuntimeError {
     TypeError(SourceLocation, String),
     NameError(SourceLocation, String),
@@ -66,6 +67,7 @@ impl fmt::Display for RuntimeError {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum CompilerError {
     Lex(LexError),
     Parse(ParseError),

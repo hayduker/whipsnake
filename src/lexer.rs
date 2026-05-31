@@ -11,7 +11,7 @@ pub struct Lexer<'src, 'err> {
     start: usize,
     current: usize,
     line: usize,
-    indent_level: usize,
+    indent_levels: Vec<usize>,
     error_reporter: &'err mut ErrorReporter,
 }
 
@@ -23,7 +23,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             start: 0,
             current: 0,
             line: 1,
-            indent_level: 0,
+            indent_levels: Vec::new(),
             error_reporter,
         }
     }
@@ -60,13 +60,14 @@ impl<'src, 'err> Lexer<'src, 'err> {
                 self.line += 1;
             }
 
-            for _ in 0..self.indent_level {
+            for _ in self.indent_levels.iter() {
                 tokens.push(Token::new(
                     TokenKind::Dedent,
                     "",
                     self.line
                 ));
             }
+            self.indent_levels.clear();
         }
 
         tokens.push(Token::new(
@@ -157,32 +158,53 @@ impl<'src, 'err> Lexer<'src, 'err> {
         while self.advance_if_match(' ') {
             num_spaces += 1
         }
-        let level = num_spaces / 4;
+        
+        println!("scan_indentation line {} got num_spaces = {}", self.line, num_spaces);
+        
+        let mut last_level = *self.indent_levels.last().unwrap_or(&0);
 
-        if level == self.indent_level + 1 {
+        println!("  last_level = {last_level}");
+
+        if num_spaces == last_level { println!("  same as last, we're done here"); return Ok(()); }
+
+        if num_spaces > last_level {
+            self.indent_levels.push(num_spaces);
+            println!("  got more, pushing {}: {:?}", num_spaces, self.indent_levels);
             generated_tokens.push(
                 Token::new(
                     TokenKind::Indent,
                     "",
                     self.line
                 ));
-        } else if level < self.indent_level {
-            let num_dedents = self.indent_level - level;
-            for _ in 0..num_dedents {
-                generated_tokens.push(
-                    Token::new(
-                        TokenKind::Dedent,
-                        "",
-                        self.line
-                    ));
-            }
-        } else if level != self.indent_level {
-            let how_many = level - self.indent_level;
-            return Err(LexError::TooManyIndentations(SourceLocation { line: self.line }, how_many));
+            return Ok(());
         }
-        self.indent_level = level;
+        
+        // num_spaces < last_level
+        loop {
+            self.indent_levels.pop();
+            println!("  got less, popping: {:?}", self.indent_levels);
+            generated_tokens.push(
+                Token::new(
+                    TokenKind::Dedent,
+                    "",
+                    self.line
+                ));
 
-        Ok(())
+            last_level = *self.indent_levels.last().unwrap_or(&0);
+            println!("  last level now {}", last_level);
+            if last_level == num_spaces {
+                // yay, we dedented enough
+                println!("  yay, we dedented enough!");
+                return Ok(());
+            } else if num_spaces > last_level {
+                println!("  oh no, we went to far, last_level = {}, num_spaces = {}", last_level, num_spaces);
+                // oh no, we went to far
+                return Err(LexError::IndentationError(
+                    SourceLocation { line: self.line },
+                    String::from("unindent does not match any outer indentation level.")
+                ));
+            }
+        }
     }
 
     fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {

@@ -5,7 +5,7 @@ use whipsnake::error::{ErrorReporter, CompilerError, LexError};
 mod common;
 
 #[test]
-fn scan_unexpected_character_error() {
+fn lex_unexpected_character_error() {
     let mut reporter = ErrorReporter::new();
     let mut lexer = Lexer::new(&mut reporter);
     lexer.lex("(1 + 2)&");
@@ -18,7 +18,7 @@ fn scan_unexpected_character_error() {
 }
 
 #[test]
-fn scan_unterminated_string_error() {
+fn lex_unterminated_string_error() {
     let mut reporter = ErrorReporter::new();
     let mut lexer = Lexer::new(&mut reporter);
     lexer.lex("x = 1\ny = \"hello, world!");
@@ -31,20 +31,24 @@ fn scan_unterminated_string_error() {
 }
 
 #[test]
-fn scan_too_many_indentations_error() {
+fn lex_mismatched_indentation_error() {
     let mut reporter = ErrorReporter::new();
     let mut lexer = Lexer::new(&mut reporter);
-    lexer.lex("x\n    y\n            z");
+    lexer.lex("w\n    x\n        y\n      z");
 
     assert_eq!(reporter.errors.len(), 1);
-    assert!(matches!(
+    assert_eq!(
         reporter.errors.pop().unwrap(),
-        CompilerError::Lex(LexError::TooManyIndentations(SourceLocation { line: 3 }, 2))
-    ));
+        CompilerError::Lex(
+        LexError::IndentationError(
+            SourceLocation { line: 4 },
+            String::from("unindent does not match any outer indentation level.")
+        ))
+    );
 }
 
 #[test]
-fn scan_malformed_number_literal_error() {
+fn lex_malformed_number_literal_error() {
     let mut reporter = ErrorReporter::new();
     let mut lexer = Lexer::new(&mut reporter);
     lexer.lex("let x = 123.");
