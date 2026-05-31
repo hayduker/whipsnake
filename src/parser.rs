@@ -25,6 +25,8 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         while !self.peek_matches(tokens, TokenKind::Eof) {
             let mut statements = self.statements(tokens);
+            if statements.len() == 0 { break }
+
             all_statements.append(&mut statements);
         }
 
@@ -37,15 +39,23 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut statements = Vec::new();
 
+        // This eats any newlines at the beginning of the file
+        while self.peek_matches(tokens, TokenKind::NewLine) {
+            self.advance(tokens);
+        }
+
         while !self.peek_matches_any(tokens, &[TokenKind::Eof, TokenKind::Dedent]){
             match self.statement(tokens) {
-                Ok(stmt) => statements.push(stmt),
+                Ok(stmt) => {
+                    statements.push(stmt);
+                },
                 Err(e) => {
                     self.error_reporter.register_parse_error(e);
                     self.synchronize(tokens);
                 }
             }
 
+            // This eats any newlines between statements or at the end of the file
             while self.peek_matches(tokens, TokenKind::NewLine) {
                 self.advance(tokens);
             }
@@ -94,14 +104,14 @@ impl<'src, 'err> Parser<'src, 'err> {
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) {
             return Err(ParseError::ParseError(
                 SourceLocation { line: tokens.peek().unwrap().line },
-                String::from("expected ':' after if conditional"),
+                String::from("expected new line at start of block"),
             ));
         }
 
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Indent]) {
             return Err(ParseError::ParseError(
                 SourceLocation { line: tokens.peek().unwrap().line },
-                String::from("expected ':' after if conditional"),
+                String::from("expected indent at start of block"),
             ));
         }
 
@@ -110,7 +120,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Dedent]) {
             return Err(ParseError::ParseError(
                 SourceLocation { line: tokens.peek().unwrap().line },
-                String::from("expected ':' after if conditional"),
+                String::from("expected dedent at end of block"),
             ));
         }
 
@@ -377,7 +387,7 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         Err(ParseError::ParseError(
             SourceLocation { line: tokens.peek().unwrap().line },
-            format!("don't know how to parse token {:?}", tokens.peek()),
+            format!("don't know how to parse token {:?} here", tokens.peek().unwrap().kind),
         ))
     }
 
@@ -461,6 +471,8 @@ impl<'src, 'err> Parser<'src, 'err> {
                     return;
                 }
             }
+
+            self.advance(tokens);
         }
     }
 }

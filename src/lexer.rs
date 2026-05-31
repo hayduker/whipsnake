@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, iter::Peekable, str::CharIndices};
+use std::{iter::Peekable, str::CharIndices};
 
 use crate::{
     error::{ErrorReporter, LexError},
@@ -12,62 +12,7 @@ pub struct Lexer<'src, 'err> {
     current: usize,
     line: usize,
     indent_level: usize,
-    token_buffer: VecDeque<Token<'src>>,
-    is_done: bool,
     error_reporter: &'err mut ErrorReporter,
-}
-
-impl<'src, 'err> Iterator for Lexer<'src, 'err> {
-    type Item = Token<'src>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if !self.token_buffer.is_empty() {
-            return Some(self.token_buffer.pop_front().unwrap());
-        }
-
-        if self.is_done {
-            return None;
-        }
-
-        while !self.is_at_end() {
-            self.start = self.current;
-
-            match self.next_token_group() {
-                Ok(Some(tokens)) => {
-                    self.token_buffer.extend(tokens);
-                    if !self.token_buffer.is_empty() {
-                        return Some(self.token_buffer.pop_front().unwrap());
-                    }
-                }
-                Ok(None) => { /* non-indentation whitespace or comment */ }
-                Err(e) => self.error_reporter.register_lex_error(e),
-            }
-        }
-
-
-        self.token_buffer.push_back(Token::new(
-            TokenKind::NewLine,
-            "\n",
-            self.line
-        ));
-        self.line += 1;
-
-        for _ in 0..self.indent_level {
-            self.token_buffer.push_back(Token::new(
-                TokenKind::Dedent,
-                "",
-                self.line
-            ));
-        }
-
-        self.is_done = true;
-        Some(Token {
-            kind: TokenKind::Eof,
-            lexeme: "",
-            literal: Literal::None,
-            line: self.line,
-        })
-    }
 }
 
 impl<'src, 'err> Lexer<'src, 'err> {
@@ -79,8 +24,6 @@ impl<'src, 'err> Lexer<'src, 'err> {
             current: 0,
             line: 1,
             indent_level: 0,
-            token_buffer: VecDeque::new(),
-            is_done: false,
             error_reporter,
         }
     }
@@ -103,23 +46,27 @@ impl<'src, 'err> Lexer<'src, 'err> {
             }
         }
 
-        // Trailing newline and dedents are added in case file ends in
-        // the middle of an indented block. This simplifies the parser.
+        if tokens.len() > 0 {
+            // Trailing newline and dedents are added in case file ends in
+            // the middle of an indented block. This simplifies the parser.
 
-        tokens.push(Token::new(
-            TokenKind::NewLine,
-            "\n",
-            self.line
-        ));
+            if tokens[tokens.len() - 1].kind != TokenKind::NewLine {
+                tokens.push(Token::new(
+                    TokenKind::NewLine,
+                    "\n",
+                    self.line
+                ));
 
-        self.line += 1;
+                self.line += 1;
+            }
 
-        for _ in 0..self.indent_level {
-            tokens.push(Token::new(
-                TokenKind::Dedent,
-                "",
-                self.line
-            ));
+            for _ in 0..self.indent_level {
+                tokens.push(Token::new(
+                    TokenKind::Dedent,
+                    "",
+                    self.line
+                ));
+            }
         }
 
         tokens.push(Token::new(

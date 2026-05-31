@@ -27,13 +27,28 @@ fn run_repl() {
     let mut environment = Environment::new();
 
     loop {
-        print!("> ");
-        io::stdout().flush().expect("Failed to flush stdout");
-
         input.clear();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read line");
+        
+        print!(">>> ");
+        io::stdout().flush().expect("Failed to flush stdout");
+        io::stdin().read_line(&mut input).expect("Failed to read line");
+
+
+        if next_to_last_equals(&input, ':') {
+            let mut last_line = String::new();
+
+            while last_line != "\n" {
+                last_line.clear();
+
+                print!("... ");
+                io::stdout().flush().expect("Failed to flush stdout");
+                io::stdin().read_line(&mut last_line).expect("Failed to read line");
+
+                input.push_str(last_line.as_str());
+            }
+        }
+
+        // println!("Got input: >{input}<");
 
         let mut reporter = ErrorReporter::new();
         let mut lexer = Lexer::new(&mut reporter);
@@ -61,7 +76,7 @@ fn run_repl() {
 
         if reporter.has_errors() {
             reporter.print_errors();
-            return;
+            continue;
         }
 
         reporter.clear();
@@ -70,6 +85,8 @@ fn run_repl() {
 
 fn run_file(filename: &str) {
     let source = read_to_string(filename).unwrap();
+
+    println!("input >{source}<");
 
     let mut reporter = ErrorReporter::new();
     let mut environment = Environment::new();
@@ -100,6 +117,12 @@ fn run_file(filename: &str) {
         reporter.print_errors();
         return;
     }
+}
+
+fn next_to_last_equals(s: &String, target: char) -> bool {
+    let mut rev_chars = s.chars().rev();
+    rev_chars.next();
+    rev_chars.next() == Some(target)
 }
 
 fn _error(line: u32, message: &str) {
