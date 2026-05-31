@@ -86,7 +86,8 @@ fn run_repl() {
 fn run_file(filename: &str) {
     let source = read_to_string(filename).unwrap();
 
-    println!("input >{source}<");
+    println!("Input:");
+    println!(">{source}<");
 
     let mut reporter = ErrorReporter::new();
     let mut environment = Environment::new();
@@ -94,7 +95,7 @@ fn run_file(filename: &str) {
     let mut lexer = Lexer::new(&mut reporter);
     let tokens: Vec<Token> = lexer.lex(source.as_str());
 
-    println!("Tokens:");
+    println!("\nTokens:");
     for token in tokens.clone() {
         println!("{token:?}");
     }

@@ -152,92 +152,80 @@ impl<'src, 'err> Lexer<'src, 'err> {
         )]))
     }
 
-    fn scan_indentation(
-        &mut self,
-        generated_tokens: &mut Vec<Token<'src>>
-    ) -> Result<(), LexError> {
-        println!("scan_indentation called");
+    fn scan_indentation(&mut self, generated_tokens: &mut Vec<Token<'src>>) -> Result<(), LexError> {
+        let (num_spaces, num_tabs) = self.consume_spaces_and_tabs();
+        self.validate_whitespace_style(num_spaces, num_tabs)?;
 
-        let mut num_spaces: usize = 0;
-        let mut num_tabs: usize = 0;
+        let current_level = if self.using_tabs == Some(true) { num_tabs } else { num_spaces };
+        let last_level = *self.indent_levels.last().unwrap_or(&0);
 
-        while self.peek() == Some(' ') || self.peek() == Some('\t') {
-            if self.advance_if_match(' ') {
-                num_spaces += 1;
-            } else if self.advance_if_match('\t') {
-                num_tabs += 1;
+        if current_level == last_level {
+            Ok(())
+        } else if current_level > last_level {
+            self.indent_levels.push(current_level);
+            generated_tokens.push(Token::new(TokenKind::Indent, "", self.line));
+            Ok(())
+        } else {
+            self.handle_dedents(current_level, generated_tokens)
+        }
+    }
+
+    fn consume_spaces_and_tabs(&mut self) -> (usize, usize) {
+        let mut num_spaces = 0;
+        let mut num_tabs = 0;
+
+        while let Some(c) = self.peek() {
+            match c {
+                ' ' => { self.advance(); num_spaces += 1; }
+                '\t' => { self.advance(); num_tabs += 1; }
+                _ => break,
             }
         }
 
-        println!("num_spaces = {num_spaces}, num_tabs = {num_tabs}");
+        (num_spaces, num_tabs)
+    }
 
-        if (num_spaces > 0 && num_tabs > 0) ||
-            (self.using_tabs == Some(true) && num_spaces > 0) ||
-            (self.using_tabs == Some(false) && num_tabs > 0) {
+    fn validate_whitespace_style(&mut self, spaces: usize, tabs: usize) -> Result<(), LexError> {
+        let mixed_on_line = spaces > 0 && tabs > 0;
+        
+        let mismatch_with_file = match self.using_tabs {
+            Some(true) => spaces > 0,
+            Some(false) => tabs > 0,
+            None => false,
+        };
+
+        if mixed_on_line || mismatch_with_file {
             return Err(LexError::TabError(
                 SourceLocation { line: self.line },
                 String::from("mixed spaces and tabs for indentation.")
             ));
         }
 
-        println!("no mixed spaces and tabs, cool");
-
-        if self.using_tabs == None && (num_spaces > 0 || num_tabs > 0) {
-            self.using_tabs = Some(num_tabs > 0);
-            println!("initializing using_tabs to {:?}", self.using_tabs);
+        if self.using_tabs.is_none() && (spaces > 0 || tabs > 0) {
+            self.using_tabs = Some(tabs > 0);
         }
 
-        if self.using_tabs == Some(true) {
-            num_spaces = num_tabs * 8;
-            println!("got {} tabs which means {} spaces", num_tabs, num_spaces);
-        }
-        
-        println!("scan_indentation line {} got num_spaces = {}", self.line, num_spaces);
-        
-        let mut last_level = *self.indent_levels.last().unwrap_or(&0);
+        Ok(())
+    }
 
-        println!("  last_level = {last_level}");
-
-        if num_spaces == last_level { println!("  same as last, we're done here"); return Ok(()); }
-
-        if num_spaces > last_level {
-            self.indent_levels.push(num_spaces);
-            println!("  got more, pushing {}: {:?}", num_spaces, self.indent_levels);
-            generated_tokens.push(
-                Token::new(
-                    TokenKind::Indent,
-                    "",
-                    self.line
-                ));
-            return Ok(());
-        }
-        
-        // num_spaces < last_level
-        loop {
-            self.indent_levels.pop();
-            println!("  got less, popping: {:?}", self.indent_levels);
-            generated_tokens.push(
-                Token::new(
-                    TokenKind::Dedent,
-                    "",
-                    self.line
-                ));
-
-            last_level = *self.indent_levels.last().unwrap_or(&0);
-            println!("  last level now {}", last_level);
-            if last_level == num_spaces {
-                // yay, we dedented enough
-                println!("  yay, we dedented enough!");
+    fn handle_dedents(&mut self, current_level: usize, tokens: &mut Vec<Token<'src>>) -> Result<(), LexError> {
+        while let Some(&last_level) = self.indent_levels.last() {
+            if last_level == current_level {
                 return Ok(());
-            } else if num_spaces > last_level {
-                println!("  oh no, we went to far, last_level = {}, num_spaces = {}", last_level, num_spaces);
-                // oh no, we went to far
+            }
+            
+            if current_level > last_level {
                 return Err(LexError::IndentationError(
                     SourceLocation { line: self.line },
                     String::from("unindent does not match any outer indentation level.")
                 ));
             }
+
+            self.indent_levels.pop();
+            tokens.push(Token::new(TokenKind::Dedent, "", self.line));
         }
+        
+        Ok(())
     }
 
     fn scan_comment(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
