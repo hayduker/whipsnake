@@ -1,5 +1,5 @@
 use whipsnake::{
-    environment::{self, Environment}, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer, parser::Parser, token::Token
+    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer, parser::Parser,
 };
 
 #[test]

@@ -1,6 +1,5 @@
 use crate::{
-    ast::{Expr, Stmt}, error::{ErrorReporter, ParseError, RuntimeError}, token::{Literal, SourceLocation, Token, TokenKind}
-
+    ast::{Expr, Stmt}, error::{ErrorReporter, ParseError}, token::{Literal, SourceLocation, Token, TokenKind}
 };
 
 use std::iter::Peekable;

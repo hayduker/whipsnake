@@ -1,5 +1,5 @@
 use whipsnake::lexer::Lexer;
-use whipsnake::token::{SourceLocation, Token};
+use whipsnake::token::SourceLocation;
 use whipsnake::error::{ErrorReporter, CompilerError, LexError};
 
 mod common;

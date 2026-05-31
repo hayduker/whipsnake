@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use crate::{ast::{AstNode, Expr, Stmt}, token::Literal};
 
 pub struct PrettyPrinter;

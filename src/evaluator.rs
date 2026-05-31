@@ -48,13 +48,6 @@ impl<'err> Evaluator<'err> {
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
             }
-            
-            _ => self.error_reporter.register_runtime_error(
-                RuntimeError::RuntimeError(
-                    SourceLocation { line: 0 },
-                    format!("don't know how to evaluate statement {:?}", statement)
-                )
-            )
         }
     }
     
