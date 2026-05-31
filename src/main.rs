@@ -95,7 +95,7 @@ fn run_file(filename: &str) {
     let tokens: Vec<Token> = lexer.lex(source.as_str());
 
     println!("Tokens:");
-    for token in tokens {
+    for token in tokens.clone() {
         println!("{token:?}");
     }
 
@@ -104,19 +104,19 @@ fn run_file(filename: &str) {
         return;
     }
 
-    // let mut parser = Parser::new(&mut reporter);
-    // let statements = parser.parse(&mut tokens.into_iter().peekable());
+    let mut parser = Parser::new(&mut reporter);
+    let statements = parser.parse(&mut tokens.into_iter().peekable());
 
-    // println!("\nSyntax tree:");
-    // println!("{}", PrettyPrinter::print(&statements));
+    println!("\nSyntax tree:");
+    println!("{}", PrettyPrinter::print(&statements));
 
-    // let mut evaluator = Evaluator::new(&mut reporter);
-    // evaluator.interpret(&statements, &mut environment, false);
+    let mut evaluator = Evaluator::new(&mut reporter);
+    evaluator.interpret(&statements, &mut environment, false);
 
-    // if reporter.has_errors() {
-    //     reporter.print_errors();
-    //     return;
-    // }
+    if reporter.has_errors() {
+        reporter.print_errors();
+        return;
+    }
 }
 
 fn next_to_last_equals(s: &String, target: char) -> bool {
