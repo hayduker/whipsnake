@@ -1,4 +1,6 @@
-use crate::{token::Literal, ast::{Stmt, Expr}};
+use std::ops::Deref;
+
+use crate::{ast::{AstNode, Expr, Stmt}, token::Literal};
 
 pub struct PrettyPrinter;
 
@@ -16,10 +18,18 @@ impl PrettyPrinter {
 
     pub fn print_stmt(s: &Stmt) -> String {
         match s {
-            Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &[expr]),
-            Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &[expr]),
-            Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(format!("assign {}", name.lexeme).as_str(), &[initializer]),
-            Stmt::If { condition, body } => PrettyPrinter::parenthesize("if", &[&Box::new(condition.clone()), &Box::new(body.clone())]),
+            Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &vec![AstNode::Expr(expr)]),
+            Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &vec![AstNode::Expr(expr)]),
+            Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(format!("assign {}", name.lexeme).as_str(), &vec![AstNode::Expr(initializer)]),
+            Stmt::If { condition, body } => {
+                let mut nodes = vec![AstNode::Expr(condition)];
+                
+                for stmt in body.iter() {
+                    nodes.push(AstNode::Stmt(stmt));
+                }
+    
+                PrettyPrinter::parenthesize("if", &nodes)
+            }
         }
     }
 
@@ -30,24 +40,27 @@ impl PrettyPrinter {
             Expr::Literal(Literal::Bool(true)) => format!("True"),
             Expr::Literal(Literal::Bool(false)) => format!("False"),
             Expr::Literal(Literal::None) => format!("None"),
-            Expr::Grouping(expr) => PrettyPrinter::parenthesize("group", &[expr]), 
+            Expr::Grouping(expr) => PrettyPrinter::parenthesize("group", &vec![AstNode::Expr(expr)]), 
             Expr::Unary { operator, right } => {
-                PrettyPrinter::parenthesize(operator.lexeme, &[right])
+                PrettyPrinter::parenthesize(operator.lexeme, &vec![AstNode::Expr(right)])
             },
             Expr::Binary { left, operator, right } => {
-                PrettyPrinter::parenthesize(operator.lexeme, &[left, right])
+                PrettyPrinter::parenthesize(operator.lexeme, &vec![AstNode::Expr(left), AstNode::Expr(right)])
             },
             Expr::Variable(token) => format!("{}", token.lexeme),
-            _ => String::from(""), 
         }
     }
 
-    fn parenthesize(name: &str, exprs: &[&Expr]) -> String {
+    fn parenthesize(name: &str, nodes: &Vec<AstNode>) -> String {
         let mut s = String::from(format!("({name}"));
 
-        for expr in exprs {
+        for node in nodes {
             s.push(' ');
-            s.push_str(PrettyPrinter::print_expr(expr).as_str());
+
+            match node {
+                AstNode::Expr(expr) => s.push_str(PrettyPrinter::print_expr(expr).as_str()),
+                AstNode::Stmt(stmt) => s.push_str(PrettyPrinter::print_stmt(stmt).as_str()),
+            }
         }
 
         s.push(')');

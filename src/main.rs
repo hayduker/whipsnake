@@ -36,8 +36,8 @@ fn run_repl() {
             .expect("Failed to read line");
 
         let mut reporter = ErrorReporter::new();
-        let lexer = Lexer::new(input.as_str(), &mut reporter);
-        let tokens: Vec<Token> = lexer.collect();
+        let mut lexer = Lexer::new(&mut reporter);
+        let tokens: Vec<Token> = lexer.lex(input.as_str());
 
         println!("Tokens:");
         for token in tokens.clone() {
@@ -74,8 +74,8 @@ fn run_file(filename: &str) {
     let mut reporter = ErrorReporter::new();
     let mut environment = Environment::new();
 
-    let lexer = Lexer::new(source.as_str(), &mut reporter);
-    let tokens: Vec<Token> = lexer.collect();
+    let mut lexer = Lexer::new(&mut reporter);
+    let tokens: Vec<Token> = lexer.lex(source.as_str());
 
     println!("Tokens:");
     for token in tokens.clone() {

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, Stmt}, environment::{self, Environment}, error::{ErrorReporter, RuntimeError}, object::Object, token::{Literal, SourceLocation, Token, TokenKind}
+    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::Object, token::{Literal, SourceLocation, Token, TokenKind}
 };
 
 pub struct Evaluator<'err> {
@@ -30,14 +30,21 @@ impl<'err> Evaluator<'err> {
             
             Stmt::Expression(expr) => {
                 match self.evaluate(&expr, environment) {
-                    Err(e) => self.error_reporter.register_runtime_error(e),
                     Ok(value) => if interactive { println!("{}", value) },
+                    Err(e) => self.error_reporter.register_runtime_error(e),
                 }
             },
             
             Stmt::Assignment { name, initializer } => {
                 match self.evaluate(initializer, environment) {
                     Ok(value) => environment.define(name.lexeme.to_string(), value),
+                    Err(e) => self.error_reporter.register_runtime_error(e),
+                }
+            }
+
+            Stmt::If { condition, body } => {
+                match self.if_statement(condition, body, environment, interactive) {
+                    Ok(_) => (),
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
             }
@@ -51,6 +58,16 @@ impl<'err> Evaluator<'err> {
         }
     }
     
+    fn if_statement(&mut self, condition: &Expr, body: &Vec<Stmt>, environment: &mut Environment, interactive: bool) -> Result<Object, RuntimeError> {
+        let condition = self.evaluate(condition, environment)?;
+
+        if condition.is_truthy() {
+            self.interpret(body, environment, interactive);
+        }
+
+        Ok(Object::None)
+    }
+
     pub fn evaluate(&self, expr: &Expr, environment: &Environment) -> Result<Object, RuntimeError> {
         let value = match expr {
             Expr::Literal(literal) => {

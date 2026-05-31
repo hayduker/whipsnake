@@ -1,2 +1,5 @@
-if 2 < 1:
-    3 + 4
+if 1 < 2:
+    y = 1
+    print(y)
+
+print(y)

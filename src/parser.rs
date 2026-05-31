@@ -1,7 +1,5 @@
 use crate::{
-    token::{Token, TokenKind, Literal, SourceLocation},
-    ast::{Stmt, Expr},
-    error::{ErrorReporter, ParseError},
+    ast::{Expr, Stmt}, error::{ErrorReporter, ParseError, RuntimeError}, token::{Literal, SourceLocation, Token, TokenKind}
 
 };
 
@@ -24,16 +22,33 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
+        let mut all_statements = Vec::new();
+
+        while !self.peek_matches(tokens, TokenKind::Eof) {
+            let mut statements = self.statements(tokens);
+            all_statements.append(&mut statements);
+        }
+
+        all_statements
+    }
+
+    fn statements<I>(&mut self, tokens: &mut Peekable<I>) -> Vec<Stmt<'src>>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
         let mut statements = Vec::new();
 
-        while !self.is_at_end(tokens) {
-            println!("parsing next statement");
+        while !self.peek_matches_any(tokens, &[TokenKind::Eof, TokenKind::Dedent]){
             match self.statement(tokens) {
                 Ok(stmt) => statements.push(stmt),
                 Err(e) => {
                     self.error_reporter.register_parse_error(e);
                     self.synchronize(tokens);
                 }
+            }
+
+            while self.peek_matches(tokens, TokenKind::NewLine) {
+                self.advance(tokens);
             }
         }
 
@@ -44,8 +59,6 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        println!("definitely parsing next statement");
-
         if self.advance_if_peek_matches_any(tokens, &[TokenKind::Print]) {
             return self.print_statement(tokens);
         }
@@ -73,6 +86,36 @@ impl<'src, 'err> Parser<'src, 'err> {
             SourceLocation { line: tokens.peek().unwrap().line },
             String::from("expected newline or EOF after expression statement."),
         ))
+    }
+
+    fn block<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Vec<Stmt<'src>>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) {
+            return Err(ParseError::ParseError(
+                SourceLocation { line: tokens.peek().unwrap().line },
+                String::from("expected ':' after if conditional"),
+            ));
+        }
+
+        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Indent]) {
+            return Err(ParseError::ParseError(
+                SourceLocation { line: tokens.peek().unwrap().line },
+                String::from("expected ':' after if conditional"),
+            ));
+        }
+
+        let statements = self.statements(tokens);
+
+        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Dedent]) {
+            return Err(ParseError::ParseError(
+                SourceLocation { line: tokens.peek().unwrap().line },
+                String::from("expected ':' after if conditional"),
+            ));
+        }
+
+        Ok(statements)
     }
 
     fn print_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
@@ -141,7 +184,8 @@ impl<'src, 'err> Parser<'src, 'err> {
         self.advance(tokens); // consume "if"
 
         let condition = self.expression(tokens)?;
-        
+
+       
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
             return Err(ParseError::ParseError(
                 SourceLocation { line: tokens.peek().unwrap().line },
@@ -149,23 +193,9 @@ impl<'src, 'err> Parser<'src, 'err> {
             ));
         }
 
-        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) {
-            return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
-                String::from("expected newline after ':'"),
-            ));
-        }     
+        let body = self.block(tokens)?;
 
-        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Indent]) {
-            return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
-                String::from("expected indent after if conditional line"),
-            ));
-        }
-
-        let body = self.expression(tokens)?;
-
-        Ok(Stmt::If { condition, body })
+        Ok(Stmt::If { condition, body: Box::new(body) })
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
@@ -366,10 +396,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         false
     }
 
-    fn previous_matches_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
-    where
-        I: Iterator<Item = Token<'src>>,
-    {
+    fn previous_matches_any(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
             if self.previous.map_or(false, |t| t.kind == *kind) {
                 return true;
@@ -402,7 +429,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         self.advance(tokens);
 
         while !self.is_at_end(tokens) {
-            if self.previous_matches_any(tokens, &[
+            if self.previous_matches_any(&[
                 TokenKind::NewLine, TokenKind::Indent, TokenKind::Dedent
             ]) {
                 if self.peek_matches_any(tokens, &[

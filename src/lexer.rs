@@ -44,6 +44,22 @@ impl<'src, 'err> Iterator for Lexer<'src, 'err> {
             }
         }
 
+
+        self.token_buffer.push_back(Token::new(
+            TokenKind::NewLine,
+            "\n",
+            self.line
+        ));
+        self.line += 1;
+
+        for _ in 0..self.indent_level {
+            self.token_buffer.push_back(Token::new(
+                TokenKind::Dedent,
+                "",
+                self.line
+            ));
+        }
+
         self.is_done = true;
         Some(Token {
             kind: TokenKind::Eof,
@@ -55,13 +71,10 @@ impl<'src, 'err> Iterator for Lexer<'src, 'err> {
 }
 
 impl<'src, 'err> Lexer<'src, 'err> {
-    pub fn new(
-        source: &'src str,
-        error_reporter: &'err mut ErrorReporter
-    ) -> Lexer<'src, 'err> {
+    pub fn new(error_reporter: &'err mut ErrorReporter) -> Lexer<'src, 'err> {
         Lexer {
-            source,
-            chars: source.char_indices().peekable(),
+            source: "",
+            chars: "".char_indices().peekable(),
             start: 0,
             current: 0,
             line: 1,
@@ -70,6 +83,52 @@ impl<'src, 'err> Lexer<'src, 'err> {
             is_done: false,
             error_reporter,
         }
+    }
+
+    pub fn lex(&mut self, source: &'src str) -> Vec<Token<'src>> {
+        self.source = source;
+        self.chars = source.char_indices().peekable();
+
+        let mut tokens = Vec::new();
+
+        while !self.is_at_end() {
+            self.start = self.current;
+
+            match self.next_token_group() {
+                Ok(Some(ts)) => {
+                    tokens.extend(ts);
+                }
+                Ok(None) => { /* non-indentation whitespace or comment */ }
+                Err(e) => self.error_reporter.register_lex_error(e),
+            }
+        }
+
+        // Trailing newline and dedents are added in case file ends in
+        // the middle of an indented block. This simplifies the parser.
+
+        tokens.push(Token::new(
+            TokenKind::NewLine,
+            "\n",
+            self.line
+        ));
+
+        self.line += 1;
+
+        for _ in 0..self.indent_level {
+            tokens.push(Token::new(
+                TokenKind::Dedent,
+                "",
+                self.line
+            ));
+        }
+
+        tokens.push(Token::new(
+            TokenKind::Eof,
+            "",
+            self.line
+        ));
+
+        tokens
     }
 
     fn next_token_group(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {

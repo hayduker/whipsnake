@@ -5,7 +5,7 @@ pub enum Stmt<'src> {
     Expression(Expr<'src>),
     Print(Expr<'src>),
     Assignment { name: Token<'src>, initializer: Expr<'src> },
-    If { condition: Expr<'src>, body: Expr<'src> }
+    If { condition: Expr<'src>, body: Box<Vec<Stmt<'src>>> }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -17,3 +17,8 @@ pub enum Expr<'src> {
     Variable(Token<'src>),
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum AstNode<'src> {
+    Stmt(&'src Stmt<'src>),
+    Expr(&'src Expr<'src>),
+}
