@@ -12,6 +12,7 @@ pub struct Lexer<'src, 'err> {
     current: usize,
     line: usize,
     indent_levels: Vec<usize>,
+    using_tabs: Option<bool>,
     error_reporter: &'err mut ErrorReporter,
 }
 
@@ -24,6 +25,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             current: 0,
             line: 1,
             indent_levels: Vec::new(),
+            using_tabs: None,
             error_reporter,
         }
     }
@@ -154,9 +156,40 @@ impl<'src, 'err> Lexer<'src, 'err> {
         &mut self,
         generated_tokens: &mut Vec<Token<'src>>
     ) -> Result<(), LexError> {
+        println!("scan_indentation called");
+
         let mut num_spaces: usize = 0;
-        while self.advance_if_match(' ') {
-            num_spaces += 1
+        let mut num_tabs: usize = 0;
+
+        while self.peek() == Some(' ') || self.peek() == Some('\t') {
+            if self.advance_if_match(' ') {
+                num_spaces += 1;
+            } else if self.advance_if_match('\t') {
+                num_tabs += 1;
+            }
+        }
+
+        println!("num_spaces = {num_spaces}, num_tabs = {num_tabs}");
+
+        if (num_spaces > 0 && num_tabs > 0) ||
+            (self.using_tabs == Some(true) && num_spaces > 0) ||
+            (self.using_tabs == Some(false) && num_tabs > 0) {
+            return Err(LexError::TabError(
+                SourceLocation { line: self.line },
+                String::from("mixed spaces and tabs for indentation.")
+            ));
+        }
+
+        println!("no mixed spaces and tabs, cool");
+
+        if self.using_tabs == None && (num_spaces > 0 || num_tabs > 0) {
+            self.using_tabs = Some(num_tabs > 0);
+            println!("initializing using_tabs to {:?}", self.using_tabs);
+        }
+
+        if self.using_tabs == Some(true) {
+            num_spaces = num_tabs * 8;
+            println!("got {} tabs which means {} spaces", num_tabs, num_spaces);
         }
         
         println!("scan_indentation line {} got num_spaces = {}", self.line, num_spaces);

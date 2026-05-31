@@ -7,6 +7,7 @@ pub enum LexError {
     UnexpectedCharacter(SourceLocation,char),
     UnterminatedString(SourceLocation),
     IndentationError(SourceLocation, String),
+    TabError(SourceLocation, String),
     MalformedNumberLiteral(SourceLocation),
 }
 
@@ -18,6 +19,9 @@ impl fmt::Display for LexError {
             },
             LexError::IndentationError(location, message) => {
                 write!(f, "IndentationError at line {}: {}", location.line, message)
+            },
+            LexError::TabError(location, message) => {
+                write!(f, "TabError at line {}: {}", location.line, message)
             },
             LexError::UnterminatedString(l) => {
                 write!(f, "unterminated string at line {}", l.line)

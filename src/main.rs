@@ -48,7 +48,7 @@ fn run_repl() {
             }
         }
 
-        // println!("Got input: >{input}<");
+        println!("Got input: >{input}<");
 
         let mut reporter = ErrorReporter::new();
         let mut lexer = Lexer::new(&mut reporter);

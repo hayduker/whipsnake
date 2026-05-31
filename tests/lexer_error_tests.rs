@@ -48,6 +48,57 @@ fn lex_mismatched_indentation_error() {
 }
 
 #[test]
+fn lex_tab_error_0() {
+    let mut reporter = ErrorReporter::new();
+    let mut lexer = Lexer::new(&mut reporter);
+    lexer.lex("w\n\tx\n        y\n\t\tz");
+
+    assert_eq!(reporter.errors.len(), 1);
+    assert_eq!(
+        reporter.errors.pop().unwrap(),
+        CompilerError::Lex(
+        LexError::TabError(
+            SourceLocation { line: 3 },
+            String::from("mixed spaces and tabs for indentation.")
+        ))
+    );
+}
+
+#[test]
+fn lex_tab_error_1() {
+    let mut reporter = ErrorReporter::new();
+    let mut lexer = Lexer::new(&mut reporter);
+    lexer.lex("w\n    x\n\t\ty\n        z");
+
+    assert_eq!(reporter.errors.len(), 1);
+    assert_eq!(
+        reporter.errors.pop().unwrap(),
+        CompilerError::Lex(
+        LexError::TabError(
+            SourceLocation { line: 3 },
+            String::from("mixed spaces and tabs for indentation.")
+        ))
+    );
+}
+
+#[test]
+fn lex_tab_error_2() {
+    let mut reporter = ErrorReporter::new();
+    let mut lexer = Lexer::new(&mut reporter);
+    lexer.lex("w\n\t    ");
+
+    assert_eq!(reporter.errors.len(), 1);
+    assert_eq!(
+        reporter.errors.pop().unwrap(),
+        CompilerError::Lex(
+        LexError::TabError(
+            SourceLocation { line: 2 },
+            String::from("mixed spaces and tabs for indentation.")
+        ))
+    );
+}
+
+#[test]
 fn lex_malformed_number_literal_error() {
     let mut reporter = ErrorReporter::new();
     let mut lexer = Lexer::new(&mut reporter);
