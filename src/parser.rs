@@ -325,6 +325,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         if self.advance_if_peek_matches_any(tokens, &[
             TokenKind::Not,
+            TokenKind::Plus,
             TokenKind::Minus,
         ]) {
             let operator = self.previous.unwrap();

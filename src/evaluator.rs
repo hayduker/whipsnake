@@ -87,6 +87,15 @@ impl<'err> Evaluator<'err> {
                 match self.evaluate(right, environment) {
                     Ok(right) => {
                         match operator.kind {
+                            TokenKind::Plus => {
+                                match right {
+                                    Object::Float(_) => right, // unary + is identity
+                                    _ => return Err(RuntimeError::TypeError(
+                                        SourceLocation { line: operator.line },
+                                        format!("bad operand type for unary -: '{}'", right.py_type())
+                                    ))
+                                }
+                            },
                             TokenKind::Minus => {
                                 match right {
                                     Object::Float(float) => Object::Float(-float),
