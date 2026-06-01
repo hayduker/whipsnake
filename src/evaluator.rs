@@ -42,8 +42,8 @@ impl<'err> Evaluator<'err> {
                 }
             }
 
-            Stmt::If { condition, true_body, false_body } => {
-                match self.if_statement(condition, true_body, false_body, environment, interactive) {
+            Stmt::If { condition, then_body, else_body } => {
+                match self.if_statement(condition, then_body, else_body, environment, interactive) {
                     Ok(_) => (),
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
@@ -54,17 +54,17 @@ impl<'err> Evaluator<'err> {
     fn if_statement(
         &mut self,
         condition: &Expr,
-        true_body: &Vec<Stmt>,
-        false_body: &Vec<Stmt>,
+        then_body: &Vec<Stmt>,
+        else_body: &Vec<Stmt>,
         environment: &mut Environment,
         interactive: bool
     ) -> Result<Object, RuntimeError> {
         let condition = self.evaluate(condition, environment)?;
 
         if condition.is_truthy() {
-            self.interpret(true_body, environment, interactive);
+            self.interpret(then_body, environment, interactive);
         } else {
-            self.interpret(false_body, environment, interactive);
+            self.interpret(else_body, environment, interactive);
         }
 
         Ok(Object::None)

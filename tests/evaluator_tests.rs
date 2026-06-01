@@ -17,7 +17,7 @@ macro_rules! test_no_errors {
         fn $name() {
             let mut error_reporter = ErrorReporter::new();
             let interpreter = Evaluator::new(&mut error_reporter);
-            let mut environment = Environment::new();
+            let mut environment = Environment::new_global();
             match interpreter.evaluate(&$input, &mut environment) {
                 Ok(value) => assert_eq!(value, $expected),
                 Err(e) => {

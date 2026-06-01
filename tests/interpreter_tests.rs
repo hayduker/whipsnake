@@ -5,7 +5,7 @@ use whipsnake::{
 #[test]
 fn interpret_string_literal() {
     let mut reporter = ErrorReporter::new();
-    let mut environment = Environment::new();
+    let mut environment = Environment::new_global();
 
     let source = "\"Hello, world!\"";
 

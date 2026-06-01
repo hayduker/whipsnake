@@ -19,23 +19,23 @@ impl PrettyPrinter {
             Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &vec![AstNode::Expr(expr)]),
             Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &vec![AstNode::Expr(expr)]),
             Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(format!("assign {}", name.lexeme).as_str(), &vec![AstNode::Expr(initializer)]),
-            Stmt::If { condition, true_body, false_body } => {               
-                let mut true_body_nodes = vec![];
-                for stmt in true_body.iter() {
-                    true_body_nodes.push(AstNode::Stmt(stmt));
+            Stmt::If { condition, then_body, else_body } => {               
+                let mut then_body_nodes = vec![];
+                for stmt in then_body.iter() {
+                    then_body_nodes.push(AstNode::Stmt(stmt));
                 }
 
-                let mut false_body_nodes = vec![];
-                for stmt in false_body.iter() {
-                    false_body_nodes.push(AstNode::Stmt(stmt));
+                let mut else_body_nodes = vec![];
+                for stmt in else_body.iter() {
+                    else_body_nodes.push(AstNode::Stmt(stmt));
                 }
 
                 let condition_str = PrettyPrinter::print_expr(condition);
-                let true_body_str = PrettyPrinter::parenthesize("block", &true_body_nodes);
-                let false_body_str = PrettyPrinter::parenthesize("block", &false_body_nodes);
+                let then_body_str = PrettyPrinter::parenthesize("block", &then_body_nodes);
+                let else_body_str = PrettyPrinter::parenthesize("block", &else_body_nodes);
 
 
-                format!("(if {condition_str} {true_body_str} {false_body_str})")    
+                format!("(if {condition_str} {then_body_str} {else_body_str})")    
             }
         }
     }

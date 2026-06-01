@@ -24,7 +24,7 @@ fn main() -> Result<(), &'static str> {
 
 fn run_repl() {
     let mut input = String::new();
-    let mut environment = Environment::new();
+    let mut environment = Environment::new_global();
 
     loop {
         input.clear();
@@ -90,7 +90,7 @@ fn run_file(filename: &str) {
     println!(">{source}<");
 
     let mut reporter = ErrorReporter::new();
-    let mut environment = Environment::new();
+    let mut environment = Environment::new_global();
 
     let mut lexer = Lexer::new(&mut reporter);
     let tokens: Vec<Token> = lexer.lex(source.as_str());

@@ -162,16 +162,16 @@ impl<'src, 'err> Parser<'src, 'err> {
         ))
     }
 
-    fn assignment_statement<I>(&mut self, tokens: &mut Peekable<I>, left: &Expr<'src>) -> Result<Stmt<'src>, ParseError>
+    fn assignment_statement<I>(&mut self, tokens: &mut Peekable<I>, l_value: &Expr<'src>) -> Result<Stmt<'src>, ParseError>
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if let Expr::Variable(token) = left {
-            let right = self.expression(tokens)?;
+        let r_value = self.expression(tokens)?;
 
+        if let Expr::Variable(token) = l_value {
             if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) ||
                 self.is_at_end(tokens) {
-                return Ok(Stmt::Assignment { name: *token, initializer: right })
+                return Ok(Stmt::Assignment { name: *token, initializer: r_value })
             }            
 
             return Err(ParseError::ParseError(
@@ -224,8 +224,8 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         Ok(Stmt::If {
             condition,
-            true_body: Box::new(true_body),
-            false_body: Box::new(false_body),
+            then_body: Box::new(true_body),
+            else_body: Box::new(false_body),
         })
     }
 
