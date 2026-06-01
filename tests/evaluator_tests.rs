@@ -87,12 +87,48 @@ test_no_errors!(
 );
 
 test_no_errors!(
+    evaluate_unary_plus,
+    Expr::Unary {
+        operator: tok!(Plus, "+", 1),
+        right: expr_float_box(3.4)
+    },
+    Object::Float(3.4)
+);
+
+test_no_errors!(
     evaluate_unary_minus,
     Expr::Unary {
         operator: tok!(Minus, "-", 1),
         right: expr_float_box(3.4)
     },
     Object::Float(-3.4)
+);
+
+test_no_errors!(
+    evaluate_unary_tilde_0,
+    Expr::Unary {
+        operator: tok!(Tilde, "~", 1),
+        right: expr_float_box(0.0)
+    },
+    Object::Float(-1.0)
+);
+
+test_no_errors!(
+    evaluate_unary_tilde_1,
+    Expr::Unary {
+        operator: tok!(Tilde, "~", 1),
+        right: expr_float_box(9.0)
+    },
+    Object::Float(-10.0)
+);
+
+test_no_errors!(
+    evaluate_unary_tilde_2,
+    Expr::Unary {
+        operator: tok!(Tilde, "~", 1),
+        right: expr_float_box(-5.0)
+    },
+    Object::Float(4.0)
 );
 
 test_no_errors!(

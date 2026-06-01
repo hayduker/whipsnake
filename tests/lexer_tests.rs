@@ -108,6 +108,7 @@ test_single_char!(lex_minus, "-", Minus);
 test_single_char!(lex_plus, "+", Plus);
 test_single_char!(lex_slash, "/", Slash);
 test_single_char!(lex_star, "*", Star);
+test_single_char!(lex_tilde, "~", Tilde);
 
 test_no_errors!(
     lex_multiple_chars,

@@ -327,6 +327,7 @@ impl<'src, 'err> Parser<'src, 'err> {
             TokenKind::Not,
             TokenKind::Plus,
             TokenKind::Minus,
+            TokenKind::Tilde,
         ]) {
             let operator = self.previous.unwrap();
             let right = self.unary(tokens)?;

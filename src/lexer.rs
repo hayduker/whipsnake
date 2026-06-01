@@ -110,6 +110,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             '+' => TokenKind::Plus,
             '/' => TokenKind::Slash,
             '*' => TokenKind::Star,
+            '~' => TokenKind::Tilde,
             '!' => {
                 if self.advance_if_match('=') {
                     TokenKind::BangEqual

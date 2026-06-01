@@ -15,6 +15,7 @@ pub enum TokenKind {
     Plus,
     Slash,
     Star,
+    Tilde,
 
     // one or two character tokens
     BangEqual,

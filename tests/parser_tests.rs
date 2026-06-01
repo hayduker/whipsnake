@@ -115,6 +115,19 @@ test_no_errors!(
 );
 
 test_no_errors!(
+    parse_plus_unary,
+    vec![
+        tok!(Plus, "+", 1),
+        tok_float(1.234, 1),
+        tok![Eof, "", 1],
+    ],
+    vec![Stmt::Expression(Expr::Unary {
+        operator: tok!(Plus, "+", 1),
+        right: expr_float_box(1.234)
+    })]
+);
+
+test_no_errors!(
     parse_minus_unary,
     vec![
         tok!(Minus, "-", 1),
@@ -124,6 +137,19 @@ test_no_errors!(
     vec![Stmt::Expression(Expr::Unary {
         operator: tok!(Minus, "-", 1),
         right: expr_float_box(1.234)
+    })]
+);
+
+test_no_errors!(
+    parse_tilde_unary,
+    vec![
+        tok!(Tilde, "~", 1),
+        tok_float(9.0, 1),
+        tok![Eof, "", 1],
+    ],
+    vec![Stmt::Expression(Expr::Unary {
+        operator: tok!(Tilde, "~", 1),
+        right: expr_float_box(9.0)
     })]
 );
 

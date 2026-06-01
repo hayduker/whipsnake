@@ -87,9 +87,9 @@ impl<'err> Evaluator<'err> {
                 match self.evaluate(right, environment) {
                     Ok(right) => {
                         match operator.kind {
-                            TokenKind::Plus => {
+                            TokenKind::Plus => { // unary + is identity
                                 match right {
-                                    Object::Float(_) => right, // unary + is identity
+                                    Object::Float(_) => right,
                                     _ => return Err(RuntimeError::TypeError(
                                         SourceLocation { line: operator.line },
                                         format!("bad operand type for unary -: '{}'", right.py_type())
@@ -99,6 +99,16 @@ impl<'err> Evaluator<'err> {
                             TokenKind::Minus => {
                                 match right {
                                     Object::Float(float) => Object::Float(-float),
+                                    _ => return Err(RuntimeError::TypeError(
+                                        SourceLocation { line: operator.line },
+                                        format!("bad operand type for unary -: '{}'", right.py_type())
+                                    ))
+                                }
+                            },
+                            TokenKind::Tilde => { // unary ~ is bitwise inversion, which for two's complement integers
+                                                  // works out to:  ~x = -(x+1)
+                                match right {
+                                    Object::Float(float) => Object::Float(-(float+1.0)),
                                     _ => return Err(RuntimeError::TypeError(
                                         SourceLocation { line: operator.line },
                                         format!("bad operand type for unary -: '{}'", right.py_type())
