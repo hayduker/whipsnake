@@ -201,12 +201,12 @@ impl<'src, 'err> Parser<'src, 'err> {
             ));
         }
 
-        let true_body = self.block(tokens)?;
+        let then_body = self.block(tokens)?;
 
-        let mut false_body: Vec<Stmt> = vec![];
+        let mut else_body: Vec<Stmt> = vec![];
 
         if self.peek_matches(tokens, TokenKind::Elif) {
-            false_body.push(self.if_statement(tokens)?);
+            else_body.push(self.if_statement(tokens)?);
         }
 
         if self.peek_matches(tokens, TokenKind::Else) {
@@ -219,14 +219,10 @@ impl<'src, 'err> Parser<'src, 'err> {
                 ));
             }
 
-            false_body = self.block(tokens)?;
+            else_body = self.block(tokens)?;
         }
 
-        Ok(Stmt::If {
-            condition,
-            then_body: Box::new(true_body),
-            else_body: Box::new(false_body),
-        })
+        Ok(Stmt::If { condition, then_body, else_body })
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>

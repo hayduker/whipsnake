@@ -5,8 +5,8 @@ pub enum Stmt<'src> {
     Expression(Expr<'src>),
     Print(Expr<'src>),
     Assignment { name: Token<'src>, initializer: Expr<'src> },
-    // Block(Box<Vec<Stmt<'src>>>),
-    If { condition: Expr<'src>, then_body: Box<Vec<Stmt<'src>>>, else_body: Box<Vec<Stmt<'src>>> }
+    // Block(Vec<Stmt<'src>>),
+    If { condition: Expr<'src>, then_body: Vec<Stmt<'src>>, else_body: Vec<Stmt<'src>> }
 }
 
 #[derive(Debug, PartialEq, Clone)]
