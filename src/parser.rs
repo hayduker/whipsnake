@@ -80,12 +80,14 @@ impl<'src, 'err> Parser<'src, 'err> {
             return self.if_statement(tokens);
         }
 
+        if self.peek_matches(tokens, TokenKind::While) {
+            return self.while_statement(tokens);
+        }
+
         if self.advance_if_peek_matches_any(tokens, &[NewLine]) {
             if self.peek_matches(tokens, TokenKind::Indent) {
                 return Ok(Stmt::Block(self.block(tokens)?));
             }
-
-
         }
 
         // It appears than we have an expression (including the beginning of an assignment)
@@ -268,6 +270,31 @@ impl<'src, 'err> Parser<'src, 'err> {
             condition,
             then_body: Box::new(then_body),
             else_body: else_body,
+        })
+    }
+
+    fn while_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        self.advance(tokens); // consume "while"
+
+        let condition = self.expression(tokens)?;
+
+        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
+            return Err(ParseError::ParseError(
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
+                String::from("expected ':' after if conditional"),
+            ));
+        }
+
+        let body = self.statement(tokens)?;
+
+        Ok(Stmt::While {
+            condition,
+            body: Box::new(body),
         })
     }
 

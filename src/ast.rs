@@ -14,6 +14,10 @@ pub enum Stmt<'src> {
         then_body: Box<Stmt<'src>>,
         else_body: Option<Box<Stmt<'src>>>,
     },
+    While {
+        condition: Expr<'src>,
+        body: Box<Stmt<'src>>,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]

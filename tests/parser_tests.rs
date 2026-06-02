@@ -2,7 +2,7 @@ use whipsnake::{
     ast::{Expr, Stmt},
     error::ErrorReporter,
     parser::Parser,
-    token::{Token, TokenKind},
+    token::{Token, TokenKind, Literal},
 };
 
 use common::*;
@@ -281,3 +281,24 @@ test_no_errors!(
         right: expr_true_box()
     })]
 );
+
+// test_no_errors!(
+//     parse_if_statement,
+//     vec![
+//         tok!(If, "if", 1), tok_false(1), tok!(Colon, ":", 1), tok!(NewLine, "\n", 1),
+//         tok!(Indent, "", 2), tok_int(41, 2), tok!(NewLine, "\n", 2),
+//         tok!(Dedent, "", 3), tok!(Elif, "elif", 3), tok_true(3), tok!(Colon, ":", 3), tok!(NewLine, "\n", 3),
+//         tok!(Indent, "", 4), tok_int(42, 4), tok!(NewLine, "\n", 4),
+//         tok!(Dedent, "", 5), tok!(Else, "else", 5), tok!(Colon, ":", 5), tok!(NewLine, "\n", 5),
+//         tok!(Indent, "", 6), tok_int(42, 6),
+//     ],
+//     vec![Stmt::If {
+//         condition: Expr::Literal(Literal::Bool(false)),
+//         then_body: Box::new(Stmt::Expression(Expr::Literal(Literal::Int(41)))),
+//         else_body: Some(Box::new(Stmt::If {
+//             condition: Expr::Literal(Literal::Bool(true)),
+//             then_body: Box::new(Stmt::Expression(Expr::Literal(Literal::Int(42)))),
+//             else_body: Some(Box::new(Stmt::Expression(Expr::Literal(Literal::Int(43))))),
+//         }))
+//     }]
+// );

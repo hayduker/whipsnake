@@ -103,7 +103,14 @@ fn convert_stmt(s: &Stmt) -> SExpr {
                 sexpr.push(convert_stmt(else_body));
             }
             SExpr::List(sexpr)
-        }
+        },
+        Stmt::While { condition, body } => {
+            SExpr::List(vec![
+                atom("while"),
+                convert_expr(condition),
+                convert_stmt(body),
+            ])
+        },
     }
 }
 

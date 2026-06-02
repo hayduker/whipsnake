@@ -62,6 +62,12 @@ impl<'err> Evaluator<'err> {
                     Ok(value) => if interactive { return Some(value) },
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
+            },
+
+            Stmt::While { condition, body } => {
+                while let value = self.evaluate(condition, environment).ok()? && value.is_truthy() {
+                    self.execute(body, environment, interactive);
+                }
             }
         }
         
