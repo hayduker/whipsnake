@@ -3,7 +3,6 @@ use crate::{
     token::Literal,
 };
 
-
 enum SExpr {
     Atom(String),
     List(Vec<SExpr>),
@@ -100,11 +99,9 @@ fn convert_stmt(s: &Stmt) -> SExpr {
                 convert_stmt(then_body),
             ];
 
-            match else_body {
-                Some(else_body) => sexpr.push(convert_stmt(else_body)),
-                None => ()
+            if let Some(else_body) = else_body {
+                sexpr.push(convert_stmt(else_body));
             }
-
             SExpr::List(sexpr)
         }
     }
@@ -112,12 +109,12 @@ fn convert_stmt(s: &Stmt) -> SExpr {
 
 fn convert_expr(e: &Expr) -> SExpr {
     match e {
-        Expr::Literal(Literal::String(s)) => atom(format!("\"{s}\"").as_str()),
-        Expr::Literal(Literal::Int(i)) => atom(format!("{i}").as_str()),
-        Expr::Literal(Literal::Float(f)) => atom(format!("{f}").as_str()),
-        Expr::Literal(Literal::Bool(true)) => atom("True"),
-        Expr::Literal(Literal::Bool(false)) => atom("False"),
+        Expr::Literal(Literal::String(s)) => atom(&format!("\"{s}\"")),
+        Expr::Literal(Literal::Int(i)) => atom(&i.to_string()),
+        Expr::Literal(Literal::Float(f)) => atom(&f.to_string()),
+        Expr::Literal(Literal::Bool(b)) => atom(if *b { "True" } else { "False" }),
         Expr::Literal(Literal::None) => atom("None"),
+
         Expr::Grouping(expr) => SExpr::List(vec![atom("group"), convert_expr(expr)]),
         Expr::Unary { operator, right } => {
             SExpr::List(vec![atom(operator.lexeme), convert_expr(right)])
@@ -125,17 +122,13 @@ fn convert_expr(e: &Expr) -> SExpr {
         Expr::Binary { left, operator, right } => {
             SExpr::List(vec![atom(operator.lexeme), convert_expr(left), convert_expr(right)])
         },
-        Expr::Variable(token) => atom(format!("{}", token.lexeme).as_str()),
+        Expr::Variable(token) => atom(token.lexeme),
     }
 }
 
 pub fn print_ast(stmts: &Vec<Stmt>) -> String {
-    let mut result = String::new();
-    for stmt in stmts {
-        let sexpr = convert_stmt(stmt);
-        result += format_sexpr(&sexpr, 0).as_str();
-        result.push('\n');
-    }
-
-    result
+    stmts.iter()
+        .map(|stmt| format_sexpr(&convert_stmt(stmt), 0))
+        .collect::<Vec<String>>()
+        .join("\n")
 }
