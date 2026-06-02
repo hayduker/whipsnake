@@ -182,6 +182,22 @@ impl<'err> Evaluator<'err> {
                 return self.binary_expr(&left, operator, &right);
             }
 
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => {
+                let left = self.evaluate(left, environment)?;
+                
+                match operator.kind {
+                    TokenKind::Or => if left.is_truthy() { return Ok(left) },
+                    TokenKind::And => if !left.is_truthy() { return Ok(left) },
+                    _ => panic!("invalid logical operator {:?}", operator),
+                }
+
+                return self.evaluate(right, environment);
+            }            
+
             Expr::Variable(token) => match environment.get(token.lexeme) {
                 Some(object) => object.clone(),
                 None => {

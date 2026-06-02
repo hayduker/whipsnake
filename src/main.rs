@@ -73,7 +73,7 @@ fn run_repl() {
         println!("\nSyntax tree:");
         println!("{}", print_ast(&statements));
 
-        println!("Value:");
+        println!("\nValue:");
         let mut evaluator = Evaluator::new(&mut reporter);
         evaluator.interpret(&statements, &mut environment, true);
 

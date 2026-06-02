@@ -29,5 +29,10 @@ pub enum Expr<'src> {
         operator: Token<'src>,
         right: Box<Expr<'src>>,
     },
+    Logical {
+        left: Box<Expr<'src>>,
+        operator: Token<'src>,
+        right: Box<Expr<'src>>,
+    },
     Variable(Token<'src>),
 }

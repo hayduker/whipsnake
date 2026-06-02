@@ -275,7 +275,63 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        self.equality(tokens)
+        self.logical_or(tokens)
+    }
+
+    fn logical_or<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.logical_and(tokens)?;
+
+        while self.advance_if_peek_matches_any(tokens, &[TokenKind::Or]) {
+            let operator = self.previous.unwrap();
+            let right = self.logical_and(tokens)?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            };
+        }
+
+        Ok(expr)
+    }
+
+
+    fn logical_and<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.logical_not(tokens)?;
+
+        while self.advance_if_peek_matches_any(tokens, &[TokenKind::And]) {
+            let operator = self.previous.unwrap();
+            let right = self.logical_not(tokens)?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            };
+        }
+
+        Ok(expr)
+    }
+
+    fn logical_not<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Not,]) {
+            let operator = self.previous.unwrap();
+            let right = self.unary(tokens)?;
+            return Ok(Expr::Unary {
+                operator,
+                right: Box::new(right),
+            });
+        }
+
+        let expr = self.equality(tokens)?;
+        Ok(expr)
     }
 
     fn equality<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
@@ -371,7 +427,6 @@ impl<'src, 'err> Parser<'src, 'err> {
         if self.advance_if_peek_matches_any(
             tokens,
             &[
-                TokenKind::Not,
                 TokenKind::Plus,
                 TokenKind::Minus,
                 TokenKind::Tilde,

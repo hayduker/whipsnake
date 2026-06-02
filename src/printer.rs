@@ -122,6 +122,9 @@ fn convert_expr(e: &Expr) -> SExpr {
         Expr::Binary { left, operator, right } => {
             SExpr::List(vec![atom(operator.lexeme), convert_expr(left), convert_expr(right)])
         },
+        Expr::Logical { left, operator, right } => {
+            SExpr::List(vec![atom(operator.lexeme), convert_expr(left), convert_expr(right)])
+        },
         Expr::Variable(token) => atom(token.lexeme),
     }
 }
