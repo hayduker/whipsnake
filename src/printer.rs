@@ -1,98 +1,108 @@
 use crate::{
-    ast::{AstNode, Expr, Stmt},
+    ast::{Expr, Stmt},
     token::Literal,
 };
 
-pub struct PrettyPrinter;
 
-impl PrettyPrinter {
-    pub fn print(statements: &Vec<Stmt>) -> String {
-        let mut output = String::from("");
+enum SExpr {
+    Atom(String),
+    List(Vec<SExpr>),
+}
 
-        for s in statements {
-            output += PrettyPrinter::print_stmt(&s).as_str();
-            output += "\n";
-        }
+fn atom(s: &str) -> SExpr {
+    SExpr::Atom(s.to_string())
+}
 
-        output
-    }
+fn format_sexpr(expr: &SExpr, indent: usize) -> String {
+    match expr {
+        SExpr::Atom(s) => s.clone(),
 
-    pub fn print_stmt(s: &Stmt) -> String {
-        match s {
-            Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &vec![AstNode::Expr(expr)]),
-            Stmt::Expression(expr) => {
-                PrettyPrinter::parenthesize("stmt", &vec![AstNode::Expr(expr)])
+        SExpr::List(children) => {
+            if children.is_empty() {
+                return "()".to_string();
             }
-            Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(
-                format!("assign {}", name.lexeme).as_str(),
-                &vec![AstNode::Expr(initializer)],
-            ),
-            Stmt::Block(stmts) => {
-                PrettyPrinter::parenthesize(
-                    "block",
-                    &(stmts.iter().map(|stmt| AstNode::Stmt(stmt)).collect())
-                )
-            },
-            Stmt::If {
-                condition,
-                then_body,
-                else_body,
-            } => {
-                let condition_str = PrettyPrinter::print_expr(condition);
-                let then_body_str = PrettyPrinter::print_stmt(then_body);
 
-                let string = format!("(if {condition_str} {then_body_str}");
+            let mut result = String::new();
+            result.push('(');
 
-                match else_body {
-                    Some(else_body) => {
-                        let else_body_str = PrettyPrinter::print_stmt(else_body);
-                        string + format!(" {else_body_str})").as_str()
-                    },
-                    None => string
+            let first_str = format_sexpr(&children[0], indent + 1);
+            result.push_str(&first_str);
+
+            if children.len() > 1 {
+                result.push(' ');
+
+                let second_indent = indent + 1 + first_str.len() + 1;
+                let second_str = format_sexpr(&children[1], second_indent);
+                result.push_str(&second_str);
+
+                for child in &children[2..] {
+                    result.push('\n');
+                    result.push_str(&" ".repeat(second_indent));
+                    result.push_str(&format_sexpr(child, second_indent));
                 }
             }
+
+            result.push(')');
+            result
         }
     }
+}
 
-    pub fn print_expr(e: &Expr) -> String {
-        match e {
-            Expr::Literal(Literal::String(s)) => format!("\"{s}\""),
-            Expr::Literal(Literal::Int(i)) => format!("{i}").to_string(),
-            Expr::Literal(Literal::Float(f)) => format!("{f}").to_string(),
-            Expr::Literal(Literal::Bool(true)) => format!("True"),
-            Expr::Literal(Literal::Bool(false)) => format!("False"),
-            Expr::Literal(Literal::None) => format!("None"),
-            Expr::Grouping(expr) => {
-                PrettyPrinter::parenthesize("group", &vec![AstNode::Expr(expr)])
+fn convert_stmt(s: &Stmt) -> SExpr {
+    match s {
+        Stmt::Print(expr) => SExpr::List(vec![atom("print"), convert_expr(expr)]),
+        Stmt::Expression(expr) => SExpr::List(vec![atom("stmt"), convert_expr(expr)]),
+        Stmt::Assignment { name, initializer } => {
+            SExpr::List(vec![atom("="), atom(name.lexeme), convert_expr(initializer)])
+        },
+        Stmt::Block(stmts) => {
+            let mut sexpr = vec![atom("block")];
+            sexpr.extend(stmts.iter().map(|stmt| convert_stmt(stmt)));
+            SExpr::List(sexpr)
+        },
+        Stmt::If { condition, then_body, else_body } => {
+            let mut sexpr = vec![
+                atom("if"),
+                convert_expr(condition),
+                convert_stmt(then_body),
+            ];
+
+            match else_body {
+                Some(else_body) => sexpr.push(convert_stmt(else_body)),
+                None => ()
             }
-            Expr::Unary { operator, right } => {
-                PrettyPrinter::parenthesize(operator.lexeme, &vec![AstNode::Expr(right)])
-            }
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => PrettyPrinter::parenthesize(
-                operator.lexeme,
-                &vec![AstNode::Expr(left), AstNode::Expr(right)],
-            ),
-            Expr::Variable(token) => format!("{}", token.lexeme),
+
+            SExpr::List(sexpr)
         }
     }
+}
 
-    fn parenthesize(name: &str, nodes: &Vec<AstNode>) -> String {
-        let mut s = String::from(format!("({name}"));
-
-        for node in nodes {
-            s.push(' ');
-
-            match node {
-                AstNode::Expr(expr) => s.push_str(PrettyPrinter::print_expr(expr).as_str()),
-                AstNode::Stmt(stmt) => s.push_str(PrettyPrinter::print_stmt(stmt).as_str()),
-            }
-        }
-
-        s.push(')');
-        s
+fn convert_expr(e: &Expr) -> SExpr {
+    match e {
+        Expr::Literal(Literal::String(s)) => atom(format!("\"{s}\"").as_str()),
+        Expr::Literal(Literal::Int(i)) => atom(format!("{i}").as_str()),
+        Expr::Literal(Literal::Float(f)) => atom(format!("{f}").as_str()),
+        Expr::Literal(Literal::Bool(true)) => atom("True"),
+        Expr::Literal(Literal::Bool(false)) => atom("False"),
+        Expr::Literal(Literal::None) => atom("None"),
+        Expr::Grouping(expr) => SExpr::List(vec![atom("group"), convert_expr(expr)]),
+        Expr::Unary { operator, right } => {
+            SExpr::List(vec![atom(operator.lexeme), convert_expr(right)])
+        },
+        Expr::Binary { left, operator, right } => {
+            SExpr::List(vec![atom(operator.lexeme), convert_expr(left), convert_expr(right)])
+        },
+        Expr::Variable(token) => atom(format!("{}", token.lexeme).as_str()),
     }
+}
+
+pub fn print_ast(stmts: &Vec<Stmt>) -> String {
+    let mut result = String::new();
+    for stmt in stmts {
+        let sexpr = convert_stmt(stmt);
+        result += format_sexpr(&sexpr, 0).as_str();
+        result.push('\n');
+    }
+
+    result
 }

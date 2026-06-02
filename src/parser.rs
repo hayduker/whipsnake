@@ -212,7 +212,7 @@ impl<'src, 'err> Parser<'src, 'err> {
                 SourceLocation {
                     line: tokens.peek().unwrap().line,
                 },
-                String::from("expected newline or EOF after print statement."),
+                String::from("expected newline or EOF after assignment statement."),
             ));
         }
 

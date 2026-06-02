@@ -4,8 +4,7 @@ use std::{
     io::{self, Write},
 };
 use whipsnake::{
-    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
-    parser::Parser, printer::PrettyPrinter, token::Token,
+    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer, parser::Parser, printer::print_ast, token::Token
 };
 
 fn main() -> Result<(), &'static str> {
@@ -72,7 +71,7 @@ fn run_repl() {
         let statements = parser.parse(&mut tokens.into_iter().peekable());
 
         println!("\nSyntax tree:");
-        println!("{}", PrettyPrinter::print(&statements));
+        println!("{}", print_ast(&statements));
 
         println!("Value:");
         let mut evaluator = Evaluator::new(&mut reporter);
@@ -113,7 +112,7 @@ fn run_file(filename: &str) {
     let statements = parser.parse(&mut tokens.into_iter().peekable());
 
     println!("\nSyntax tree:");
-    println!("{}", PrettyPrinter::print(&statements));
+    println!("{}", print_ast(&statements));
 
     let mut evaluator = Evaluator::new(&mut reporter);
     evaluator.interpret(&statements, &mut environment, false);
