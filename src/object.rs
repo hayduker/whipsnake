@@ -20,6 +20,13 @@ impl Object {
         }
     }
 
+    pub fn is_iterable(&self) -> bool {
+        match self {
+            Object::String(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn py_type(&self) -> &str {
         match self {
             Object::None => "NoneType",

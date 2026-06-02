@@ -68,7 +68,14 @@ impl<'err> Evaluator<'err> {
                 while let value = self.evaluate(condition, environment).ok()? && value.is_truthy() {
                     self.execute(body, environment, interactive);
                 }
-            }
+            },
+
+            Stmt::For { variable, iterable, body } => {
+                match self.for_loop(variable, iterable, body, environment) {
+                    Ok(value) => if interactive { return Some(value) },
+                    Err(e) => self.error_reporter.register_runtime_error(e),
+                }
+            },
         }
         
         None
@@ -89,6 +96,44 @@ impl<'err> Evaluator<'err> {
             self.execute(else_body, environment, false);
         }
 
+        Ok(Object::None)
+    }
+
+    fn for_loop(
+        &mut self,
+        variable: &Token,
+        iterable_expr: &Expr,
+        body: &Stmt,
+        environment: &mut Environment,
+    ) -> Result<Object, RuntimeError> {
+        // This is possibly the most hideous and limited impl of a for loop
+
+        let name = variable.lexeme.to_string();
+
+        let iterable = match self.evaluate(iterable_expr, environment) {
+            Ok(i) => i,
+            Err(e) => return Err(e),
+        };
+
+        match iterable {
+            Object::String(s) => {
+                for char in s.chars() {
+                    environment.define(
+                        name.clone(),
+                        Object::String(char.to_string())
+                    );
+
+                    self.execute(body, environment, false);
+                }
+            },
+            _ => {
+                return Err(RuntimeError::RuntimeError(
+                    SourceLocation { line: variable.line },
+                    format!("expression {:?} is not iterable", iterable_expr),
+                ));
+            }
+        }
+ 
         Ok(Object::None)
     }
 

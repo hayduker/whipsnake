@@ -81,7 +81,11 @@ impl<'src, 'err> Parser<'src, 'err> {
         }
 
         if self.peek_matches(tokens, TokenKind::While) {
-            return self.while_statement(tokens);
+            return self.while_loop(tokens);
+        }
+
+        if self.peek_matches(tokens, TokenKind::For) {
+            return self.for_loop(tokens);
         }
 
         if self.advance_if_peek_matches_any(tokens, &[NewLine]) {
@@ -273,7 +277,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         })
     }
 
-    fn while_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
+    fn while_loop<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
     where
         I: Iterator<Item = Token<'src>>,
     {
@@ -286,7 +290,7 @@ impl<'src, 'err> Parser<'src, 'err> {
                 SourceLocation {
                     line: tokens.peek().unwrap().line,
                 },
-                String::from("expected ':' after if conditional"),
+                String::from("expected ':' after while conditional"),
             ));
         }
 
@@ -296,6 +300,52 @@ impl<'src, 'err> Parser<'src, 'err> {
             condition,
             body: Box::new(body),
         })
+    }
+
+    fn for_loop<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        self.advance(tokens); // consume "for"
+
+        let expr = self.expression(tokens)?;
+        
+        if let Expr::Variable(token) = expr {
+            if !self.advance_if_peek_matches_any(tokens, &[TokenKind::In]) {
+                return Err(ParseError::ParseError(
+                    SourceLocation {
+                        line: tokens.peek().unwrap().line,
+                    },
+                    String::from("expected 'in' after for loop variable"),
+                ));
+            }
+
+            let iterable = self.expression(tokens)?;
+
+            if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
+                return Err(ParseError::ParseError(
+                    SourceLocation {
+                        line: tokens.peek().unwrap().line,
+                    },
+                    String::from("expected ':' after for loop iterable"),
+                ));
+            }
+
+            let body = self.statement(tokens)?;
+
+            Ok(Stmt::For {
+                variable: token,
+                iterable,
+                body: Box::new(body),
+            })
+        } else {
+            Err(ParseError::ParseError(
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
+                format!("cannot assign to {:?}", expr),
+            ))
+        }
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>

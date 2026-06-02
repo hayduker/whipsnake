@@ -2,7 +2,7 @@ use whipsnake::{
     ast::{Expr, Stmt},
     error::ErrorReporter,
     parser::Parser,
-    token::{Token, TokenKind, Literal},
+    token::{Token, TokenKind},
 };
 
 use common::*;

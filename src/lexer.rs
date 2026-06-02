@@ -399,6 +399,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             "False" => Some(TokenKind::False), // really a literal
             "for" => Some(TokenKind::For),
             "if" => Some(TokenKind::If),
+            "in" => Some(TokenKind::In),
             "None" => Some(TokenKind::None), // really a literal
             "not" => Some(TokenKind::Not),
             "or" => Some(TokenKind::Or),

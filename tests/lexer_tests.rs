@@ -424,6 +424,11 @@ test_suite_no_errors!([
         vec![tok![If, "if", 1], tok![NewLine, "\n", 1], tok![Eof, "", 2],]
     ),
     (
+        lex_in,
+        "in",
+        vec![tok![In, "in", 1], tok![NewLine, "\n", 1], tok![Eof, "", 2],]
+    ),
+    (
         lex_none,
         "None",
         vec![
