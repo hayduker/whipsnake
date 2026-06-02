@@ -20,13 +20,14 @@ impl<'err> Evaluator<'err> {
         statements: &Vec<Stmt>,
         environment: &mut Environment,
         interactive: bool,
-    ) {
-        for statement in statements {
-            self.execute(statement, environment, interactive);
-        }
+    ) -> Option<Object> {
+        statements.iter()
+            .map(|stmt| self.execute(stmt, environment, interactive))
+            .last()
+            .unwrap_or(None)
     }
 
-    pub fn execute(&mut self, statement: &Stmt, environment: &mut Environment, interactive: bool) {
+    pub fn execute(&mut self, statement: &Stmt, environment: &mut Environment, interactive: bool) -> Option<Object> {
         match statement {
             Stmt::Print(expr) => match self.evaluate(&expr, environment) {
                 Ok(value) => println!("{}", value),
@@ -36,7 +37,8 @@ impl<'err> Evaluator<'err> {
             Stmt::Expression(expr) => match self.evaluate(&expr, environment) {
                 Ok(value) => {
                     if interactive {
-                        println!("{}", value)
+                        println!("{}", value);
+                        return Some(value);
                     }
                 }
                 Err(e) => self.error_reporter.register_runtime_error(e),
@@ -55,17 +57,15 @@ impl<'err> Evaluator<'err> {
                 }
             }
 
-            Stmt::If {
-                condition,
-                then_body,
-                else_body,
-            } => {
-                match self.if_statement(condition, then_body, else_body, environment, interactive) {
-                    Ok(_) => (),
+            Stmt::If { condition, then_body, else_body } => {
+                match self.if_statement(condition, then_body, else_body, environment) {
+                    Ok(value) => if interactive { return Some(value) },
                     Err(e) => self.error_reporter.register_runtime_error(e),
                 }
             }
         }
+        
+        None
     }
 
     fn if_statement(
@@ -74,17 +74,13 @@ impl<'err> Evaluator<'err> {
         then_body: &Stmt,
         else_body: &Option<Box<Stmt>>,
         environment: &mut Environment,
-        interactive: bool,
     ) -> Result<Object, RuntimeError> {
         let condition = self.evaluate(condition, environment)?;
 
         if condition.is_truthy() {
-            self.execute(then_body, environment, interactive);
-        } else {
-            match else_body {
-                Some(else_body) => self.execute(else_body, environment, interactive),
-                None => ()
-            }
+            self.execute(then_body, environment, false);
+        } else if let Some(else_body) = else_body {
+            self.execute(else_body, environment, false);
         }
 
         Ok(Object::None)

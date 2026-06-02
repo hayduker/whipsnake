@@ -85,15 +85,6 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    parse_not_unary,
-    vec![tok!(Not, "not", 1), tok_true(1), tok![Eof, "", 1],],
-    vec![Stmt::Expression(Expr::Unary {
-        operator: tok!(Not, "not", 1),
-        right: expr_true_box()
-    })]
-);
-
-test_no_errors!(
     parse_plus_unary,
     vec![tok!(Plus, "+", 1), tok_float(1.234, 1), tok![Eof, "", 1],],
     vec![Stmt::Expression(Expr::Unary {
@@ -212,5 +203,81 @@ test_no_errors!(
             operator: tok!(Star, "*", 1),
             right: expr_int_box(3)
         })
+    })]
+);
+
+test_no_errors!(
+    parse_not_0,
+    vec![tok!(Not, "not", 1), tok_true(1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_true_box()
+    })]
+);
+
+test_no_errors!(
+    parse_not_1,
+    vec![tok!(Not, "not", 1), tok_false(1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_false_box()
+    })]
+);
+
+test_no_errors!(
+    parse_not_2,
+    vec![tok!(Not, "not", 1), tok_int(123, 1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_int_box(123)
+    })]
+);
+
+test_no_errors!(
+    parse_not_3,
+    vec![tok!(Not, "not", 1), tok_string("hi", 1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_string_box("hi")
+    })]
+);
+
+test_no_errors!(
+    parse_and_0,
+    vec![tok_string("bye", 1), tok!(And, "and", 1), tok_string("hi", 1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Logical {
+        left: expr_string_box("bye"),
+        operator: tok!(And, "and", 1),
+        right: expr_string_box("hi")
+    })]
+);
+
+test_no_errors!(
+    parse_and_1,
+    vec![tok_false(1), tok!(And, "and", 1), tok_true(1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Logical {
+        left: expr_false_box(),
+        operator: tok!(And, "and", 1),
+        right: expr_true_box()
+    })]
+);
+
+test_no_errors!(
+    parse_or_0,
+    vec![tok_string("bye", 1), tok!(Or, "or", 1), tok_string("hi", 1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Logical {
+        left: expr_string_box("bye"),
+        operator: tok!(Or, "or", 1),
+        right: expr_string_box("hi")
+    })]
+);
+
+test_no_errors!(
+    parse_or_1,
+    vec![tok_false(1), tok!(Or, "or", 1), tok_true(1), tok![Eof, "", 1],],
+    vec![Stmt::Expression(Expr::Logical {
+        left: expr_false_box(),
+        operator: tok!(Or, "or", 1),
+        right: expr_true_box()
     })]
 );

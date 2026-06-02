@@ -60,51 +60,6 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    evaluate_not_bool,
-    Expr::Unary {
-        operator: tok!(Not, "not", 1),
-        right: expr_none_box()
-    },
-    Object::Bool(true)
-);
-
-test_no_errors!(
-    evaluate_not_truthy_int,
-    Expr::Unary {
-        operator: tok!(Not, "not", 1),
-        right: expr_int_box(1)
-    },
-    Object::Bool(false)
-);
-
-test_no_errors!(
-    evaluate_not_falsy_int,
-    Expr::Unary {
-        operator: tok!(Not, "not", 1),
-        right: expr_int_box(0)
-    },
-    Object::Bool(true)
-);
-
-test_no_errors!(
-    evaluate_not_truthy_float,
-    Expr::Unary {
-        operator: tok!(Not, "not", 1),
-        right: expr_float_box(1.2)
-    },
-    Object::Bool(false)
-);
-
-test_no_errors!(
-    evaluate_not_falsy_float,
-    Expr::Unary {
-        operator: tok!(Not, "not", 1),
-        right: expr_float_box(0.0)
-    },
-    Object::Bool(true)
-);
-
-test_no_errors!(
     evaluate_unary_plus,
     Expr::Unary {
         operator: tok!(Plus, "+", 1),
@@ -365,6 +320,231 @@ test_no_errors!(
         left: expr_float_box(3.0),
         operator: tok!(BangEqual, "!=", 1),
         right: expr_string_box("hi")
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
+    evaluate_not_bool,
+    Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_none_box()
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
+    evaluate_not_truthy_int,
+    Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_int_box(1)
+    },
+    Object::Bool(false)
+);
+
+test_no_errors!(
+    evaluate_not_falsy_int,
+    Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_int_box(0)
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
+    evaluate_not_truthy_float,
+    Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_float_box(1.2)
+    },
+    Object::Bool(false)
+);
+
+test_no_errors!(
+    evaluate_not_falsy_float,
+    Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_float_box(0.0)
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
+    evaluate_and_false_first_int,
+    Expr::Logical {
+        left: expr_int_box(0),
+        operator: tok!(And, "and", 1),
+        right: expr_int_box(1)
+    },
+    Object::Int(0)
+);
+
+test_no_errors!(
+    evaluate_and_false_second_int,
+    Expr::Logical {
+        left: expr_int_box(1),
+        operator: tok!(And, "and", 1),
+        right: expr_int_box(0)
+    },
+    Object::Int(0)
+);
+
+test_no_errors!(
+    evaluate_and_true_ints,
+    Expr::Logical {
+        left: expr_int_box(1),
+        operator: tok!(And, "and", 1),
+        right: expr_int_box(2)
+    },
+    Object::Int(2)
+);
+
+test_no_errors!(
+    evaluate_and_false_first_string,
+    Expr::Logical {
+        left: expr_string_box(""),
+        operator: tok!(And, "and", 1),
+        right: expr_string_box("hi")
+    },
+    Object::String(String::from(""))
+);
+
+test_no_errors!(
+    evaluate_and_false_second_string,
+    Expr::Logical {
+        left: expr_string_box("hi"),
+        operator: tok!(And, "and", 1),
+        right: expr_string_box("")
+    },
+    Object::String(String::from(""))
+);
+
+test_no_errors!(
+    evaluate_and_true_strings,
+    Expr::Logical {
+        left: expr_string_box("hi"),
+        operator: tok!(And, "and", 1),
+        right: expr_string_box("bye")
+    },
+    Object::String(String::from("bye"))
+);
+
+test_no_errors!(
+    evaluate_and_false_first_bool,
+    Expr::Logical {
+        left: expr_false_box(),
+        operator: tok!(And, "and", 1),
+        right: expr_true_box()
+    },
+    Object::Bool(false)
+);
+
+test_no_errors!(
+    evaluate_and_false_second_bool,
+    Expr::Logical {
+        left: expr_true_box(),
+        operator: tok!(And, "and", 1),
+        right: expr_false_box()
+    },
+    Object::Bool(false)
+);
+
+test_no_errors!(
+    evaluate_and_true_bools,
+    Expr::Logical {
+        left: expr_true_box(),
+        operator: tok!(And, "and", 1),
+        right: expr_true_box()
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
+    evaluate_or_false_first_int,
+    Expr::Logical {
+        left: expr_int_box(0),
+        operator: tok!(Or, "or", 1),
+        right: expr_int_box(1)
+    },
+    Object::Int(1)
+);
+
+test_no_errors!(
+    evaluate_or_false_second_int,
+    Expr::Logical {
+        left: expr_int_box(1),
+        operator: tok!(Or, "or", 1),
+        right: expr_int_box(0)
+    },
+    Object::Int(1)
+);
+
+test_no_errors!(
+    evaluate_or_true_ints,
+    Expr::Logical {
+        left: expr_int_box(1),
+        operator: tok!(Or, "or", 1),
+        right: expr_int_box(2)
+    },
+    Object::Int(1)
+);
+
+test_no_errors!(
+    evaluate_or_false_first_string,
+    Expr::Logical {
+        left: expr_string_box(""),
+        operator: tok!(Or, "or", 1),
+        right: expr_string_box("hi")
+    },
+    Object::String(String::from("hi"))
+);
+
+test_no_errors!(
+    evaluate_or_false_second_string,
+    Expr::Logical {
+        left: expr_string_box("hi"),
+        operator: tok!(Or, "or", 1),
+        right: expr_string_box("")
+    },
+    Object::String(String::from("hi"))
+);
+
+test_no_errors!(
+    evaluate_or_true_strings,
+    Expr::Logical {
+        left: expr_string_box("hi"),
+        operator: tok!(Or, "or", 1),
+        right: expr_string_box("bye")
+    },
+    Object::String(String::from("hi"))
+);
+
+test_no_errors!(
+    evaluate_or_false_first_bool,
+    Expr::Logical {
+        left: expr_false_box(),
+        operator: tok!(Or, "or", 1),
+        right: expr_true_box()
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
+    evaluate_or_false_second_bool,
+    Expr::Logical {
+        left: expr_true_box(),
+        operator: tok!(Or, "or", 1),
+        right: expr_false_box()
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
+    evaluate_or_true_bools,
+    Expr::Logical {
+        left: expr_true_box(),
+        operator: tok!(Or, "or", 1),
+        right: expr_true_box()
     },
     Object::Bool(true)
 );
