@@ -1,5 +1,6 @@
 use whipsnake::{
-    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer, parser::Parser,
+    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
+    parser::Parser,
 };
 
 #[test]
@@ -32,6 +33,4 @@ fn interpret_string_literal() {
         reporter.print_errors();
         assert!(false);
     }
-
-
 }

@@ -4,7 +4,7 @@ use crate::token::SourceLocation;
 
 #[derive(Debug, PartialEq)]
 pub enum LexError {
-    UnexpectedCharacter(SourceLocation,char),
+    UnexpectedCharacter(SourceLocation, char),
     UnterminatedString(SourceLocation),
     IndentationError(SourceLocation, String),
     TabError(SourceLocation, String),
@@ -16,19 +16,19 @@ impl fmt::Display for LexError {
         match self {
             LexError::UnexpectedCharacter(l, c) => {
                 write!(f, "unexpected character '{}' at line {}", c, l.line)
-            },
+            }
             LexError::IndentationError(location, message) => {
                 write!(f, "IndentationError at line {}: {}", location.line, message)
-            },
+            }
             LexError::TabError(location, message) => {
                 write!(f, "TabError at line {}: {}", location.line, message)
-            },
+            }
             LexError::UnterminatedString(l) => {
                 write!(f, "unterminated string at line {}", l.line)
-            },
+            }
             LexError::MalformedNumberLiteral(l) => {
                 write!(f, "malformed number literal at line {}", l.line)
-            },
+            }
         }
     }
 }
@@ -43,7 +43,7 @@ impl fmt::Display for ParseError {
         match self {
             ParseError::ParseError(location, message) => {
                 write!(f, "ParseError at line {}: {}", location.line, message)
-            },
+            }
         }
     }
 }
@@ -60,13 +60,13 @@ impl fmt::Display for RuntimeError {
         match self {
             RuntimeError::TypeError(location, message) => {
                 write!(f, "TypeError at line {}: {}", location.line, message)
-            },
+            }
             RuntimeError::NameError(location, message) => {
                 write!(f, "NameError at line {}: {}", location.line, message)
             }
             RuntimeError::RuntimeError(location, message) => {
                 write!(f, "RuntimeError at line {}: {}", location.line, message)
-            },
+            }
         }
     }
 }
@@ -79,7 +79,7 @@ pub enum CompilerError {
 }
 
 pub struct ErrorReporter {
-    pub errors: Vec<CompilerError>
+    pub errors: Vec<CompilerError>,
 }
 
 impl ErrorReporter {

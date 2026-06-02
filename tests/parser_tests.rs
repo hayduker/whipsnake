@@ -1,8 +1,8 @@
 use whipsnake::{
-    token::{Token, TokenKind},
-    parser::Parser,
+    ast::{Expr, Stmt},
     error::ErrorReporter,
-    ast::{Stmt, Expr},
+    parser::Parser,
+    token::{Token, TokenKind},
 };
 
 use common::*;
@@ -45,46 +45,31 @@ macro_rules! test_binary_numeric_no_errors {
 
 test_no_errors!(
     parse_string_literal,
-    vec![
-        tok_string("hi", 1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok_string("hi", 1), tok![Eof, "", 1],],
     vec![Stmt::Expression(expr_string("hi"))]
 );
 
 test_no_errors!(
     parse_float_literal,
-    vec![
-        tok_float(1.234, 1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok_float(1.234, 1), tok![Eof, "", 1],],
     vec![Stmt::Expression(expr_float(1.234))]
 );
 
 test_no_errors!(
     parse_true_literal,
-    vec![
-        tok_true(1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok_true(1), tok![Eof, "", 1],],
     vec![Stmt::Expression(expr_true())]
 );
 
 test_no_errors!(
     parse_false_literal,
-    vec![
-        tok_false(1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok_false(1), tok![Eof, "", 1],],
     vec![Stmt::Expression(expr_false())]
 );
 
 test_no_errors!(
     parse_none_literal,
-    vec![
-        tok!(None, "None", 1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok!(None, "None", 1), tok![Eof, "", 1],],
     vec![Stmt::Expression(expr_none())]
 );
 
@@ -96,18 +81,12 @@ test_no_errors!(
         tok!(RightParen, ")", 1),
         tok![Eof, "", 1],
     ],
-    vec![Stmt::Expression(Expr::Grouping(
-        expr_none_box()
-    ))]
+    vec![Stmt::Expression(Expr::Grouping(expr_none_box()))]
 );
 
 test_no_errors!(
     parse_not_unary,
-    vec![
-        tok!(Not, "not", 1),
-        tok_true(1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok!(Not, "not", 1), tok_true(1), tok![Eof, "", 1],],
     vec![Stmt::Expression(Expr::Unary {
         operator: tok!(Not, "not", 1),
         right: expr_true_box()
@@ -116,11 +95,7 @@ test_no_errors!(
 
 test_no_errors!(
     parse_plus_unary,
-    vec![
-        tok!(Plus, "+", 1),
-        tok_float(1.234, 1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok!(Plus, "+", 1), tok_float(1.234, 1), tok![Eof, "", 1],],
     vec![Stmt::Expression(Expr::Unary {
         operator: tok!(Plus, "+", 1),
         right: expr_float_box(1.234)
@@ -129,11 +104,7 @@ test_no_errors!(
 
 test_no_errors!(
     parse_minus_unary,
-    vec![
-        tok!(Minus, "-", 1),
-        tok_float(1.234, 1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok!(Minus, "-", 1), tok_float(1.234, 1), tok![Eof, "", 1],],
     vec![Stmt::Expression(Expr::Unary {
         operator: tok!(Minus, "-", 1),
         right: expr_float_box(1.234)
@@ -142,11 +113,7 @@ test_no_errors!(
 
 test_no_errors!(
     parse_tilde_unary,
-    vec![
-        tok!(Tilde, "~", 1),
-        tok_float(9.0, 1),
-        tok![Eof, "", 1],
-    ],
+    vec![tok!(Tilde, "~", 1), tok_float(9.0, 1), tok![Eof, "", 1],],
     vec![Stmt::Expression(Expr::Unary {
         operator: tok!(Tilde, "~", 1),
         right: expr_float_box(9.0)
@@ -226,7 +193,6 @@ test_no_errors!(
         })
     })]
 );
-
 
 test_no_errors!(
     parse_precedence_3,

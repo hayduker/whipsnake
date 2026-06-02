@@ -41,16 +41,10 @@ fn tok_string_fn() {
 
 #[test]
 fn tok_true_fn() {
-    assert_eq!(
-        tok_true(9),
-        Token::new(TokenKind::True, "True", 9)
-    )
+    assert_eq!(tok_true(9), Token::new(TokenKind::True, "True", 9))
 }
 
 #[test]
 fn tok_false_fn() {
-    assert_eq!(
-        tok_false(12),
-        Token::new(TokenKind::False, "False", 12)
-    )
+    assert_eq!(tok_false(12), Token::new(TokenKind::False, "False", 12))
 }

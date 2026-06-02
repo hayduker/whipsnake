@@ -1,10 +1,10 @@
 use whipsnake::{
     ast::Expr,
+    environment::Environment,
+    error::ErrorReporter,
     evaluator::Evaluator,
     object::Object,
     token::{Literal, Token, TokenKind},
-    error::ErrorReporter,
-    environment::Environment,
 };
 
 use common::*;

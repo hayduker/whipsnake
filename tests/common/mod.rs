@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
 use whipsnake::{
-    token::{Token, TokenKind, Literal},
     ast::Expr,
+    token::{Literal, Token, TokenKind},
 };
 
 #[macro_export]
@@ -14,54 +14,36 @@ macro_rules! tok {
 
 pub fn tok_int<'src>(value: i64, line: usize) -> Token<'static> {
     let int_string = value.to_string();
-    let static_lexeme : &'static str = Box::leak(int_string.into_boxed_str());
+    let static_lexeme: &'static str = Box::leak(int_string.into_boxed_str());
 
-    Token::with_literal(
-        TokenKind::Int,
-        static_lexeme,
-        Literal::Int(value),
-        line
-    )
+    Token::with_literal(TokenKind::Int, static_lexeme, Literal::Int(value), line)
 }
 
 pub fn tok_float<'src>(value: f64, line: usize) -> Token<'static> {
     let float_string = value.to_string();
-    let static_lexeme : &'static str = Box::leak(float_string.into_boxed_str());
+    let static_lexeme: &'static str = Box::leak(float_string.into_boxed_str());
 
-    Token::with_literal(
-        TokenKind::Float,
-        static_lexeme,
-        Literal::Float(value),
-        line
-    )
+    Token::with_literal(TokenKind::Float, static_lexeme, Literal::Float(value), line)
 }
 
 pub fn tok_string<'src>(value: &'static str, line: usize) -> Token<'static> {
     let quoted_string = format!("\"{value}\"");
     let static_lexeme: &'static str = Box::leak(quoted_string.into_boxed_str());
-    
+
     Token::with_literal(
         TokenKind::String,
         static_lexeme,
         Literal::String(value),
-        line
+        line,
     )
 }
 
 pub fn tok_true<'src>(line: usize) -> Token<'src> {
-    Token::new(
-        TokenKind::True,
-        "True",
-        line
-    )
+    Token::new(TokenKind::True, "True", line)
 }
 
 pub fn tok_false<'src>(line: usize) -> Token<'src> {
-    Token::new(
-        TokenKind::False,
-        "False",
-        line
-    )
+    Token::new(TokenKind::False, "False", line)
 }
 
 pub fn expr_string<'src>(value: &'src str) -> Expr<'src> {

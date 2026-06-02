@@ -1,6 +1,6 @@
-use whipsnake::token::{Literal, Token, TokenKind};
 use whipsnake::ast::Expr;
 use whipsnake::printer::PrettyPrinter;
+use whipsnake::token::{Literal, Token, TokenKind};
 
 mod common;
 
@@ -27,9 +27,7 @@ test_no_errors!(
 
 test_no_errors!(
     pretty_print_group_float_expr,
-    Expr::Grouping(
-        Box::new(Expr::Literal(Literal::Float(9.876)))
-    ),
+    Expr::Grouping(Box::new(Expr::Literal(Literal::Float(9.876)))),
     "(group 9.876)"
 );
 
@@ -60,9 +58,9 @@ test_no_errors!(
             right: Box::new(Expr::Literal(Literal::Float(123.0))),
         }),
         operator: tok!(Star, "*", 1),
-        right: Box::new(Expr::Grouping(
-            Box::new(Expr::Literal(Literal::Float(45.67)))
-        ))
+        right: Box::new(Expr::Grouping(Box::new(Expr::Literal(Literal::Float(
+            45.67
+        )))))
     },
     "(* (- 123) (group 45.67))"
 );

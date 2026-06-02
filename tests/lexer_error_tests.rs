@@ -1,6 +1,6 @@
+use whipsnake::error::{CompilerError, ErrorReporter, LexError};
 use whipsnake::lexer::Lexer;
 use whipsnake::token::SourceLocation;
-use whipsnake::error::{ErrorReporter, CompilerError, LexError};
 
 mod common;
 
@@ -13,7 +13,10 @@ fn lex_unexpected_character_error() {
     assert_eq!(reporter.errors.len(), 1);
     assert!(matches!(
         reporter.errors.pop().unwrap(),
-        CompilerError::Lex(LexError::UnexpectedCharacter(SourceLocation { line: 1 }, '&'))
+        CompilerError::Lex(LexError::UnexpectedCharacter(
+            SourceLocation { line: 1 },
+            '&'
+        ))
     ));
 }
 
@@ -39,8 +42,7 @@ fn lex_mismatched_indentation_error() {
     assert_eq!(reporter.errors.len(), 1);
     assert_eq!(
         reporter.errors.pop().unwrap(),
-        CompilerError::Lex(
-        LexError::IndentationError(
+        CompilerError::Lex(LexError::IndentationError(
             SourceLocation { line: 4 },
             String::from("unindent does not match any outer indentation level.")
         ))
@@ -56,8 +58,7 @@ fn lex_tab_error_0() {
     assert_eq!(reporter.errors.len(), 1);
     assert_eq!(
         reporter.errors.pop().unwrap(),
-        CompilerError::Lex(
-        LexError::TabError(
+        CompilerError::Lex(LexError::TabError(
             SourceLocation { line: 3 },
             String::from("mixed spaces and tabs for indentation.")
         ))
@@ -73,8 +74,7 @@ fn lex_tab_error_1() {
     assert_eq!(reporter.errors.len(), 1);
     assert_eq!(
         reporter.errors.pop().unwrap(),
-        CompilerError::Lex(
-        LexError::TabError(
+        CompilerError::Lex(LexError::TabError(
             SourceLocation { line: 3 },
             String::from("mixed spaces and tabs for indentation.")
         ))
@@ -90,8 +90,7 @@ fn lex_tab_error_2() {
     assert_eq!(reporter.errors.len(), 1);
     assert_eq!(
         reporter.errors.pop().unwrap(),
-        CompilerError::Lex(
-        LexError::TabError(
+        CompilerError::Lex(LexError::TabError(
             SourceLocation { line: 2 },
             String::from("mixed spaces and tabs for indentation.")
         ))

@@ -4,7 +4,8 @@ use std::{
     io::{self, Write},
 };
 use whipsnake::{
-    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer, parser::Parser, printer::PrettyPrinter, token::Token
+    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
+    parser::Parser, printer::PrettyPrinter, token::Token,
 };
 
 fn main() -> Result<(), &'static str> {
@@ -28,11 +29,12 @@ fn run_repl() {
 
     loop {
         input.clear();
-        
+
         print!(">>> ");
         io::stdout().flush().expect("Failed to flush stdout");
-        io::stdin().read_line(&mut input).expect("Failed to read line");
-
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
 
         if next_to_last_equals(&input, ':') {
             let mut last_line = String::new();
@@ -42,7 +44,9 @@ fn run_repl() {
 
                 print!("... ");
                 io::stdout().flush().expect("Failed to flush stdout");
-                io::stdin().read_line(&mut last_line).expect("Failed to read line");
+                io::stdin()
+                    .read_line(&mut last_line)
+                    .expect("Failed to read line");
 
                 input.push_str(last_line.as_str());
             }

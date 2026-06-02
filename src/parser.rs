@@ -1,5 +1,7 @@
 use crate::{
-    ast::{Expr, Stmt}, error::{ErrorReporter, ParseError}, token::{Literal, SourceLocation, Token, TokenKind}
+    ast::{Expr, Stmt},
+    error::{ErrorReporter, ParseError},
+    token::{Literal, SourceLocation, Token, TokenKind},
 };
 
 use std::iter::Peekable;
@@ -13,7 +15,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     pub fn new(error_reporter: &'err mut ErrorReporter) -> Self {
         Parser {
             previous: None,
-            error_reporter
+            error_reporter,
         }
     }
 
@@ -25,7 +27,9 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         while !self.peek_matches(tokens, TokenKind::Eof) {
             let mut statements = self.statements(tokens);
-            if statements.len() == 0 { break }
+            if statements.len() == 0 {
+                break;
+            }
 
             all_statements.append(&mut statements);
         }
@@ -44,11 +48,11 @@ impl<'src, 'err> Parser<'src, 'err> {
             self.advance(tokens);
         }
 
-        while !self.peek_matches_any(tokens, &[TokenKind::Eof, TokenKind::Dedent]){
+        while !self.peek_matches_any(tokens, &[TokenKind::Eof, TokenKind::Dedent]) {
             match self.statement(tokens) {
                 Ok(stmt) => {
                     statements.push(stmt);
-                },
+                }
                 Err(e) => {
                     self.error_reporter.register_parse_error(e);
                     self.synchronize(tokens);
@@ -86,13 +90,15 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         // Definitely expression statement, we expect newline or EOF now
 
-        if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) ||
-            self.is_at_end(tokens) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) || self.is_at_end(tokens)
+        {
             return Ok(Stmt::Expression(expr));
         }
 
         Err(ParseError::ParseError(
-            SourceLocation { line: tokens.peek().unwrap().line },
+            SourceLocation {
+                line: tokens.peek().unwrap().line,
+            },
             String::from("expected newline or EOF after expression statement."),
         ))
     }
@@ -103,14 +109,18 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) {
             return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
                 String::from("expected new line at start of block"),
             ));
         }
 
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Indent]) {
             return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
                 String::from("expected indent at start of block"),
             ));
         }
@@ -119,7 +129,9 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Dedent]) {
             return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
                 String::from("expected dedent at end of block"),
             ));
         }
@@ -137,51 +149,69 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::LeftParen]) {
             return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
                 String::from("expected '(' after print keyword."),
-            ))
+            ));
         }
 
         let value = self.expression(tokens)?;
 
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::RightParen]) {
             return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
                 String::from("expected ')' after print keyword."),
-            ))
+            ));
         }
 
-        if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) ||
-            self.is_at_end(tokens) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) || self.is_at_end(tokens)
+        {
             return Ok(Stmt::Print(value));
         }
 
         Err(ParseError::ParseError(
-            SourceLocation { line: tokens.peek().unwrap().line },
+            SourceLocation {
+                line: tokens.peek().unwrap().line,
+            },
             String::from("expected newline or EOF after print statement."),
         ))
     }
 
-    fn assignment_statement<I>(&mut self, tokens: &mut Peekable<I>, l_value: &Expr<'src>) -> Result<Stmt<'src>, ParseError>
+    fn assignment_statement<I>(
+        &mut self,
+        tokens: &mut Peekable<I>,
+        l_value: &Expr<'src>,
+    ) -> Result<Stmt<'src>, ParseError>
     where
         I: Iterator<Item = Token<'src>>,
     {
         let r_value = self.expression(tokens)?;
 
         if let Expr::Variable(token) = l_value {
-            if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) ||
-                self.is_at_end(tokens) {
-                return Ok(Stmt::Assignment { name: *token, initializer: r_value })
-            }            
+            if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine])
+                || self.is_at_end(tokens)
+            {
+                return Ok(Stmt::Assignment {
+                    name: *token,
+                    initializer: r_value,
+                });
+            }
 
             return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
                 String::from("expected newline or EOF after print statement."),
-            ))
+            ));
         }
 
         Err(ParseError::ParseError(
-            SourceLocation { line: tokens.peek().unwrap().line },
+            SourceLocation {
+                line: tokens.peek().unwrap().line,
+            },
             String::from("cannot assign to expression here. Maybe you meant '==' instead of '='?"),
         ))
     }
@@ -193,10 +223,12 @@ impl<'src, 'err> Parser<'src, 'err> {
         self.advance(tokens); // consume "if" or "elif"
 
         let condition = self.expression(tokens)?;
-       
+
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
             return Err(ParseError::ParseError(
-                SourceLocation { line: tokens.peek().unwrap().line },
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
                 String::from("expected ':' after if conditional"),
             ));
         }
@@ -214,7 +246,9 @@ impl<'src, 'err> Parser<'src, 'err> {
 
             if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Colon]) {
                 return Err(ParseError::ParseError(
-                    SourceLocation { line: tokens.peek().unwrap().line },
+                    SourceLocation {
+                        line: tokens.peek().unwrap().line,
+                    },
                     String::from("expected ':' after 'else'"),
                 ));
             }
@@ -222,7 +256,11 @@ impl<'src, 'err> Parser<'src, 'err> {
             else_body = self.block(tokens)?;
         }
 
-        Ok(Stmt::If { condition, then_body, else_body })
+        Ok(Stmt::If {
+            condition,
+            then_body,
+            else_body,
+        })
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
@@ -238,7 +276,9 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.comparison(tokens)?;
 
-        while self.advance_if_peek_matches_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual]) {
+        while self
+            .advance_if_peek_matches_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual])
+        {
             let operator = self.previous.unwrap();
             let right = self.comparison(tokens)?;
             expr = Expr::Binary {
@@ -257,12 +297,15 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.term(tokens)?;
 
-        while self.advance_if_peek_matches_any(tokens, &[
-            TokenKind::Greater,
-            TokenKind::GreaterEqual,
-            TokenKind::Less,
-            TokenKind::LessEqual,
-        ]) {
+        while self.advance_if_peek_matches_any(
+            tokens,
+            &[
+                TokenKind::Greater,
+                TokenKind::GreaterEqual,
+                TokenKind::Less,
+                TokenKind::LessEqual,
+            ],
+        ) {
             let operator = self.previous.unwrap();
             let right = self.term(tokens)?;
             expr = Expr::Binary {
@@ -281,10 +324,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.factor(tokens)?;
 
-        while self.advance_if_peek_matches_any(tokens, &[
-            TokenKind::Plus,
-            TokenKind::Minus,
-        ]) {
+        while self.advance_if_peek_matches_any(tokens, &[TokenKind::Plus, TokenKind::Minus]) {
             let operator = self.previous.unwrap();
             let right = self.factor(tokens)?;
             expr = Expr::Binary {
@@ -303,10 +343,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         let mut expr = self.unary(tokens)?;
 
-        while self.advance_if_peek_matches_any(tokens, &[
-            TokenKind::Star,
-            TokenKind::Slash,
-        ]) {
+        while self.advance_if_peek_matches_any(tokens, &[TokenKind::Star, TokenKind::Slash]) {
             let operator = self.previous.unwrap();
             let right = self.unary(tokens)?;
             expr = Expr::Binary {
@@ -323,12 +360,15 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.advance_if_peek_matches_any(tokens, &[
-            TokenKind::Not,
-            TokenKind::Plus,
-            TokenKind::Minus,
-            TokenKind::Tilde,
-        ]) {
+        if self.advance_if_peek_matches_any(
+            tokens,
+            &[
+                TokenKind::Not,
+                TokenKind::Plus,
+                TokenKind::Minus,
+                TokenKind::Tilde,
+            ],
+        ) {
             let operator = self.previous.unwrap();
             let right = self.unary(tokens)?;
             return Ok(Expr::Unary {
@@ -341,7 +381,7 @@ impl<'src, 'err> Parser<'src, 'err> {
         Ok(expr)
     }
 
-    // TODO: currently the lexer doesn't fill out the literal field of 
+    // TODO: currently the lexer doesn't fill out the literal field of
     // tokens representing None, True, or False in Python. But the parser
     // does put a Literal in the AST here. This means I have Literal variants
     // that are never used in Token.
@@ -361,7 +401,10 @@ impl<'src, 'err> Parser<'src, 'err> {
             return Ok(Expr::Literal(Literal::None));
         }
 
-        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Int, TokenKind::Float, TokenKind::String]) {
+        if self.advance_if_peek_matches_any(
+            tokens,
+            &[TokenKind::Int, TokenKind::Float, TokenKind::String],
+        ) {
             return Ok(Expr::Literal(self.previous.unwrap().literal));
         }
 
@@ -377,15 +420,22 @@ impl<'src, 'err> Parser<'src, 'err> {
                 return Ok(Expr::Grouping(Box::new(expr)));
             } else {
                 return Err(ParseError::ParseError(
-                    SourceLocation { line: tokens.peek().unwrap().line },
+                    SourceLocation {
+                        line: tokens.peek().unwrap().line,
+                    },
                     String::from("'(' was never closed"),
-                ))
+                ));
             }
         }
 
         Err(ParseError::ParseError(
-            SourceLocation { line: tokens.peek().unwrap().line },
-            format!("don't know how to parse token {:?} here", tokens.peek().unwrap().kind),
+            SourceLocation {
+                line: tokens.peek().unwrap().line,
+            },
+            format!(
+                "don't know how to parse token {:?} here",
+                tokens.peek().unwrap().kind
+            ),
         ))
     }
 
@@ -399,7 +449,11 @@ impl<'src, 'err> Parser<'src, 'err> {
         self.previous.unwrap()
     }
 
-    fn advance_if_peek_matches_any<I>(&mut self, tokens: &mut Peekable<I>, kinds: &[TokenKind]) -> bool
+    fn advance_if_peek_matches_any<I>(
+        &mut self,
+        tokens: &mut Peekable<I>,
+        kinds: &[TokenKind],
+    ) -> bool
     where
         I: Iterator<Item = Token<'src>>,
     {
@@ -459,13 +513,22 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         while !self.is_at_end(tokens) {
             if self.previous_matches_any(&[
-                TokenKind::NewLine, TokenKind::Indent, TokenKind::Dedent
+                TokenKind::NewLine,
+                TokenKind::Indent,
+                TokenKind::Dedent,
             ]) {
-                if self.peek_matches_any(tokens, &[
-                    TokenKind::Return, TokenKind::Def, TokenKind::If,
-                    TokenKind::Class, TokenKind::For, TokenKind::While,
-                    TokenKind::Print
-                ]) {
+                if self.peek_matches_any(
+                    tokens,
+                    &[
+                        TokenKind::Return,
+                        TokenKind::Def,
+                        TokenKind::If,
+                        TokenKind::Class,
+                        TokenKind::For,
+                        TokenKind::While,
+                        TokenKind::Print,
+                    ],
+                ) {
                     return;
                 }
             }

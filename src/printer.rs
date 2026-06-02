@@ -1,4 +1,7 @@
-use crate::{ast::{AstNode, Expr, Stmt}, token::Literal};
+use crate::{
+    ast::{AstNode, Expr, Stmt},
+    token::Literal,
+};
 
 pub struct PrettyPrinter;
 
@@ -17,9 +20,18 @@ impl PrettyPrinter {
     pub fn print_stmt(s: &Stmt) -> String {
         match s {
             Stmt::Print(expr) => PrettyPrinter::parenthesize("print", &vec![AstNode::Expr(expr)]),
-            Stmt::Expression(expr) => PrettyPrinter::parenthesize("stmt", &vec![AstNode::Expr(expr)]),
-            Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(format!("assign {}", name.lexeme).as_str(), &vec![AstNode::Expr(initializer)]),
-            Stmt::If { condition, then_body, else_body } => {               
+            Stmt::Expression(expr) => {
+                PrettyPrinter::parenthesize("stmt", &vec![AstNode::Expr(expr)])
+            }
+            Stmt::Assignment { name, initializer } => PrettyPrinter::parenthesize(
+                format!("assign {}", name.lexeme).as_str(),
+                &vec![AstNode::Expr(initializer)],
+            ),
+            Stmt::If {
+                condition,
+                then_body,
+                else_body,
+            } => {
                 let mut then_body_nodes = vec![];
                 for stmt in then_body.iter() {
                     then_body_nodes.push(AstNode::Stmt(stmt));
@@ -34,8 +46,7 @@ impl PrettyPrinter {
                 let then_body_str = PrettyPrinter::parenthesize("block", &then_body_nodes);
                 let else_body_str = PrettyPrinter::parenthesize("block", &else_body_nodes);
 
-
-                format!("(if {condition_str} {then_body_str} {else_body_str})")    
+                format!("(if {condition_str} {then_body_str} {else_body_str})")
             }
         }
     }
@@ -48,13 +59,20 @@ impl PrettyPrinter {
             Expr::Literal(Literal::Bool(true)) => format!("True"),
             Expr::Literal(Literal::Bool(false)) => format!("False"),
             Expr::Literal(Literal::None) => format!("None"),
-            Expr::Grouping(expr) => PrettyPrinter::parenthesize("group", &vec![AstNode::Expr(expr)]), 
+            Expr::Grouping(expr) => {
+                PrettyPrinter::parenthesize("group", &vec![AstNode::Expr(expr)])
+            }
             Expr::Unary { operator, right } => {
                 PrettyPrinter::parenthesize(operator.lexeme, &vec![AstNode::Expr(right)])
-            },
-            Expr::Binary { left, operator, right } => {
-                PrettyPrinter::parenthesize(operator.lexeme, &vec![AstNode::Expr(left), AstNode::Expr(right)])
-            },
+            }
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => PrettyPrinter::parenthesize(
+                operator.lexeme,
+                &vec![AstNode::Expr(left), AstNode::Expr(right)],
+            ),
             Expr::Variable(token) => format!("{}", token.lexeme),
         }
     }

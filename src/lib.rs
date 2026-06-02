@@ -1,9 +1,9 @@
-pub mod error;
-pub mod lexer;
-pub mod token;
 pub mod ast;
-pub mod printer;
-pub mod parser;
-pub mod object;
 pub mod environment;
+pub mod error;
 pub mod evaluator;
+pub mod lexer;
+pub mod object;
+pub mod parser;
+pub mod printer;
+pub mod token;

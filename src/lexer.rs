@@ -2,7 +2,7 @@ use std::{iter::Peekable, str::CharIndices};
 
 use crate::{
     error::{ErrorReporter, LexError},
-    token::{Literal, Token, TokenKind, SourceLocation}
+    token::{Literal, SourceLocation, Token, TokenKind},
 };
 
 pub struct Lexer<'src, 'err> {
@@ -53,30 +53,18 @@ impl<'src, 'err> Lexer<'src, 'err> {
             // the middle of an indented block. This simplifies the parser.
 
             if tokens[tokens.len() - 1].kind != TokenKind::NewLine {
-                tokens.push(Token::new(
-                    TokenKind::NewLine,
-                    "\n",
-                    self.line
-                ));
+                tokens.push(Token::new(TokenKind::NewLine, "\n", self.line));
 
                 self.line += 1;
             }
 
             for _ in self.indent_levels.iter() {
-                tokens.push(Token::new(
-                    TokenKind::Dedent,
-                    "",
-                    self.line
-                ));
+                tokens.push(Token::new(TokenKind::Dedent, "", self.line));
             }
             self.indent_levels.clear();
         }
 
-        tokens.push(Token::new(
-            TokenKind::Eof,
-            "",
-            self.line
-        ));
+        tokens.push(Token::new(TokenKind::Eof, "", self.line));
 
         tokens
     }
@@ -86,9 +74,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
 
         let kind = match c {
             '\n' => {
-                let mut generated_tokens = vec![
-                    Token::new(TokenKind::NewLine, "\n", self.line)
-                ];
+                let mut generated_tokens = vec![Token::new(TokenKind::NewLine, "\n", self.line)];
 
                 self.line += 1;
 
@@ -115,7 +101,10 @@ impl<'src, 'err> Lexer<'src, 'err> {
                 if self.advance_if_match('=') {
                     TokenKind::BangEqual
                 } else {
-                    return Err(LexError::UnexpectedCharacter(SourceLocation { line: self.line }, c));
+                    return Err(LexError::UnexpectedCharacter(
+                        SourceLocation { line: self.line },
+                        c,
+                    ));
                 }
             }
             '=' => {
@@ -143,7 +132,12 @@ impl<'src, 'err> Lexer<'src, 'err> {
             '"' => return self.scan_string_literal(),
             '0'..='9' => return self.scan_number_literal(),
             'a'..='z' | 'A'..='Z' | '_' => return self.scan_indentifier(),
-            _ => return Err(LexError::UnexpectedCharacter(SourceLocation { line: self.line }, c)),
+            _ => {
+                return Err(LexError::UnexpectedCharacter(
+                    SourceLocation { line: self.line },
+                    c,
+                ));
+            }
         };
 
         Ok(Some(vec![Token::new(
@@ -153,11 +147,18 @@ impl<'src, 'err> Lexer<'src, 'err> {
         )]))
     }
 
-    fn scan_indentation(&mut self, generated_tokens: &mut Vec<Token<'src>>) -> Result<(), LexError> {
+    fn scan_indentation(
+        &mut self,
+        generated_tokens: &mut Vec<Token<'src>>,
+    ) -> Result<(), LexError> {
         let (num_spaces, num_tabs) = self.consume_spaces_and_tabs();
         self.validate_whitespace_style(num_spaces, num_tabs)?;
 
-        let current_level = if self.using_tabs == Some(true) { num_tabs } else { num_spaces };
+        let current_level = if self.using_tabs == Some(true) {
+            num_tabs
+        } else {
+            num_spaces
+        };
         let last_level = *self.indent_levels.last().unwrap_or(&0);
 
         if current_level == last_level {
@@ -177,8 +178,14 @@ impl<'src, 'err> Lexer<'src, 'err> {
 
         while let Some(c) = self.peek() {
             match c {
-                ' ' => { self.advance(); num_spaces += 1; }
-                '\t' => { self.advance(); num_tabs += 1; }
+                ' ' => {
+                    self.advance();
+                    num_spaces += 1;
+                }
+                '\t' => {
+                    self.advance();
+                    num_tabs += 1;
+                }
                 _ => break,
             }
         }
@@ -188,7 +195,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
 
     fn validate_whitespace_style(&mut self, spaces: usize, tabs: usize) -> Result<(), LexError> {
         let mixed_on_line = spaces > 0 && tabs > 0;
-        
+
         let mismatch_with_file = match self.using_tabs {
             Some(true) => spaces > 0,
             Some(false) => tabs > 0,
@@ -198,7 +205,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
         if mixed_on_line || mismatch_with_file {
             return Err(LexError::TabError(
                 SourceLocation { line: self.line },
-                String::from("mixed spaces and tabs for indentation.")
+                String::from("mixed spaces and tabs for indentation."),
             ));
         }
 
@@ -209,23 +216,27 @@ impl<'src, 'err> Lexer<'src, 'err> {
         Ok(())
     }
 
-    fn handle_dedents(&mut self, current_level: usize, tokens: &mut Vec<Token<'src>>) -> Result<(), LexError> {
+    fn handle_dedents(
+        &mut self,
+        current_level: usize,
+        tokens: &mut Vec<Token<'src>>,
+    ) -> Result<(), LexError> {
         while let Some(&last_level) = self.indent_levels.last() {
             if last_level == current_level {
                 return Ok(());
             }
-            
+
             if current_level > last_level {
                 return Err(LexError::IndentationError(
                     SourceLocation { line: self.line },
-                    String::from("unindent does not match any outer indentation level.")
+                    String::from("unindent does not match any outer indentation level."),
                 ));
             }
 
             self.indent_levels.pop();
             tokens.push(Token::new(TokenKind::Dedent, "", self.line));
         }
-        
+
         Ok(())
     }
 
@@ -239,7 +250,9 @@ impl<'src, 'err> Lexer<'src, 'err> {
     fn scan_string_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
         while self.peek() != Some('"') {
             if self.peek() == Some('\n') || self.is_at_end() {
-                return Err(LexError::UnterminatedString(SourceLocation { line: self.line }));
+                return Err(LexError::UnterminatedString(SourceLocation {
+                    line: self.line,
+                }));
             }
             self.advance();
         }
@@ -247,8 +260,9 @@ impl<'src, 'err> Lexer<'src, 'err> {
         self.advance(); // eat the closing "
 
         let lexeme = self.current_lexeme();
-        let literal = lexeme.get(1..lexeme.len() - 1)
-            .expect("String literal should be the same as the lexeme without the quotes on either side");
+        let literal = lexeme.get(1..lexeme.len() - 1).expect(
+            "String literal should be the same as the lexeme without the quotes on either side",
+        );
 
         return Ok(Some(vec![Token::with_literal(
             TokenKind::String,
@@ -259,16 +273,22 @@ impl<'src, 'err> Lexer<'src, 'err> {
     }
 
     fn scan_number_literal(&mut self) -> Result<Option<Vec<Token<'src>>>, LexError> {
-        while self.peek_is_digit() { self.advance(); }
+        while self.peek_is_digit() {
+            self.advance();
+        }
 
         if self.peek() == Some('.') {
             self.advance();
 
             if !self.peek_is_digit() {
-                return Err(LexError::MalformedNumberLiteral(SourceLocation { line: self.line }));
+                return Err(LexError::MalformedNumberLiteral(SourceLocation {
+                    line: self.line,
+                }));
             }
 
-            while self.peek_is_digit() { self.advance(); }
+            while self.peek_is_digit() {
+                self.advance();
+            }
 
             let float = self.current_lexeme().parse().expect(
                 "Lexer guarantees a well-formed numeric value in earlier part of this method.",
@@ -282,9 +302,10 @@ impl<'src, 'err> Lexer<'src, 'err> {
             )]));
         }
 
-        let int = self.current_lexeme().parse().expect(
-            "Lexer guarantees a well-formed numeric value in earlier part of this method.",
-        );
+        let int = self
+            .current_lexeme()
+            .parse()
+            .expect("Lexer guarantees a well-formed numeric value in earlier part of this method.");
 
         return Ok(Some(vec![Token::with_literal(
             TokenKind::Int,
@@ -303,14 +324,14 @@ impl<'src, 'err> Lexer<'src, 'err> {
             self.advance();
         }
 
-        let kind = self.lookup_keyword(
-            &self.current_lexeme(),
-        ).unwrap_or(TokenKind::Identifier);
+        let kind = self
+            .lookup_keyword(&self.current_lexeme())
+            .unwrap_or(TokenKind::Identifier);
 
         Ok(Some(vec![Token::new(
             kind,
             self.current_lexeme(),
-            self.line
+            self.line,
         )]))
     }
 
@@ -370,25 +391,24 @@ impl<'src, 'err> Lexer<'src, 'err> {
 
     fn lookup_keyword(&self, identifier: &str) -> Option<TokenKind> {
         match identifier {
-            "and"    => Some(TokenKind::And),
-            "class"  => Some(TokenKind::Class),
-            "def"    => Some(TokenKind::Def),
-            "elif"   => Some(TokenKind::Elif),
-            "else"   => Some(TokenKind::Else),
-            "False"  => Some(TokenKind::False), // really a literal
-            "for"    => Some(TokenKind::For),
-            "if"     => Some(TokenKind::If),
-            "None"   => Some(TokenKind::None), // really a literal
-            "not"    => Some(TokenKind::Not),
-            "or"     => Some(TokenKind::Or),
-            "print"  => Some(TokenKind::Print),
+            "and" => Some(TokenKind::And),
+            "class" => Some(TokenKind::Class),
+            "def" => Some(TokenKind::Def),
+            "elif" => Some(TokenKind::Elif),
+            "else" => Some(TokenKind::Else),
+            "False" => Some(TokenKind::False), // really a literal
+            "for" => Some(TokenKind::For),
+            "if" => Some(TokenKind::If),
+            "None" => Some(TokenKind::None), // really a literal
+            "not" => Some(TokenKind::Not),
+            "or" => Some(TokenKind::Or),
+            "print" => Some(TokenKind::Print),
             "return" => Some(TokenKind::Return),
-            "super"  => Some(TokenKind::Super),
-            "self"   => Some(TokenKind::This),
-            "True"   => Some(TokenKind::True), // really a literal
-            "while"  => Some(TokenKind::While),
-            _        => None,
+            "super" => Some(TokenKind::Super),
+            "self" => Some(TokenKind::This),
+            "True" => Some(TokenKind::True), // really a literal
+            "while" => Some(TokenKind::While),
+            _ => None,
         }
     }
-
 }
