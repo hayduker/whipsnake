@@ -27,26 +27,29 @@ impl PrettyPrinter {
                 format!("assign {}", name.lexeme).as_str(),
                 &vec![AstNode::Expr(initializer)],
             ),
+            Stmt::Block(stmts) => {
+                PrettyPrinter::parenthesize(
+                    "block",
+                    &(stmts.iter().map(|stmt| AstNode::Stmt(stmt)).collect())
+                )
+            },
             Stmt::If {
                 condition,
                 then_body,
                 else_body,
             } => {
-                let mut then_body_nodes = vec![];
-                for stmt in then_body.iter() {
-                    then_body_nodes.push(AstNode::Stmt(stmt));
-                }
-
-                let mut else_body_nodes = vec![];
-                for stmt in else_body.iter() {
-                    else_body_nodes.push(AstNode::Stmt(stmt));
-                }
-
                 let condition_str = PrettyPrinter::print_expr(condition);
-                let then_body_str = PrettyPrinter::parenthesize("block", &then_body_nodes);
-                let else_body_str = PrettyPrinter::parenthesize("block", &else_body_nodes);
+                let then_body_str = PrettyPrinter::print_stmt(then_body);
 
-                format!("(if {condition_str} {then_body_str} {else_body_str})")
+                let string = format!("(if {condition_str} {then_body_str}");
+
+                match else_body {
+                    Some(else_body) => {
+                        let else_body_str = PrettyPrinter::print_stmt(else_body);
+                        string + format!(" {else_body_str})").as_str()
+                    },
+                    None => string
+                }
             }
         }
     }

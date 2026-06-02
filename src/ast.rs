@@ -8,11 +8,11 @@ pub enum Stmt<'src> {
         name: Token<'src>,
         initializer: Expr<'src>,
     },
-    // Block(Vec<Stmt<'src>>),
+    Block(Vec<Stmt<'src>>),
     If {
         condition: Expr<'src>,
-        then_body: Vec<Stmt<'src>>,
-        else_body: Vec<Stmt<'src>>,
+        then_body: Box<Stmt<'src>>,
+        else_body: Option<Box<Stmt<'src>>>,
     },
 }
 

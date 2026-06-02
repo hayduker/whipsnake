@@ -1,7 +1,7 @@
 use crate::{
     ast::{Expr, Stmt},
     error::{ErrorReporter, ParseError},
-    token::{Literal, SourceLocation, Token, TokenKind},
+    token::{Literal, SourceLocation, Token, TokenKind::{self, NewLine}},
 };
 
 use std::iter::Peekable;
@@ -80,7 +80,15 @@ impl<'src, 'err> Parser<'src, 'err> {
             return self.if_statement(tokens);
         }
 
-        // Didn't match keyword, we must have expression or assignment
+        if self.advance_if_peek_matches_any(tokens, &[NewLine]) {
+            if self.peek_matches(tokens, TokenKind::Indent) {
+                return Ok(Stmt::Block(self.block(tokens)?));
+            }
+
+
+        }
+
+        // It appears than we have an expression (including the beginning of an assignment)
 
         let expr = self.expression(tokens)?;
 
@@ -107,14 +115,14 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) {
-            return Err(ParseError::ParseError(
-                SourceLocation {
-                    line: tokens.peek().unwrap().line,
-                },
-                String::from("expected new line at start of block"),
-            ));
-        }
+        // if !self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) {
+        //     return Err(ParseError::ParseError(
+        //         SourceLocation {
+        //             line: tokens.peek().unwrap().line,
+        //         },
+        //         String::from("expected new line at start of block"),
+        //     ));
+        // }
 
         if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Indent]) {
             return Err(ParseError::ParseError(
@@ -233,12 +241,12 @@ impl<'src, 'err> Parser<'src, 'err> {
             ));
         }
 
-        let then_body = self.block(tokens)?;
+        let then_body = self.statement(tokens)?;
 
-        let mut else_body: Vec<Stmt> = vec![];
+        let mut else_body = None;
 
         if self.peek_matches(tokens, TokenKind::Elif) {
-            else_body.push(self.if_statement(tokens)?);
+            else_body = Some(Box::new(self.if_statement(tokens)?));
         }
 
         if self.peek_matches(tokens, TokenKind::Else) {
@@ -253,13 +261,13 @@ impl<'src, 'err> Parser<'src, 'err> {
                 ));
             }
 
-            else_body = self.block(tokens)?;
+            else_body = Some(Box::new(self.statement(tokens)?));
         }
 
         Ok(Stmt::If {
             condition,
-            then_body,
-            else_body,
+            then_body: Box::new(then_body),
+            else_body: else_body,
         })
     }
 

@@ -42,6 +42,12 @@ impl<'err> Evaluator<'err> {
                 Err(e) => self.error_reporter.register_runtime_error(e),
             },
 
+            Stmt::Block(stmts) => {
+                for stmt in stmts {
+                    self.execute(stmt, environment, interactive);
+                }
+            }
+
             Stmt::Assignment { name, initializer } => {
                 match self.evaluate(initializer, environment) {
                     Ok(value) => environment.define(name.lexeme.to_string(), value),
@@ -65,17 +71,20 @@ impl<'err> Evaluator<'err> {
     fn if_statement(
         &mut self,
         condition: &Expr,
-        then_body: &Vec<Stmt>,
-        else_body: &Vec<Stmt>,
+        then_body: &Stmt,
+        else_body: &Option<Box<Stmt>>,
         environment: &mut Environment,
         interactive: bool,
     ) -> Result<Object, RuntimeError> {
         let condition = self.evaluate(condition, environment)?;
 
         if condition.is_truthy() {
-            self.interpret(then_body, environment, interactive);
+            self.execute(then_body, environment, interactive);
         } else {
-            self.interpret(else_body, environment, interactive);
+            match else_body {
+                Some(else_body) => self.execute(else_body, environment, interactive),
+                None => ()
+            }
         }
 
         Ok(Object::None)
