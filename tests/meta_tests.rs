@@ -16,10 +16,18 @@ fn tok_macro() {
 }
 
 #[test]
+fn tok_int_fn() {
+    assert_eq!(
+        tok_int(12, 1),
+        Token::with_literal(TokenKind::Int, "12", Literal::Int(12), 1)
+    )
+}
+
+#[test]
 fn tok_float_fn() {
     assert_eq!(
         tok_float(1.234, 1),
-        Token::with_literal(TokenKind::Number, "1.234", Literal::Float(1.234), 1)
+        Token::with_literal(TokenKind::Float, "1.234", Literal::Float(1.234), 1)
     )
 }
 

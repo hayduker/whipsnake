@@ -74,6 +74,7 @@ impl<'err> Evaluator<'err> {
         let value = match expr {
             Expr::Literal(literal) => {
                 match literal {
+                    Literal::Int(int) => Object::Int(*int),
                     Literal::Float(float) => Object::Float(*float),
                     Literal::String(string) => Object::String(string.to_string()),
                     Literal::Bool(b) => Object::Bool(*b),
@@ -89,7 +90,7 @@ impl<'err> Evaluator<'err> {
                         match operator.kind {
                             TokenKind::Plus => { // unary + is identity
                                 match right {
-                                    Object::Float(_) => right,
+                                    Object::Int(_) | Object::Float(_) => right,
                                     _ => return Err(RuntimeError::TypeError(
                                         SourceLocation { line: operator.line },
                                         format!("bad operand type for unary -: '{}'", right.py_type())
@@ -98,6 +99,7 @@ impl<'err> Evaluator<'err> {
                             },
                             TokenKind::Minus => {
                                 match right {
+                                    Object::Int(int) => Object::Int(-int),
                                     Object::Float(float) => Object::Float(-float),
                                     _ => return Err(RuntimeError::TypeError(
                                         SourceLocation { line: operator.line },
@@ -108,7 +110,7 @@ impl<'err> Evaluator<'err> {
                             TokenKind::Tilde => { // unary ~ is bitwise inversion, which for two's complement integers
                                                   // works out to:  ~x = -(x+1)
                                 match right {
-                                    Object::Float(float) => Object::Float(-(float+1.0)),
+                                    Object::Int(int) => Object::Int(-(int+1)),
                                     _ => return Err(RuntimeError::TypeError(
                                         SourceLocation { line: operator.line },
                                         format!("bad operand type for unary -: '{}'", right.py_type())
@@ -130,26 +132,7 @@ impl<'err> Evaluator<'err> {
                 let left = self.evaluate(left, environment)?;
                 let right = self.evaluate(right, environment)?;
 
-                match operator.kind {
-                    TokenKind::Plus => match (&left, &right) {
-                        (Object::Float(fl), Object::Float(fr)) => Object::Float(fl + fr),
-                        (Object::String(sl), Object::String(sr)) => Object::String(format!("{}{}", sl, sr)),
-                        _ => return Err(RuntimeError::TypeError(
-                            SourceLocation { line: operator.line },
-                            format!("unsupported operand of type(s) for +: '{}' and '{}'", left.py_type(), right.py_type())
-                        ))
-                    }
-                    TokenKind::EqualEqual => Object::Bool(right == left),
-                    TokenKind::BangEqual => Object::Bool(right != left),
-                    TokenKind::Minus | TokenKind::Star | TokenKind::Slash |
-                    TokenKind::Greater | TokenKind::GreaterEqual | TokenKind::Less | TokenKind::LessEqual => {
-                         self.evaluate_binary_float_expr(&left, &operator, &right)?
-                    }
-                    _ => return Err(RuntimeError::TypeError(
-                        SourceLocation { line: operator.line },
-                        format!("got an invalid binary operator {:?}", operator.kind)
-                    ))
-                }
+                return self.binary_expr(&left, operator, &right);
             },
 
             Expr::Variable(token) => {
@@ -166,33 +149,107 @@ impl<'err> Evaluator<'err> {
         Ok(value)
     }
 
-    fn evaluate_binary_float_expr<'src>(
-        &self,
-        left: &Object,
-        operator: &Token<'src>,
-        right: &Object
-    ) -> Result<Object, RuntimeError> {
-        if let (Object::Float(fl), Object::Float(fr)) = (left, right) {
-            let value = match operator.kind {
-                TokenKind::Minus => Object::Float(fl - fr),
-                TokenKind::Star => Object::Float(fl * fr),
-                TokenKind::Slash => Object::Float(fl / fr),
-                TokenKind::Greater => Object::Bool(fl > fr),
-                TokenKind::GreaterEqual => Object::Bool(fl >= fr),
-                TokenKind::Less => Object::Bool(fl < fr),
-                TokenKind::LessEqual => Object::Bool(fl <= fr),
+    fn binary_expr<'src>(&self, left: &Object, operator: &Token<'src>, right: &Object) -> Result<Object, RuntimeError> {
+        let result = match operator.kind {
+            TokenKind::Plus => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Int(l + r),
+                (Object::Float(l), Object::Float(r)) => Object::Float(l + r),
+                (Object::Int(l), Object::Float(r)) => Object::Float(*l as f64 + r),
+                (Object::Float(l), Object::Int(r)) => Object::Float(l + *r as f64),
+                (Object::String(l), Object::String(r)) => Object::String(format!("{}{}", l, r)),
                 _ => return Err(RuntimeError::TypeError(
                     SourceLocation { line: operator.line },
-                    format!("unsupported operand of type(s) for {operator:?}: 'float' and 'floar'")
+                    format!("unsupported operand type(s) for +: '{}' and '{}'", left.py_type(), right.py_type())
                 ))
-            };
+            },
 
-            Ok(value)
-        } else {
-            Err(RuntimeError::RuntimeError(
+            TokenKind::Minus => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Int(l - r),
+                (Object::Float(l), Object::Float(r)) => Object::Float(l - r),
+                (Object::Int(l), Object::Float(r)) => Object::Float(*l as f64 - r),
+                (Object::Float(l), Object::Int(r)) => Object::Float(l - *r as f64),
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand type(s) for -: '{}' and '{}'", left.py_type(), right.py_type())
+                ))
+            },
+
+            TokenKind::Star => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Int(l * r),
+                (Object::Float(l), Object::Float(r)) => Object::Float(l * r),
+                (Object::Int(l), Object::Float(r)) => Object::Float(*l as f64 * r),
+                (Object::Float(l), Object::Int(r)) => Object::Float(l * *r as f64),
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand type(s) for *: '{}' and '{}'", left.py_type(), right.py_type())
+                ))
+            },
+
+            TokenKind::Slash => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Float(*l as f64 / *r as f64),
+                (Object::Float(l), Object::Float(r)) => Object::Float(l / r),
+                (Object::Int(l), Object::Float(r)) => Object::Float(*l as f64 / r),
+                (Object::Float(l), Object::Int(r)) => Object::Float(l / *r as f64),
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand type(s) for /: '{}' and '{}'", left.py_type(), right.py_type())
+                ))
+            },
+
+            TokenKind::Greater => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Bool(l > r),
+                (Object::Float(l), Object::Float(r)) => Object::Bool(l > r),
+                (Object::Int(l), Object::Float(r)) => Object::Bool(*l as f64 > *r),
+                (Object::Float(l), Object::Int(r)) => Object::Bool(*l > *r as f64),
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand type(s) for >: '{}' and '{}'", left.py_type(), right.py_type())
+                ))
+            },
+            
+            TokenKind::GreaterEqual => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Bool(l >= r),
+                (Object::Float(l), Object::Float(r)) => Object::Bool(l >= r),
+                (Object::Int(l), Object::Float(r)) => Object::Bool(*l as f64 >= *r),
+                (Object::Float(l), Object::Int(r)) => Object::Bool(*l >= *r as f64),
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand type(s) for >=: '{}' and '{}'", left.py_type(), right.py_type())
+                ))
+            },
+            
+            TokenKind::Less => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Bool(l < r),
+                (Object::Float(l), Object::Float(r)) => Object::Bool(l < r),
+                (Object::Int(l), Object::Float(r)) => Object::Bool((*l as f64) < *r),
+                (Object::Float(l), Object::Int(r)) => Object::Bool(*l < *r as f64),
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand type(s) for <: '{}' and '{}'", left.py_type(), right.py_type())
+                ))
+            },
+            
+            TokenKind::LessEqual => match (&left, &right) {
+                (Object::Int(l), Object::Int(r)) => Object::Bool(l <= r),
+                (Object::Float(l), Object::Float(r)) => Object::Bool(l <= r),
+                (Object::Int(l), Object::Float(r)) => Object::Bool(*l as f64 <= *r),
+                (Object::Float(l), Object::Int(r)) => Object::Bool(*l <= *r as f64),
+                _ => return Err(RuntimeError::TypeError(
+                    SourceLocation { line: operator.line },
+                    format!("unsupported operand type(s) for <=: '{}' and '{}'", left.py_type(), right.py_type())
+                ))
+            },
+
+            TokenKind::EqualEqual => Object::Bool(right == left),
+
+            TokenKind::BangEqual => Object::Bool(right != left),
+
+            _ => return Err(RuntimeError::RuntimeError(
                 SourceLocation { line: operator.line },
                 format!("somehow hit binary float expression with incompatible operator {:?}", operator)
             ))
-        }
+        };
+
+        Ok(result)
     }
 }

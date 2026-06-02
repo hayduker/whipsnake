@@ -12,12 +12,24 @@ macro_rules! tok {
     };
 }
 
+pub fn tok_int<'src>(value: i64, line: usize) -> Token<'static> {
+    let int_string = value.to_string();
+    let static_lexeme : &'static str = Box::leak(int_string.into_boxed_str());
+
+    Token::with_literal(
+        TokenKind::Int,
+        static_lexeme,
+        Literal::Int(value),
+        line
+    )
+}
+
 pub fn tok_float<'src>(value: f64, line: usize) -> Token<'static> {
     let float_string = value.to_string();
     let static_lexeme : &'static str = Box::leak(float_string.into_boxed_str());
 
     Token::with_literal(
-        TokenKind::Number,
+        TokenKind::Float,
         static_lexeme,
         Literal::Float(value),
         line
@@ -58,6 +70,14 @@ pub fn expr_string<'src>(value: &'src str) -> Expr<'src> {
 
 pub fn expr_string_box<'src>(value: &'src str) -> Box<Expr<'src>> {
     Box::new(expr_string(value))
+}
+
+pub fn expr_int<'src>(value: i64) -> Expr<'src> {
+    Expr::Literal(Literal::Int(value))
+}
+
+pub fn expr_int_box<'src>(value: i64) -> Box<Expr<'src>> {
+    Box::new(expr_int(value))
 }
 
 pub fn expr_float<'src>(value: f64) -> Expr<'src> {

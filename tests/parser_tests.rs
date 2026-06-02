@@ -188,6 +188,27 @@ test_no_errors!(
 test_no_errors!(
     parse_precedence_1,
     vec![
+        tok_int(1, 1),
+        tok!(Star, "*", 1),
+        tok_int(2, 1),
+        tok!(Plus, "+", 1),
+        tok_int(3, 1),
+        tok![Eof, "", 1],
+    ],
+    vec![Stmt::Expression(Expr::Binary {
+        left: Box::new(Expr::Binary {
+            left: expr_int_box(1),
+            operator: tok!(Star, "*", 1),
+            right: expr_int_box(2)
+        }),
+        operator: tok!(Plus, "+", 1),
+        right: expr_int_box(3)
+    })]
+);
+
+test_no_errors!(
+    parse_precedence_2,
+    vec![
         tok_float(1.2, 1),
         tok!(Plus, "+", 1),
         tok_float(2.3, 1),
@@ -202,6 +223,28 @@ test_no_errors!(
             left: expr_float_box(2.3),
             operator: tok!(Star, "*", 1),
             right: expr_float_box(3.4)
+        })
+    })]
+);
+
+
+test_no_errors!(
+    parse_precedence_3,
+    vec![
+        tok_int(1, 1),
+        tok!(Plus, "+", 1),
+        tok_int(2, 1),
+        tok!(Star, "*", 1),
+        tok_int(3, 1),
+        tok![Eof, "", 1],
+    ],
+    vec![Stmt::Expression(Expr::Binary {
+        left: expr_int_box(1),
+        operator: tok!(Plus, "+", 1),
+        right: Box::new(Expr::Binary {
+            left: expr_int_box(2),
+            operator: tok!(Star, "*", 1),
+            right: expr_int_box(3)
         })
     })]
 );

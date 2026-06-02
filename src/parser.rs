@@ -361,7 +361,7 @@ impl<'src, 'err> Parser<'src, 'err> {
             return Ok(Expr::Literal(Literal::None));
         }
 
-        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Number, TokenKind::String]) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Int, TokenKind::Float, TokenKind::String]) {
             return Ok(Expr::Literal(self.previous.unwrap().literal));
         }
 

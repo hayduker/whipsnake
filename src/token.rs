@@ -29,7 +29,8 @@ pub enum TokenKind {
     // literals
     Identifier,
     String,
-    Number,
+    Int,
+    Float,
 
     // keywords
     And,
@@ -63,6 +64,7 @@ pub enum TokenKind {
 pub enum Literal<'src> {
     None,
     String(&'src str),
+    Int(i64),
     Float(f64),
     Bool(bool),
 }

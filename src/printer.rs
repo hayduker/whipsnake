@@ -43,6 +43,7 @@ impl PrettyPrinter {
     pub fn print_expr(e: &Expr) -> String {
         match e {
             Expr::Literal(Literal::String(s)) => format!("\"{s}\""),
+            Expr::Literal(Literal::Int(i)) => format!("{i}").to_string(),
             Expr::Literal(Literal::Float(f)) => format!("{f}").to_string(),
             Expr::Literal(Literal::Bool(true)) => format!("True"),
             Expr::Literal(Literal::Bool(false)) => format!("False"),

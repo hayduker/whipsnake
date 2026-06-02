@@ -69,6 +69,24 @@ test_no_errors!(
 );
 
 test_no_errors!(
+    evaluate_not_truthy_int,
+    Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_int_box(1)
+    },
+    Object::Bool(false)
+);
+
+test_no_errors!(
+    evaluate_not_falsy_int,
+    Expr::Unary {
+        operator: tok!(Not, "not", 1),
+        right: expr_int_box(0)
+    },
+    Object::Bool(true)
+);
+
+test_no_errors!(
     evaluate_not_truthy_float,
     Expr::Unary {
         operator: tok!(Not, "not", 1),
@@ -108,27 +126,27 @@ test_no_errors!(
     evaluate_unary_tilde_0,
     Expr::Unary {
         operator: tok!(Tilde, "~", 1),
-        right: expr_float_box(0.0)
+        right: expr_int_box(0)
     },
-    Object::Float(-1.0)
+    Object::Int(-1)
 );
 
 test_no_errors!(
     evaluate_unary_tilde_1,
     Expr::Unary {
         operator: tok!(Tilde, "~", 1),
-        right: expr_float_box(9.0)
+        right: expr_int_box(9)
     },
-    Object::Float(-10.0)
+    Object::Int(-10)
 );
 
 test_no_errors!(
     evaluate_unary_tilde_2,
     Expr::Unary {
         operator: tok!(Tilde, "~", 1),
-        right: expr_float_box(-5.0)
+        right: expr_int_box(-5)
     },
-    Object::Float(4.0)
+    Object::Int(4)
 );
 
 test_no_errors!(
@@ -142,6 +160,16 @@ test_no_errors!(
 );
 
 test_no_errors!(
+    evaluate_plus_int,
+    Expr::Binary {
+        left: expr_int_box(1),
+        operator: tok!(Plus, "+", 1),
+        right: expr_int_box(4)
+    },
+    Object::Int(5)
+);
+
+test_no_errors!(
     evaluate_plus_float,
     Expr::Binary {
         left: expr_float_box(1.2),
@@ -152,7 +180,27 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    evaluate_minus,
+    evaluate_plus_int_float,
+    Expr::Binary {
+        left: expr_int_box(1),
+        operator: tok!(Plus, "+", 1),
+        right: expr_float_box(4.5)
+    },
+    Object::Float(5.5)
+);
+
+test_no_errors!(
+    evaluate_minus_int,
+    Expr::Binary {
+        left: expr_int_box(4),
+        operator: tok!(Minus, "-", 1),
+        right: expr_int_box(2)
+    },
+    Object::Int(2)
+);
+
+test_no_errors!(
+    evaluate_minus_float,
     Expr::Binary {
         left: expr_float_box(4.5),
         operator: tok!(Minus, "-", 1),
@@ -162,7 +210,27 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    evaluate_star,
+    evaluate_minus_float_int,
+    Expr::Binary {
+        left: expr_float_box(4.3),
+        operator: tok!(Minus, "-", 1),
+        right: expr_int_box(2)
+    },
+    Object::Float(2.3)
+);
+
+test_no_errors!(
+    evaluate_star_int,
+    Expr::Binary {
+        left: expr_int_box(4),
+        operator: tok!(Star, "*", 1),
+        right: expr_int_box(2)
+    },
+    Object::Int(8)
+);
+
+test_no_errors!(
+    evaluate_star_float,
     Expr::Binary {
         left: expr_float_box(4.5),
         operator: tok!(Star, "*", 1),
@@ -172,7 +240,27 @@ test_no_errors!(
 );
 
 test_no_errors!(
-    evaluate_slash,
+    evaluate_star_int_float,
+    Expr::Binary {
+        left: expr_int_box(4),
+        operator: tok!(Star, "*", 1),
+        right: expr_float_box(2.1)
+    },
+    Object::Float(8.4)
+);
+
+test_no_errors!(
+    evaluate_slash_int,
+    Expr::Binary {
+        left: expr_int_box(9),
+        operator: tok!(Slash, "/", 1),
+        right: expr_int_box(2)
+    },
+    Object::Float(4.5)
+);
+
+test_no_errors!(
+    evaluate_slash_float,
     Expr::Binary {
         left: expr_float_box(9.0),
         operator: tok!(Slash, "/", 1),
@@ -204,9 +292,9 @@ test_no_errors!(
 test_no_errors!(
     evaluate_greater_equal_1,
     Expr::Binary {
-        left: expr_float_box(3.2),
+        left: expr_int_box(6),
         operator: tok!(GreaterEqual, ">=", 1),
-        right: expr_float_box(3.1)
+        right: expr_int_box(5)
     },
     Object::Bool(true)
 );
@@ -234,9 +322,9 @@ test_no_errors!(
 test_no_errors!(
     evaluate_less_equal_1,
     Expr::Binary {
-        left: expr_float_box(3.1),
+        left: expr_int_box(4),
         operator: tok!(LessEqual, "<=", 1),
-        right: expr_float_box(3.1)
+        right: expr_int_box(4)
     },
     Object::Bool(true)
 );
@@ -264,9 +352,9 @@ test_no_errors!(
 test_no_errors!(
     evaluate_bang_equal_same_type,
     Expr::Binary {
-        left: expr_float_box(3.1),
+        left: expr_int_box(3),
         operator: tok!(BangEqual, "!=", 1),
-        right: expr_float_box(3.1)
+        right: expr_int_box(3)
     },
     Object::Bool(false)
 );

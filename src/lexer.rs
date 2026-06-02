@@ -269,18 +269,29 @@ impl<'src, 'err> Lexer<'src, 'err> {
             }
 
             while self.peek_is_digit() { self.advance(); }
+
+            let float = self.current_lexeme().parse().expect(
+                "Lexer guarantees a well-formed numeric value in earlier part of this method.",
+            );
+
+            return Ok(Some(vec![Token::with_literal(
+                TokenKind::Float,
+                self.current_lexeme(),
+                Literal::Float(float),
+                self.line,
+            )]));
         }
 
-        let float = self.current_lexeme().parse().expect(
+        let int = self.current_lexeme().parse().expect(
             "Lexer guarantees a well-formed numeric value in earlier part of this method.",
         );
 
-        Ok(Some(vec![Token::with_literal(
-            TokenKind::Number,
+        return Ok(Some(vec![Token::with_literal(
+            TokenKind::Int,
             self.current_lexeme(),
-            Literal::Float(float),
+            Literal::Int(int),
             self.line,
-        )]))
+        )]));
     }
 
     fn peek_is_digit(&mut self) -> bool {
