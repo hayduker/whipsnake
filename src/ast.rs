@@ -18,11 +18,6 @@ pub enum Stmt<'src> {
         condition: Expr<'src>,
         body: Box<Stmt<'src>>,
     },
-    For {
-        variable: Token<'src>,
-        iterable: Expr<'src>,
-        body: Box<Stmt<'src>>,
-    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

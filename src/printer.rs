@@ -111,14 +111,6 @@ fn convert_stmt(s: &Stmt) -> SExpr {
                 convert_stmt(body),
             ])
         },
-        Stmt::For { variable, iterable, body } => {
-            SExpr::List(vec![
-                atom("for"),
-                atom(variable.lexeme),
-                convert_expr(iterable),
-                convert_stmt(body),
-            ])
-        },
     }
 }
 
