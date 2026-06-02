@@ -31,9 +31,3 @@ pub enum Expr<'src> {
     },
     Variable(Token<'src>),
 }
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum AstNode<'src> {
-    Stmt(&'src Stmt<'src>),
-    Expr(&'src Expr<'src>),
-}

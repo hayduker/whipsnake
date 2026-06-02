@@ -13,6 +13,35 @@ fn atom(s: &str) -> SExpr {
     SExpr::Atom(s.to_string())
 }
 
+fn measure_single_line(expr: &SExpr) -> usize {
+    match expr {
+        SExpr::Atom(s) => s.len(),
+        SExpr::List(children) => {
+            if children.is_empty() {
+                return 2; // "()"
+            }
+            
+            let children_len: usize = children.iter().map(measure_single_line).sum();
+            
+            // include '(' and ')' and spaces between children
+            2 + children_len + (children.len() - 1)
+        }
+    }
+}
+
+fn format_flat(expr: &SExpr) -> String {
+    match expr {
+        SExpr::Atom(s) => s.clone(),
+        SExpr::List(children) => {
+            if children.is_empty() {
+                return "()".to_string();
+            }
+            let child_strings: Vec<String> = children.iter().map(format_flat).collect();
+            format!("({})", child_strings.join(" "))
+        }
+    }
+}
+
 fn format_sexpr(expr: &SExpr, indent: usize) -> String {
     match expr {
         SExpr::Atom(s) => s.clone(),
@@ -20,6 +49,10 @@ fn format_sexpr(expr: &SExpr, indent: usize) -> String {
         SExpr::List(children) => {
             if children.is_empty() {
                 return "()".to_string();
+            }
+
+            if measure_single_line(expr) <= 12 {
+                return format_flat(expr);
             }
 
             let mut result = String::new();
