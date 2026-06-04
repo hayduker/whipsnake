@@ -1,13 +1,6 @@
-use std::{fmt::Error, io::Read};
+use std::io::Read;
 
 use wat;
-
-#[derive(Debug, PartialEq)]
-pub struct DecodeError {
-    message: String,
-}
-
-
 
 struct BinaryReader<'a> {
     remaining_bytes: &'a [u8],
@@ -36,6 +29,56 @@ impl<'a> BinaryReader<'a> {
         Ok(u32::from_le_bytes(bytes))
     }
 
+    pub fn read_leb128_u32(&mut self) -> Result<u32, String> {
+        let mut result: u32 = 0;
+        let mut shift = 0;
+
+        // (28)      (21)      (14)      (7)        (0)
+        // 0.0001111 1.1110111 1.1100011 1.1010101  1.1010011
+
+        loop {
+            println!("------------------------------------------------");
+            println!("loop iter: result = {:b}", result);
+            println!("shift = {shift}");
+
+            let byte = self.read_byte()?;
+            let flag = byte >> 7;
+            let data = (byte & 0x7F) as u32;
+
+            println!("byte = {byte:b}, flag = {flag}, data = {data:b}");
+
+            if shift > 21 {
+                if flag == 1 {
+                    return Err("got uleb128 encoding with more than 5 bytes, which is too many for u32".into());
+                }
+
+                let first_half = data & 0xF0;
+                if first_half != 0 {
+                    return Err("got high bits in locations 0b0xxx0000 of 5th byte in uleb128 encoding, which will get shifted out for u32".into());
+                }
+            }
+
+            let shifted = data << shift;
+
+            println!("shifted = {shifted:b}");
+
+            result = result | shifted;
+
+            println!("new result = {:b}", result);
+
+            // 0000|0000 000|00000 00|000000 0|0000000
+            // 0000|0000 000|00000 00|000000 0|1010011
+            // 0000|0000 000|00000 00|101010 1|1010011
+            // 0000|0000 000|11000 11|101010 1|1010011
+            // 0000|1110 111|11000 11|101010 1|1010011
+
+            if flag == 0 { break }
+            shift += 7;
+        }
+
+        Ok(result)
+    }
+
     pub fn read_byte(&mut self) -> Result<u8, String> {
         let bytes = self.read_bytes::<1>()?;
         Ok(bytes[0])
@@ -44,7 +87,22 @@ impl<'a> BinaryReader<'a> {
 
 
 
+enum SectionCode {
+    Type = 0x01,
+    Function = 0x03,
+    Code = 0x0A,
+}
 
+impl SectionCode {
+    fn from(code: u8) -> Result<Self, String> {
+        match code {
+            0x01 => Ok(Self::Type),
+            0x03 => Ok(Self::Function),
+            0x07 => Ok(Self::Code),
+            _  => Err(format!("unsupported section code {code} provided"))
+        }
+    }
+}
 
 
 #[derive(Debug, PartialEq)]
@@ -99,5 +157,60 @@ mod tests {
         
         let module = Module::new(&wasm).unwrap();
         assert_eq!(module, Module::default());
+    }
+
+    #[test]
+    fn test_uleb128_decoding_single_byte() {
+        let bytes: &[u8] = &[0x2A];
+        let mut reader = BinaryReader::new(bytes); 
+
+        let result = reader.read_leb128_u32();
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 42);
+    }
+
+    #[test]
+    fn test_uleb128_decoding_multi_byte() {
+        // 0xE5 = 11100101 (MSB = 1, continue)
+        // 0x8E = 10001110 (MSB = 1, continue)
+        // 0x26 = 00100110 (MSB = 0, stop)
+        let mut bytes: &[u8] = &[0xE5, 0x8E, 0x26, 0xAA, 0xBB];
+        let mut reader = BinaryReader::new(bytes); 
+
+        let result = reader.read_leb128_u32();
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 624485);
+    }
+
+    #[test]
+    fn test_uleb128_decoding_too_many_bytes() {
+        // 0xE5 = 11100101 (MSB = 1, continue)
+        // 0x8E = 10001110 (MSB = 1, continue)
+        let bytes: &[u8] = &[0xE5, 0x8E, 0xE5, 0x8E, 0b10010110];
+        //                                             ^ fifth byte can't have high continuation
+        //                                               bit when decoding to u32
+        let mut reader = BinaryReader::new(bytes); 
+
+        let result = reader.read_leb128_u32();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("more than 5 bytes"));
+    }
+
+    #[test]
+    fn test_uleb128_decoding_too_many_bits_in_fifth_byte() {
+        // 0xE5 = 11100101 (MSB = 1, continue)
+        // 0x8E = 10001110 (MSB = 1, continue)
+        let bytes: &[u8] = &[0xE5, 0x8E, 0xE5, 0x8E, 0b01010011];
+        //                                              ^^^ these three bits out of scope of u32
+        //                                                  in fifth byte of uleb128
+        let mut reader = BinaryReader::new(bytes); 
+
+        let result = reader.read_leb128_u32();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("got high bits"));
     }
 }
