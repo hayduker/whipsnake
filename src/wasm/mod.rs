@@ -29,51 +29,32 @@ impl<'a> BinaryReader<'a> {
         Ok(u32::from_le_bytes(bytes))
     }
 
-    pub fn read_leb128_u32(&mut self) -> Result<u32, String> {
+    pub fn read_uleb128_u32(&mut self) -> Result<u32, String> {
         let mut result: u32 = 0;
         let mut shift = 0;
 
-        // (28)      (21)      (14)      (7)        (0)
-        // 0.0001111 1.1110111 1.1100011 1.1010101  1.1010011
-
         loop {
-            println!("------------------------------------------------");
-            println!("loop iter: result = {:b}", result);
-            println!("shift = {shift}");
-
             let byte = self.read_byte()?;
             let flag = byte >> 7;
             let data = (byte & 0x7F) as u32;
 
-            println!("byte = {byte:b}, flag = {flag}, data = {data:b}");
-
             if shift > 21 {
                 if flag == 1 {
-                    return Err("got uleb128 encoding with more than 5 bytes, which is too many for u32".into());
+                    return Err("got uleb128 encoding with more than 5 bytes, which is too 
+                                many for u32".into());
                 }
 
                 let first_half = data & 0xF0;
                 if first_half != 0 {
-                    return Err("got high bits in locations 0b0xxx0000 of 5th byte in uleb128 encoding, which will get shifted out for u32".into());
+                    return Err("got high bits in locations 0b0xxx0000 of 5th byte 
+                                in uleb128 encoding, which will get shifted out for u32".into());
                 }
             }
 
-            let shifted = data << shift;
-
-            println!("shifted = {shifted:b}");
-
-            result = result | shifted;
-
-            println!("new result = {:b}", result);
-
-            // 0000|0000 000|00000 00|000000 0|0000000
-            // 0000|0000 000|00000 00|000000 0|1010011
-            // 0000|0000 000|00000 00|101010 1|1010011
-            // 0000|0000 000|11000 11|101010 1|1010011
-            // 0000|1110 111|11000 11|101010 1|1010011
+            result |= (data << shift);
+            shift += 7;
 
             if flag == 0 { break }
-            shift += 7;
         }
 
         Ok(result)
