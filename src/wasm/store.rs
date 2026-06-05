@@ -9,12 +9,12 @@ enum FuncInst {
     Internal(InternalFuncInst),
 }
 
-struct Store {
+pub struct Store {
     functions: Vec<FuncInst>,
 }
 
 impl Store {
-    fn from(module: Module) -> Result<Self, String> {
+    pub fn new(module: Module) -> Result<Self, String> {
         let func_indices = match module.function_section {
             Some(indices) => indices,
             None => vec![],
