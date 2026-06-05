@@ -4,7 +4,7 @@ pub mod binary;
 pub mod decoder;
 pub mod value;
 pub mod store;
-pub mod runtime;
+// pub mod runtime;
 
 #[derive(Debug)]
 enum SectionCode {
