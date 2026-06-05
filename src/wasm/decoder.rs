@@ -139,7 +139,6 @@ fn decode_code_section_func_body(contents: &[u8]) -> Result<Function, String> {
                 Opcode::I32Add => Instruction::I32Add,
             }
         );
-
         if opcode == Opcode::End { break }
     }
 
@@ -183,6 +182,40 @@ mod tests {
             Function {
                 locals: vec![],
                 code: vec![Instruction::End],
+            }
+        ]);
+
+        assert_eq!(decoded, expected);
+    }
+
+    #[test]
+    fn decode_decls_func_module() {
+        let wasm = wat::parse_str(r#"
+(module
+  (func (param i32 i32) (result i32)
+    (local i32)
+    (local i64 i64)))
+        "#).expect("unit test input WAT invalid");
+        
+        let decoded = decode_wasm(&wasm).unwrap();
+
+        let mut expected = Module::new();
+        expected.type_section = Some(vec![
+            FuncType {
+                params: vec![ValueType::I32, ValueType::I32],
+                results: vec![ValueType::I32],
+            }
+        ]);
+        expected.function_section = Some(vec![0]);
+        expected.code_section = Some(vec![
+            Function {
+                locals: vec![
+                    FunctionLocal { type_count: 1, value_type: ValueType::I32 },
+                    FunctionLocal { type_count: 2, value_type: ValueType::I64 },
+                ],
+                code: vec![
+                    Instruction::End
+                ],
             }
         ]);
 
