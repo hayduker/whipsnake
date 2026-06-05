@@ -2,8 +2,8 @@
 
 pub mod binary;
 pub mod decoder;
-
-
+pub mod value;
+pub mod store;
 
 #[derive(Debug)]
 enum SectionCode {
@@ -25,13 +25,13 @@ impl SectionCode {
 
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct FuncType {
     params: Vec<ValueType>,
     results: Vec<ValueType>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum ValueType {
     I32 = 0x7F,
     I64 = 0x7E,
@@ -55,13 +55,13 @@ struct Function {
     code: Vec<Instruction>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct FunctionLocal {
     type_count: u32,
     value_type: ValueType,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Instruction {
     End,
     LocalGet(u32),
