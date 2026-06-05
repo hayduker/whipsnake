@@ -1,16 +1,14 @@
 use crate::wasm::binary::BinaryReader;
 use crate::wasm::{FuncType, Function, FunctionLocal, Instruction, Module, Opcode, SectionCode, ValueType};
 
-pub fn decode_wasm(bytes: &[u8]) -> Result<Module, String> {        
+pub fn decode_wasm(bytes: &[u8]) -> Result<Module, String> {       
     let mut reader = BinaryReader::new(bytes);
     
     let (magic, version) = decode_module_header(&mut reader)?;
 
-    let mut module = Module {
-        magic,
-        version,
-        ..Default::default()
-    };
+    let mut module = Module::new();
+    module.magic = magic;
+    module.version = version;
 
     while !reader.is_done() {    
         let (section_code, section_size) = decode_section_header(&mut reader)?;
@@ -105,9 +103,11 @@ fn decode_code_section(contents: &[u8]) -> Result<Vec<Function>, String> {
     let num_functions = reader.read_uleb128_u32()?;
     let mut functions = vec![];
 
-    for _ in 0..num_functions {
+    for i in 0..num_functions {
         let func_body_size = reader.read_uleb128_u32()?;
         let func_body = reader.read_slice(func_body_size as usize)?;
+
+        println!("func {} has body size {}", i, func_body_size);
 
         let function = decode_code_section_func_body(func_body);
         functions.push(function);
@@ -129,8 +129,13 @@ fn decode_code_section_func_body(contents: &[u8]) -> Result<Function, String> {
         })
     }
 
+    println!("got local_decl_count = {}, locals.len() = {}", local_decl_count, locals.len());
+
     let mut instructions = vec![];
     let opcode = Opcode::from(reader.read_byte()?)?;
+
+    println!("got instruction with opcode = {:?}", opcode);
+
     instructions.push(
         match opcode {
             Opcode::End => Instruction::End,
@@ -146,4 +151,45 @@ fn decode_code_section_func_body(contents: &[u8]) -> Result<Function, String> {
         locals,
         code: instructions,
     })
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_empty_module() {
+        let wasm = wat::parse_str("(module)")
+            .expect("unit test input WAT invalid");
+        
+        let decoded = decode_wasm(&wasm).unwrap();
+        let expected = Module::new();
+        assert_eq!(decoded, expected);
+    }
+
+    #[test]
+    fn decode_empty_single_func_module() {
+        let wasm = wat::parse_str("(module (func))")
+            .expect("unit test input WAT invalid");
+        
+        let decoded = decode_wasm(&wasm).unwrap();
+
+        let mut expected = Module::new();
+        expected.type_section = Some(vec![
+            FuncType {
+                params: vec![],
+                results: vec![],
+            }
+        ]);
+        expected.function_section = Some(vec![0]);
+        expected.code_section = Some(vec![
+            Function {
+                locals: vec![],
+                code: vec![],
+            }
+        ]);
+
+        assert_eq!(decoded, expected);
+    }
 }

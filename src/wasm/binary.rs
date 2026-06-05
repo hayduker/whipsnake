@@ -10,7 +10,7 @@ impl<'a> BinaryReader<'a> {
     }
 
     pub fn is_done(&self) -> bool {
-        self.remaining_bytes.len() > 0
+        self.remaining_bytes.len() <= 0
     }
 
     pub fn read_bytes<const N: usize>(&mut self) -> Result<[u8; N], String> {
@@ -22,12 +22,12 @@ impl<'a> BinaryReader<'a> {
         Ok(buf)
     }
 
-    pub fn read_slice(&mut self, N: usize) -> Result<&'a [u8], String> {
-        if self.remaining_bytes.len() < N {
-            return Err(format!("not enough bytes remaining to read {N}"));
+    pub fn read_slice(&mut self, n: usize) -> Result<&'a [u8], String> {
+        if self.remaining_bytes.len() < n {
+            return Err(format!("not enough bytes remaining to read {n}"));
         }
 
-        let (taken, rest) = self.remaining_bytes.split_at(N);
+        let (taken, rest) = self.remaining_bytes.split_at(n);
         self.remaining_bytes = rest;
         Ok(taken)
     }
@@ -95,7 +95,7 @@ mod tests {
         // 0xE5 = 11100101 (MSB = 1, continue)
         // 0x8E = 10001110 (MSB = 1, continue)
         // 0x26 = 00100110 (MSB = 0, stop)
-        let mut bytes: &[u8] = &[0xE5, 0x8E, 0x26, 0xAA, 0xBB];
+        let bytes: &[u8] = &[0xE5, 0x8E, 0x26, 0xAA, 0xBB];
         let mut reader = BinaryReader::new(bytes); 
 
         let result = reader.read_uleb128_u32();

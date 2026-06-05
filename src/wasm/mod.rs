@@ -1,4 +1,4 @@
-use wat;
+// use wat;
 
 pub mod binary;
 pub mod decoder;
@@ -17,7 +17,7 @@ impl SectionCode {
         match code {
             0x01 => Ok(Self::Type),
             0x03 => Ok(Self::Function),
-            0x07 => Ok(Self::Code),
+            0x0A => Ok(Self::Code),
             _  => Err(format!("unsupported section code {code} provided"))
         }
     }
@@ -102,8 +102,8 @@ pub struct Module {
     code_section: Option<Vec<Function>>,
 }
 
-impl Default for Module {
-    fn default() -> Self {
+impl Module {
+    fn new() -> Self {
         Module {
             magic: "\0asm".to_string(),
             version: 1,
@@ -112,25 +112,4 @@ impl Default for Module {
             code_section: None,
         }
     }
-}
-
-impl Module {
-    fn new(wasm: &[u8]) -> Result<Self, String> {
-        decoder::decode_wasm(wasm)
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // #[test]
-    // fn decode_empty_module() {
-    //     let wasm = wat::parse_str("(module)")
-    //         .expect("unit test input WAT invalid");
-        
-    //     let module = Module::new(&wasm).unwrap();
-    //     assert_eq!(module, Module::default());
-    // }
 }
