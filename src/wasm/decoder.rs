@@ -103,17 +103,14 @@ fn decode_code_section(contents: &[u8]) -> Result<Vec<Function>, String> {
     let num_functions = reader.read_uleb128_u32()?;
     let mut functions = vec![];
 
-    for i in 0..num_functions {
+    for _ in 0..num_functions {
         let func_body_size = reader.read_uleb128_u32()?;
         let func_body = reader.read_slice(func_body_size as usize)?;
 
-        println!("func {} has body size {}", i, func_body_size);
-
         let function = decode_code_section_func_body(func_body);
-        functions.push(function);
+        functions.push(function?);
     }
 
-    let functions = vec![];
     Ok(functions)
 }
 
@@ -129,12 +126,8 @@ fn decode_code_section_func_body(contents: &[u8]) -> Result<Function, String> {
         })
     }
 
-    println!("got local_decl_count = {}, locals.len() = {}", local_decl_count, locals.len());
-
     let mut instructions = vec![];
     let opcode = Opcode::from(reader.read_byte()?)?;
-
-    println!("got instruction with opcode = {:?}", opcode);
 
     instructions.push(
         match opcode {
@@ -186,7 +179,7 @@ mod tests {
         expected.code_section = Some(vec![
             Function {
                 locals: vec![],
-                code: vec![],
+                code: vec![Instruction::End],
             }
         ]);
 
