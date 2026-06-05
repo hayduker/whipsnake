@@ -127,18 +127,21 @@ fn decode_code_section_func_body(contents: &[u8]) -> Result<Function, String> {
     }
 
     let mut instructions = vec![];
-    let opcode = Opcode::from(reader.read_byte()?)?;
+    loop {
+        let opcode = Opcode::from(reader.read_byte()?)?;
+        instructions.push(
+            match opcode {
+                Opcode::End => Instruction::End,
+                Opcode::LocalGet => {
+                    let index = reader.read_uleb128_u32()?;
+                    Instruction::LocalGet(index)
+                },
+                Opcode::I32Add => Instruction::I32Add,
+            }
+        );
 
-    instructions.push(
-        match opcode {
-            Opcode::End => Instruction::End,
-            Opcode::LocalGet => {
-                let index = reader.read_uleb128_u32()?;
-                Instruction::LocalGet(index)
-            },
-            Opcode::I32Add => Instruction::I32Add,
-        }
-    );
+        if opcode == Opcode::End { break }
+    }
 
     Ok(Function {
         locals,
@@ -180,6 +183,41 @@ mod tests {
             Function {
                 locals: vec![],
                 code: vec![Instruction::End],
+            }
+        ]);
+
+        assert_eq!(decoded, expected);
+    }
+
+    #[test]
+    fn decode_add_func_module() {
+        let wasm = wat::parse_str(r#"
+(module
+  (func (param i32 i32) (result i32)
+    (local.get 0)
+    (local.get 1)
+    i32.add))
+        "#).expect("unit test input WAT invalid");
+        
+        let decoded = decode_wasm(&wasm).unwrap();
+
+        let mut expected = Module::new();
+        expected.type_section = Some(vec![
+            FuncType {
+                params: vec![ValueType::I32, ValueType::I32],
+                results: vec![ValueType::I32],
+            }
+        ]);
+        expected.function_section = Some(vec![0]);
+        expected.code_section = Some(vec![
+            Function {
+                locals: vec![],
+                code: vec![
+                    Instruction::LocalGet(0),
+                    Instruction::LocalGet(1),
+                    Instruction::I32Add,
+                    Instruction::End
+                ],
             }
         ]);
 
