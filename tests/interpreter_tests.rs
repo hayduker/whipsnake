@@ -835,3 +835,166 @@ while n > 0:
 evens_count"#,
     Object::Int(2)
 );
+
+// =======================================================
+// Identity
+// =======================================================
+
+test_case!(
+    identity_boolean_true,
+    r#"id(True) == id(True)"#,
+    // True should map to the same deterministic ID every time
+    Object::Bool(true)
+);
+
+test_case!(
+    identity_boolean_false,
+    r#"id(False) == id(False)"#,
+    // False should map to the same deterministic ID every time
+    Object::Bool(true)
+);
+
+test_case!(
+    identity_none,
+    r#"id(None) == id(None)"#,
+    // None is a global singleton
+    Object::Bool(true)
+);
+
+test_case!(
+    is_operator_true,
+    r#"x = True
+y = True
+x is y"#,
+    // Identical identities mean 'is' must return True
+    Object::Bool(true)
+);
+
+test_case!(
+    is_not_operator_false,
+    r#"x = None
+y = None
+x is not y"#,
+    // Since x and y point to the exact same None, 'is not' must be False
+    Object::Bool(false)
+);
+
+test_case!(
+    small_int_cache_interning,
+    r#"x = 42
+y = 42
+x is y"#,
+    // 42 falls into Python's -5 to 256 cache range, so they must be the same instance
+    Object::Bool(true)
+);
+
+test_case!(
+    large_int_no_interning,
+    r#"x = 500
+y = 500
+x is y"#,
+    // 500 is outside the cache limit, so they must be distinct instances
+    Object::Bool(false)
+);
+
+test_case!(
+    large_int_equality_vs_identity,
+    r#"x = 500
+y = 500
+x == y"#,
+    // Distinct instances on the heap, but their actual numeric values are equal
+    Object::Bool(true)
+);
+
+test_case!(
+    string_interning_pool,
+    r#"x = "hello"
+y = "hello"
+x is y"#,
+    // Identical short strings are automatically pooled/interned
+    Object::Bool(true)
+);
+
+test_case!(
+    comparison_operator_chaining,
+    r#"x = 10
+y = 20
+# Rewrites to: (x < y) and (y == 20) and (20 < 30)
+x < y == 20 < 30"#,
+    // All conditions in the chain are true
+    Object::Bool(true)
+);
+
+test_case!(
+    comparison_chaining_short_circuit,
+    r#"x = 50
+y = 20
+# Rewrites to: (x < y) and (y == 20)
+# Fails instantly at (50 < 20), meaning y is never validated or touched again
+x < y == 20"#,
+    Object::Bool(false)
+);
+
+// =======================================================
+// Type
+// =======================================================
+
+test_case!(
+    type_int,
+    r#"type(42) == type(-5)"#,
+    // Both are integers, so their types should be identical
+    Object::Bool(true)
+);
+
+test_case!(
+    type_bool_true,
+    r#"type(True) == type(False)"#,
+    // True and False share the same boolean type class
+    Object::Bool(true)
+);
+
+test_case!(
+    type_none,
+    r#"x = None
+type(x)"#,
+    // Should return your representation of <class 'NoneType'>
+    Object::String("<class 'NoneType'>".to_string())
+);
+
+test_case!(
+    type_string,
+    r#"type("hello")"#,
+    // Verification for the string type class descriptor
+    Object::String("<class 'str'>".to_string())
+);
+
+test_case!(
+    type_mismatch,
+    r#"type(42) == type("42")"#,
+    // An integer type is distinctly different from a string type
+    Object::Bool(false)
+);
+
+test_case!(
+    type_identity_is_operator,
+    r#"type(100) is type(0)"#,
+    // In Python, type descriptors themselves are singletons,
+    // so checking them with 'is' must return True
+    Object::Bool(true)
+);
+
+test_case!(
+    type_expression_evaluation,
+    r#"x = 10
+y = 20
+type(x + y)"#,
+    // The expression inside must be fully evaluated to an Int before checking the type
+    Object::String("<class 'int'>".to_string())
+);
+
+test_case!(
+    type_native_function,
+    r#"type(print)"#,
+    // Verification for how you want to represent built-in functions
+    Object::String("<class 'builtin_function_or_method'>".to_string())
+);
