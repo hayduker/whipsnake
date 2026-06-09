@@ -1,8 +1,6 @@
 use std::fmt;
 
-use crate::{
-    callable::Callable,
-};
+use crate::callable::Callable;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
@@ -33,26 +31,28 @@ impl Object {
             Object::Int(_) => "int",
             Object::Float(_) => "float",
             Object::String(_) => "str",
-            Object::Function(callable) => {
-                match callable {
-                    Callable::Native(_) => "builtin_function_or_method"
-                }
-            } 
+            Object::Function(callable) => match callable {
+                Callable::Native(_) => "builtin_function_or_method",
+            },
         }
     }
 
     pub fn identity(&self) -> i64 {
         match self {
             Object::Bool(b) => {
-                if *b { 140735165470832 } else { 140735165470864 }
-            },
+                if *b {
+                    140735165470832
+                } else {
+                    140735165470864
+                }
+            }
             Object::Int(n) => {
                 if *n >= -5 && *n <= 256 {
                     (1000000 + n) as i64
                 } else {
                     self as *const Object as usize as i64
                 }
-            },
+            }
             Object::None => 140735165431120,
             _ => self as *const Object as usize as i64,
         }
@@ -68,14 +68,12 @@ impl fmt::Display for Object {
             Object::Bool(true) => write!(f, "True"),
             Object::Bool(false) => write!(f, "False"),
             Object::None => write!(f, "None"),
-            Object::Function(callable) => {
-                match callable {
-                    Callable::Native(native_fn) => {
-                        let address = native_fn.body as *const ();
-                        write!(f, "<function {} at {:p}>", native_fn.name, address)
-                    }
+            Object::Function(callable) => match callable {
+                Callable::Native(native_fn) => {
+                    let address = native_fn.body as *const ();
+                    write!(f, "<function {} at {:p}>", native_fn.name, address)
                 }
-            }
+            },
         }
     }
 }

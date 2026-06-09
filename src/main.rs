@@ -4,7 +4,8 @@ use std::{
     io::{self, Write},
 };
 use whipsnake::{
-    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer, parser::Parser, printer::print_ast, token::Token
+    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
+    parser::Parser, printer::print_ast, token::Token,
 };
 
 fn main() -> Result<(), &'static str> {

@@ -42,5 +42,5 @@ pub enum Expr<'src> {
         callee: Box<Expr<'src>>,
         paren: Token<'src>,
         arguments: Vec<Expr<'src>>,
-    }
+    },
 }

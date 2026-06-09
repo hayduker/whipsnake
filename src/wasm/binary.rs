@@ -6,7 +6,9 @@ pub struct BinaryReader<'a> {
 
 impl<'a> BinaryReader<'a> {
     pub fn new(bytes: &'a [u8]) -> Self {
-        Self { remaining_bytes: bytes }
+        Self {
+            remaining_bytes: bytes,
+        }
     }
 
     pub fn is_done(&self) -> bool {
@@ -49,20 +51,24 @@ impl<'a> BinaryReader<'a> {
             if shift > 21 {
                 if flag == 1 {
                     return Err("got uleb128 encoding with more than 5 bytes, which is too 
-                                many for u32".into());
+                                many for u32"
+                        .into());
                 }
 
                 let first_half = data & 0xF0;
                 if first_half != 0 {
                     return Err("got high bits in locations 0b0xxx0000 of 5th byte 
-                                in uleb128 encoding, which will get shifted out for u32".into());
+                                in uleb128 encoding, which will get shifted out for u32"
+                        .into());
                 }
             }
 
             result |= data << shift;
             shift += 7;
 
-            if flag == 0 { break }
+            if flag == 0 {
+                break;
+            }
         }
 
         Ok(result)
@@ -74,7 +80,6 @@ impl<'a> BinaryReader<'a> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,7 +87,7 @@ mod tests {
     #[test]
     fn test_uleb128_decoding_single_byte() {
         let bytes: &[u8] = &[0x2A];
-        let mut reader = BinaryReader::new(bytes); 
+        let mut reader = BinaryReader::new(bytes);
 
         let result = reader.read_uleb128_u32();
 
@@ -96,7 +101,7 @@ mod tests {
         // 0x8E = 10001110 (MSB = 1, continue)
         // 0x26 = 00100110 (MSB = 0, stop)
         let bytes: &[u8] = &[0xE5, 0x8E, 0x26, 0xAA, 0xBB];
-        let mut reader = BinaryReader::new(bytes); 
+        let mut reader = BinaryReader::new(bytes);
 
         let result = reader.read_uleb128_u32();
 
@@ -111,7 +116,7 @@ mod tests {
         let bytes: &[u8] = &[0xE5, 0x8E, 0xE5, 0x8E, 0b10010110];
         //                                             ^ fifth byte can't have high continuation
         //                                               bit when decoding to u32
-        let mut reader = BinaryReader::new(bytes); 
+        let mut reader = BinaryReader::new(bytes);
 
         let result = reader.read_uleb128_u32();
 
@@ -126,7 +131,7 @@ mod tests {
         let bytes: &[u8] = &[0xE5, 0x8E, 0xE5, 0x8E, 0b01010011];
         //                                              ^^^ these three bits out of scope of u32
         //                                                  in fifth byte of uleb128
-        let mut reader = BinaryReader::new(bytes); 
+        let mut reader = BinaryReader::new(bytes);
 
         let result = reader.read_uleb128_u32();
 

@@ -1,7 +1,6 @@
 use whipsnake::{
     environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
-    parser::Parser,
-    object::Object,
+    object::Object, parser::Parser,
 };
 
 macro_rules! test_case {
@@ -52,63 +51,27 @@ test_case!(
     Object::String("Hello, world!")
 );
 
-test_case!(
-    interpret_int_literal,
-    "99",
-    Object::Int(99)
-);
+test_case!(interpret_int_literal, "99", Object::Int(99));
 
-test_case!(
-    interpret_float_literal,
-    "1.23",
-    Object::Flaot(1.23)
-);
+test_case!(interpret_float_literal, "1.23", Object::Flaot(1.23));
 
-test_case!(
-    interpret_true_literal,
-    "True",
-    Object::Bool(true)
-);
+test_case!(interpret_true_literal, "True", Object::Bool(true));
 
-test_case!(
-    interpret_false_literal,
-    "False",
-    Object::Bool(false)
-);
+test_case!(interpret_false_literal, "False", Object::Bool(false));
 
 // =======================================================
 // Logical NOT Tests (Always returns a Bool)
 // =======================================================
 
-test_case!(
-    logical_not_boolean,
-    r#"not True"#,
-    Object::Bool(false)
-);
+test_case!(logical_not_boolean, r#"not True"#, Object::Bool(false));
 
-test_case!(
-    logical_not_truthy_int,
-    r#"not 42"#,
-    Object::Bool(false)
-);
+test_case!(logical_not_truthy_int, r#"not 42"#, Object::Bool(false));
 
-test_case!(
-    logical_not_falsy_int,
-    r#"not 0"#,
-    Object::Bool(true)
-);
+test_case!(logical_not_falsy_int, r#"not 0"#, Object::Bool(true));
 
-test_case!(
-    logical_not_truthy_float,
-    r#"not 3.14"#,
-    Object::Bool(false)
-);
+test_case!(logical_not_truthy_float, r#"not 3.14"#, Object::Bool(false));
 
-test_case!(
-    logical_not_falsy_float,
-    r#"not 0.0"#,
-    Object::Bool(true)
-);
+test_case!(logical_not_falsy_float, r#"not 0.0"#, Object::Bool(true));
 
 test_case!(
     logical_not_truthy_string,
@@ -116,17 +79,9 @@ test_case!(
     Object::Bool(false)
 );
 
-test_case!(
-    logical_not_falsy_string,
-    r#"not """#,
-    Object::Bool(true)
-);
+test_case!(logical_not_falsy_string, r#"not """#, Object::Bool(true));
 
-test_case!(
-    logical_not_none,
-    r#"not None"#,
-    Object::Bool(true)
-);
+test_case!(logical_not_none, r#"not None"#, Object::Bool(true));
 
 // =======================================================
 // Logical AND Tests (Short-circuits & Returns Object)
@@ -218,89 +173,41 @@ test_case!(
 // Unary Plus (+) Tests
 // =======================================================
 
-test_case!(
-    unary_plus_integer,
-    r#"+5"#,
-    Object::Int(5)
-);
+test_case!(unary_plus_integer, r#"+5"#, Object::Int(5));
 
-test_case!(
-    unary_plus_float,
-    r#"+3.14"#,
-    Object::Float(3.14)
-);
+test_case!(unary_plus_float, r#"+3.14"#, Object::Float(3.14));
 
-test_case!(
-    unary_plus_negative_integer,
-    r#"+-10"#,
-    Object::Int(-10)
-);
+test_case!(unary_plus_negative_integer, r#"+-10"#, Object::Int(-10));
 
 // =======================================================
 // Unary Minus (-) Tests
 // =======================================================
 
-test_case!(
-    unary_minus_integer,
-    r#"-42"#,
-    Object::Int(-42)
-);
+test_case!(unary_minus_integer, r#"-42"#, Object::Int(-42));
 
-test_case!(
-    unary_minus_float,
-    r#"-2.5"#,
-    Object::Float(-2.5)
-);
+test_case!(unary_minus_float, r#"-2.5"#, Object::Float(-2.5));
 
-test_case!(
-    unary_minus_negate_negative,
-    r#"-(-100)"#,
-    Object::Int(100)
-);
+test_case!(unary_minus_negate_negative, r#"-(-100)"#, Object::Int(100));
 
 // =======================================================
 // Bitwise NOT (~) Tests
 // =======================================================
 
-test_case!(
-    bitwise_not_zero,
-    r#"~0"#,
-    Object::Int(-1)
-);
+test_case!(bitwise_not_zero, r#"~0"#, Object::Int(-1));
 
-test_case!(
-    bitwise_not_positive_integer,
-    r#"~9"#,
-    Object::Int(-10)
-);
+test_case!(bitwise_not_positive_integer, r#"~9"#, Object::Int(-10));
 
-test_case!(
-    bitwise_not_negative_integer,
-    r#"~-5"#,
-    Object::Int(4)
-);
+test_case!(bitwise_not_negative_integer, r#"~-5"#, Object::Int(4));
 
 // =======================================================
 // Operator Chaining & Combinations
 // =======================================================
 
-test_case!(
-    multiple_unary_minus,
-    r#"- - - 5"#,
-    Object::Int(-5)
-);
+test_case!(multiple_unary_minus, r#"- - - 5"#, Object::Int(-5));
 
-test_case!(
-    unary_plus_and_minus_mix,
-    r#"+-+-5"#,
-    Object::Int(5)
-);
+test_case!(unary_plus_and_minus_mix, r#"+-+-5"#, Object::Int(5));
 
-test_case!(
-    bitwise_not_chained,
-    r#"~~5"#,
-    Object::Int(5)
-);
+test_case!(bitwise_not_chained, r#"~~5"#, Object::Int(5));
 
 test_case!(
     minus_and_bitwise_not_combination,
@@ -338,7 +245,7 @@ test_case!(
 
 test_case!(
     complex_unary_and_binary_precedence,
-    r#"-~2 * 3 + +4"#, 
+    r#"-~2 * 3 + +4"#,
     // Step 1: ~2 becomes -3
     // Step 2: -(-3) becomes 3, +4 becomes 4
     // Step 3: 3 * 3 becomes 9
@@ -350,17 +257,9 @@ test_case!(
 // Addition (+) Tests
 // =======================================================
 
-test_case!(
-    binary_add_integers,
-    r#"10 + 20"#,
-    Object::Int(30)
-);
+test_case!(binary_add_integers, r#"10 + 20"#, Object::Int(30));
 
-test_case!(
-    binary_add_floats,
-    r#"1.5 + 2.25"#,
-    Object::Float(3.75)
-);
+test_case!(binary_add_floats, r#"1.5 + 2.25"#, Object::Float(3.75));
 
 test_case!(
     binary_add_mixed_coercion,
@@ -372,17 +271,9 @@ test_case!(
 // Subtraction (-) Tests
 // =======================================================
 
-test_case!(
-    binary_sub_integers,
-    r#"50 - 15"#,
-    Object::Int(35)
-);
+test_case!(binary_sub_integers, r#"50 - 15"#, Object::Int(35));
 
-test_case!(
-    binary_sub_floats,
-    r#"10.5 - 3.25"#,
-    Object::Float(7.25)
-);
+test_case!(binary_sub_floats, r#"10.5 - 3.25"#, Object::Float(7.25));
 
 test_case!(
     binary_sub_mixed_coercion,
@@ -394,23 +285,11 @@ test_case!(
 // Multiplication (*) Tests
 // =======================================================
 
-test_case!(
-    binary_mul_integers,
-    r#"6 * 7"#,
-    Object::Int(42)
-);
+test_case!(binary_mul_integers, r#"6 * 7"#, Object::Int(42));
 
-test_case!(
-    binary_mul_floats,
-    r#"2.5 * 2.0"#,
-    Object::Float(5.0)
-);
+test_case!(binary_mul_floats, r#"2.5 * 2.0"#, Object::Float(5.0));
 
-test_case!(
-    binary_mul_mixed_coercion,
-    r#"3 * 1.5"#,
-    Object::Float(4.5)
-);
+test_case!(binary_mul_mixed_coercion, r#"3 * 1.5"#, Object::Float(4.5));
 
 // =======================================================
 // Division (/) Tests
@@ -422,11 +301,7 @@ test_case!(
     Object::Float(5.0)
 );
 
-test_case!(
-    binary_div_floats,
-    r#"7.5 / 2.5"#,
-    Object::Float(3.0)
-);
+test_case!(binary_div_floats, r#"7.5 / 2.5"#, Object::Float(3.0));
 
 test_case!(
     binary_div_producing_fraction,
@@ -550,7 +425,7 @@ test_case!(
 
 test_case!(
     unary_minus_inside_and_outside_groups,
-    r#"-(-5 * -(2 + 3))"#, 
+    r#"-(-5 * -(2 + 3))"#,
     // Step 1: -(2 + 3) -> -5
     // Step 2: -5 * -5 -> 25
     // Step 3: -(25) -> -25

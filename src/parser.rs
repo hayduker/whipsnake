@@ -1,7 +1,10 @@
 use crate::{
     ast::{Expr, Stmt},
     error::{ErrorReporter, ParseError},
-    token::{Literal, SourceLocation, Token, TokenKind::{self, NewLine}},
+    token::{
+        Literal, SourceLocation, Token,
+        TokenKind::{self, NewLine},
+    },
 };
 
 use std::iter::Peekable;
@@ -279,7 +282,6 @@ impl<'src, 'err> Parser<'src, 'err> {
         Ok(expr)
     }
 
-
     fn logical_and<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
     where
         I: Iterator<Item = Token<'src>>,
@@ -303,7 +305,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Not,]) {
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Not]) {
             let operator = self.previous.unwrap();
             let right = self.unary(tokens)?;
             return Ok(Expr::Unary {
@@ -408,11 +410,7 @@ impl<'src, 'err> Parser<'src, 'err> {
     {
         if self.advance_if_peek_matches_any(
             tokens,
-            &[
-                TokenKind::Plus,
-                TokenKind::Minus,
-                TokenKind::Tilde,
-            ],
+            &[TokenKind::Plus, TokenKind::Minus, TokenKind::Tilde],
         ) {
             let operator = self.previous.unwrap();
             let right = self.unary(tokens)?;
@@ -501,7 +499,11 @@ impl<'src, 'err> Parser<'src, 'err> {
         ))
     }
 
-    fn finish_call<I>(&mut self, tokens: &mut Peekable<I>, callee: Expr<'src>) -> Result<Expr<'src>, ParseError>
+    fn finish_call<I>(
+        &mut self,
+        tokens: &mut Peekable<I>,
+        callee: Expr<'src>,
+    ) -> Result<Expr<'src>, ParseError>
     where
         I: Iterator<Item = Token<'src>>,
     {
@@ -534,7 +536,10 @@ impl<'src, 'err> Parser<'src, 'err> {
 
         let right_paren = self.advance(tokens);
 
-        println!("after any arg parsing, got token {:?} which should be right paren", right_paren);
+        println!(
+            "after any arg parsing, got token {:?} which should be right paren",
+            right_paren
+        );
 
         Ok(Expr::Call {
             callee: Box::new(callee),

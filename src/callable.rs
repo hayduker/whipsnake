@@ -1,7 +1,4 @@
-use crate::{
-    object::Object,
-    error::RuntimeError,
-};
+use crate::{error::RuntimeError, object::Object};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Callable {
@@ -22,7 +19,8 @@ pub struct NativeFunction {
 }
 
 pub fn print_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
-    let string = args.iter()
+    let string = args
+        .iter()
         .map(|arg| arg.to_string())
         .collect::<Vec<_>>()
         .join(" ");
@@ -38,9 +36,7 @@ pub const PRINT_FUNC: NativeFunction = NativeFunction {
 };
 
 pub fn type_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
-    Ok(Object::String(
-        format!("<class '{}'>", &args[0].py_type())
-    ))
+    Ok(Object::String(format!("<class '{}'>", &args[0].py_type())))
 }
 
 pub const TYPE_FUNC: NativeFunction = NativeFunction {
@@ -50,9 +46,7 @@ pub const TYPE_FUNC: NativeFunction = NativeFunction {
 };
 
 pub fn id_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
-    Ok(Object::Int(
-        args[0].identity()
-    ))
+    Ok(Object::Int(args[0].identity()))
 }
 
 pub const ID_FUNC: NativeFunction = NativeFunction {

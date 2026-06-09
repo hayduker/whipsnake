@@ -244,7 +244,12 @@ test_no_errors!(
 
 test_no_errors!(
     parse_and_0,
-    vec![tok_string("bye", 1), tok!(And, "and", 1), tok_string("hi", 1), tok![Eof, "", 1],],
+    vec![
+        tok_string("bye", 1),
+        tok!(And, "and", 1),
+        tok_string("hi", 1),
+        tok![Eof, "", 1],
+    ],
     vec![Stmt::Expression(Expr::Logical {
         left: expr_string_box("bye"),
         operator: tok!(And, "and", 1),
@@ -254,7 +259,12 @@ test_no_errors!(
 
 test_no_errors!(
     parse_and_1,
-    vec![tok_false(1), tok!(And, "and", 1), tok_true(1), tok![Eof, "", 1],],
+    vec![
+        tok_false(1),
+        tok!(And, "and", 1),
+        tok_true(1),
+        tok![Eof, "", 1],
+    ],
     vec![Stmt::Expression(Expr::Logical {
         left: expr_false_box(),
         operator: tok!(And, "and", 1),
@@ -264,7 +274,12 @@ test_no_errors!(
 
 test_no_errors!(
     parse_or_0,
-    vec![tok_string("bye", 1), tok!(Or, "or", 1), tok_string("hi", 1), tok![Eof, "", 1],],
+    vec![
+        tok_string("bye", 1),
+        tok!(Or, "or", 1),
+        tok_string("hi", 1),
+        tok![Eof, "", 1],
+    ],
     vec![Stmt::Expression(Expr::Logical {
         left: expr_string_box("bye"),
         operator: tok!(Or, "or", 1),
@@ -274,7 +289,12 @@ test_no_errors!(
 
 test_no_errors!(
     parse_or_1,
-    vec![tok_false(1), tok!(Or, "or", 1), tok_true(1), tok![Eof, "", 1],],
+    vec![
+        tok_false(1),
+        tok!(Or, "or", 1),
+        tok_true(1),
+        tok![Eof, "", 1],
+    ],
     vec![Stmt::Expression(Expr::Logical {
         left: expr_false_box(),
         operator: tok!(Or, "or", 1),

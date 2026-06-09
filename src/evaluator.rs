@@ -1,5 +1,10 @@
 use crate::{
-    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::Object, token::{Literal, SourceLocation, Token, TokenKind}, callable::{Callable, Arity, PRINT_FUNC, TYPE_FUNC, ID_FUNC},
+    ast::{Expr, Stmt},
+    callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC},
+    environment::Environment,
+    error::{ErrorReporter, RuntimeError},
+    object::Object,
+    token::{Literal, SourceLocation, Token, TokenKind},
 };
 
 pub struct Evaluator<'err> {
@@ -32,13 +37,19 @@ impl<'err> Evaluator<'err> {
             Object::Function(Callable::Native(ID_FUNC)),
         );
 
-        statements.iter()
+        statements
+            .iter()
             .map(|stmt| self.execute(stmt, environment, interactive))
             .last()
             .unwrap_or(None)
     }
 
-    pub fn execute(&mut self, statement: &Stmt, environment: &mut Environment, interactive: bool) -> Option<Object> {
+    pub fn execute(
+        &mut self,
+        statement: &Stmt,
+        environment: &mut Environment,
+        interactive: bool,
+    ) -> Option<Object> {
         match statement {
             Stmt::Expression(expr) => match self.evaluate(&expr, environment) {
                 Ok(value) => {
@@ -63,20 +74,28 @@ impl<'err> Evaluator<'err> {
                 }
             }
 
-            Stmt::If { condition, then_body, else_body } => {
-                match self.if_statement(condition, then_body, else_body, environment) {
-                    Ok(value) => if interactive { return Some(value) },
-                    Err(e) => self.error_reporter.register_runtime_error(e),
+            Stmt::If {
+                condition,
+                then_body,
+                else_body,
+            } => match self.if_statement(condition, then_body, else_body, environment) {
+                Ok(value) => {
+                    if interactive {
+                        return Some(value);
+                    }
                 }
+                Err(e) => self.error_reporter.register_runtime_error(e),
             },
 
             Stmt::While { condition, body } => {
-                while let value = self.evaluate(condition, environment).ok()? && value.is_truthy() {
+                while let value = self.evaluate(condition, environment).ok()?
+                    && value.is_truthy()
+                {
                     self.execute(body, environment, interactive);
                 }
-            },
+            }
         }
-        
+
         None
     }
 
@@ -196,15 +215,23 @@ impl<'err> Evaluator<'err> {
                 right,
             } => {
                 let left = self.evaluate(left, environment)?;
-                
+
                 match operator.kind {
-                    TokenKind::Or => if left.is_truthy() { return Ok(left) },
-                    TokenKind::And => if !left.is_truthy() { return Ok(left) },
+                    TokenKind::Or => {
+                        if left.is_truthy() {
+                            return Ok(left);
+                        }
+                    }
+                    TokenKind::And => {
+                        if !left.is_truthy() {
+                            return Ok(left);
+                        }
+                    }
                     _ => panic!("invalid logical operator {:?}", operator),
                 }
 
                 return self.evaluate(right, environment);
-            }            
+            }
 
             Expr::Variable(token) => match environment.get(token.lexeme) {
                 Some(object) => object.clone(),
@@ -216,7 +243,11 @@ impl<'err> Evaluator<'err> {
                 }
             },
 
-            Expr::Call { callee, paren, arguments } => {
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => {
                 let callee = self.evaluate(callee, environment)?;
 
                 let mut arg_objects = vec![];
@@ -225,17 +256,22 @@ impl<'err> Evaluator<'err> {
                 }
 
                 return self.call(&callee, paren, arg_objects);
-            },
+            }
         };
 
         Ok(value)
     }
 
-    fn call<'src>(&self, callee: &Object, paren: &Token, arguments: Vec<Object>) -> Result<Object, RuntimeError> {
+    fn call<'src>(
+        &self,
+        callee: &Object,
+        paren: &Token,
+        arguments: Vec<Object>,
+    ) -> Result<Object, RuntimeError> {
         if let Object::Function(callable) = callee {
             match callable {
                 Callable::Native(native_fn) => {
-                    self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren);
+                    self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren)?;
                     (native_fn.body)(arguments)
                 }
             }
@@ -262,12 +298,15 @@ impl<'err> Evaluator<'err> {
                         format!("{}() expected {} arguments but got {}", name, n, num_args),
                     ));
                 }
-            },
+            }
             Arity::Minimum(n) => {
                 if num_args < n {
                     return Err(RuntimeError::TypeError(
                         SourceLocation { line: paren.line },
-                        format!("{}() expected at least {} arguments but got {}", name, n, num_args),
+                        format!(
+                            "{}() expected at least {} arguments but got {}",
+                            name, n, num_args
+                        ),
                     ));
                 }
             }

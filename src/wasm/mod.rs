@@ -2,8 +2,8 @@
 
 pub mod binary;
 pub mod decoder;
-pub mod value;
 pub mod store;
+pub mod value;
 // pub mod runtime;
 
 #[derive(Debug)]
@@ -19,12 +19,10 @@ impl SectionCode {
             0x01 => Ok(Self::Type),
             0x03 => Ok(Self::Function),
             0x0A => Ok(Self::Code),
-            _  => Err(format!("unsupported section code {code} provided"))
+            _ => Err(format!("unsupported section code {code} provided")),
         }
     }
 }
-
-
 
 #[derive(Debug, PartialEq, Clone)]
 struct FuncType {
@@ -43,12 +41,10 @@ impl ValueType {
         match value {
             0x7F => Ok(Self::I32),
             0x7E => Ok(Self::I64),
-            _ => Err(format!("unsupported value type {value} provided"))
+            _ => Err(format!("unsupported value type {value} provided")),
         }
     }
 }
-
-
 
 #[derive(Debug, PartialEq)]
 struct Function {
@@ -82,11 +78,10 @@ impl Opcode {
             0x0B => Ok(Self::End),
             0x20 => Ok(Self::LocalGet),
             0x6A => Ok(Self::I32Add),
-            _ => Err(format!("unsupported instruction code {value} provided"))
+            _ => Err(format!("unsupported instruction code {value} provided")),
         }
     }
 }
-
 
 ///////////////////////////////////////////////////////
 // Module definition

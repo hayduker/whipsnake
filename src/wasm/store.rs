@@ -1,6 +1,6 @@
 use crate::wasm::{FuncType, Function, Module};
 
-struct InternalFuncInst{
+struct InternalFuncInst {
     func_type: FuncType,
     code: Function,
 }
@@ -21,7 +21,7 @@ impl Store {
         };
 
         let mut functions = vec![];
-        
+
         if let Some(code_section) = module.code_section {
             let Some(func_types) = module.type_section else {
                 return Err("type section expected but not found".to_string());
@@ -29,7 +29,10 @@ impl Store {
 
             for (func_body, type_index) in code_section.iter().zip(func_indices) {
                 let Some(func_type) = func_types.get(type_index as usize) else {
-                    return Err(format!("type index {} not found in type section", type_index));
+                    return Err(format!(
+                        "type index {} not found in type section",
+                        type_index
+                    ));
                 };
 
                 let function = FuncInst::Internal(InternalFuncInst {

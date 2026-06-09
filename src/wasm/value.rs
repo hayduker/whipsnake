@@ -4,13 +4,13 @@ pub enum Value {
     I64(i64),
 }
 
-impl From<i32> for  Value {
+impl From<i32> for Value {
     fn from(value: i32) -> Self {
         Value::I32(value)
     }
 }
 
-impl From<i64> for  Value {
+impl From<i64> for Value {
     fn from(value: i64) -> Self {
         Value::I64(value)
     }

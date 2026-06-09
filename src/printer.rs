@@ -19,9 +19,9 @@ fn measure_single_line(expr: &SExpr) -> usize {
             if children.is_empty() {
                 return 2; // "()"
             }
-            
+
             let children_len: usize = children.iter().map(measure_single_line).sum();
-            
+
             // include '(' and ')' and spaces between children
             2 + children_len + (children.len() - 1)
         }
@@ -83,33 +83,33 @@ fn format_sexpr(expr: &SExpr, indent: usize) -> String {
 fn convert_stmt(s: &Stmt) -> SExpr {
     match s {
         Stmt::Expression(expr) => SExpr::List(vec![atom("stmt"), convert_expr(expr)]),
-        Stmt::Assignment { name, initializer } => {
-            SExpr::List(vec![atom("="), atom(name.lexeme), convert_expr(initializer)])
-        },
+        Stmt::Assignment { name, initializer } => SExpr::List(vec![
+            atom("="),
+            atom(name.lexeme),
+            convert_expr(initializer),
+        ]),
         Stmt::Block(stmts) => {
             let mut sexpr = vec![atom("block")];
             sexpr.extend(stmts.iter().map(|stmt| convert_stmt(stmt)));
             SExpr::List(sexpr)
-        },
-        Stmt::If { condition, then_body, else_body } => {
-            let mut sexpr = vec![
-                atom("if"),
-                convert_expr(condition),
-                convert_stmt(then_body),
-            ];
+        }
+        Stmt::If {
+            condition,
+            then_body,
+            else_body,
+        } => {
+            let mut sexpr = vec![atom("if"), convert_expr(condition), convert_stmt(then_body)];
 
             if let Some(else_body) = else_body {
                 sexpr.push(convert_stmt(else_body));
             }
             SExpr::List(sexpr)
-        },
-        Stmt::While { condition, body } => {
-            SExpr::List(vec![
-                atom("while"),
-                convert_expr(condition),
-                convert_stmt(body),
-            ])
-        },
+        }
+        Stmt::While { condition, body } => SExpr::List(vec![
+            atom("while"),
+            convert_expr(condition),
+            convert_stmt(body),
+        ]),
     }
 }
 
@@ -124,15 +124,31 @@ fn convert_expr(e: &Expr) -> SExpr {
         Expr::Grouping(expr) => SExpr::List(vec![atom("group"), convert_expr(expr)]),
         Expr::Unary { operator, right } => {
             SExpr::List(vec![atom(operator.lexeme), convert_expr(right)])
-        },
-        Expr::Binary { left, operator, right } => {
-            SExpr::List(vec![atom(operator.lexeme), convert_expr(left), convert_expr(right)])
-        },
-        Expr::Logical { left, operator, right } => {
-            SExpr::List(vec![atom(operator.lexeme), convert_expr(left), convert_expr(right)])
-        },
+        }
+        Expr::Binary {
+            left,
+            operator,
+            right,
+        } => SExpr::List(vec![
+            atom(operator.lexeme),
+            convert_expr(left),
+            convert_expr(right),
+        ]),
+        Expr::Logical {
+            left,
+            operator,
+            right,
+        } => SExpr::List(vec![
+            atom(operator.lexeme),
+            convert_expr(left),
+            convert_expr(right),
+        ]),
         Expr::Variable(token) => atom(token.lexeme),
-        Expr::Call { callee, paren, arguments } => {
+        Expr::Call {
+            callee,
+            paren: _paren,
+            arguments,
+        } => {
             let mut sexpr = vec![atom("call"), convert_expr(callee)];
             for argument in arguments {
                 sexpr.push(convert_expr(argument))
@@ -143,7 +159,8 @@ fn convert_expr(e: &Expr) -> SExpr {
 }
 
 pub fn print_ast(stmts: &Vec<Stmt>) -> String {
-    stmts.iter()
+    stmts
+        .iter()
         .map(|stmt| format_sexpr(&convert_stmt(stmt), 0))
         .collect::<Vec<String>>()
         .join("\n")

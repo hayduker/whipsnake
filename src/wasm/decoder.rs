@@ -1,16 +1,18 @@
 use crate::wasm::binary::BinaryReader;
-use crate::wasm::{FuncType, Function, FunctionLocal, Instruction, Module, Opcode, SectionCode, ValueType};
+use crate::wasm::{
+    FuncType, Function, FunctionLocal, Instruction, Module, Opcode, SectionCode, ValueType,
+};
 
-pub fn decode_wasm(bytes: &[u8]) -> Result<Module, String> {       
+pub fn decode_wasm(bytes: &[u8]) -> Result<Module, String> {
     let mut reader = BinaryReader::new(bytes);
-    
+
     let (magic, version) = decode_module_header(&mut reader)?;
 
     let mut module = Module::new();
     module.magic = magic;
     module.version = version;
 
-    while !reader.is_done() {    
+    while !reader.is_done() {
         let (section_code, section_size) = decode_section_header(&mut reader)?;
         let section_contents = reader.read_slice(section_size as usize)?;
 
@@ -18,15 +20,15 @@ pub fn decode_wasm(bytes: &[u8]) -> Result<Module, String> {
             SectionCode::Type => {
                 let types = decode_type_section(&section_contents)?;
                 module.type_section = Some(types);
-            },
+            }
             SectionCode::Function => {
                 let func_indices = decode_function_section(&section_contents)?;
                 module.function_section = Some(func_indices);
-            },
+            }
             SectionCode::Code => {
                 let functions = decode_code_section(&section_contents)?;
                 module.code_section = Some(functions);
-            },
+            }
         }
     }
 
@@ -62,7 +64,10 @@ fn decode_type_section(contents: &[u8]) -> Result<Vec<FuncType>, String> {
     let mut func_types = vec![];
     for i in 0..num_types {
         if reader.read_byte()? != 0x60 {
-            return Err(format!("expected 'func' marker (0x60) as first byte of func type {}", i));
+            return Err(format!(
+                "expected 'func' marker (0x60) as first byte of func type {}",
+                i
+            ));
         }
 
         let num_params = reader.read_uleb128_u32()?;
@@ -71,7 +76,7 @@ fn decode_type_section(contents: &[u8]) -> Result<Vec<FuncType>, String> {
             let value_type = ValueType::from(reader.read_byte()?)?;
             params.push(value_type);
         }
-    
+
         let num_results = reader.read_uleb128_u32()?;
         let mut results = vec![];
         for _ in 0..num_results {
@@ -81,7 +86,7 @@ fn decode_type_section(contents: &[u8]) -> Result<Vec<FuncType>, String> {
 
         func_types.push(FuncType { params, results })
     }
-    
+
     Ok(func_types)
 }
 
@@ -129,17 +134,17 @@ fn decode_code_section_func_body(contents: &[u8]) -> Result<Function, String> {
     let mut instructions = vec![];
     loop {
         let opcode = Opcode::from(reader.read_byte()?)?;
-        instructions.push(
-            match opcode {
-                Opcode::End => Instruction::End,
-                Opcode::LocalGet => {
-                    let index = reader.read_uleb128_u32()?;
-                    Instruction::LocalGet(index)
-                },
-                Opcode::I32Add => Instruction::I32Add,
+        instructions.push(match opcode {
+            Opcode::End => Instruction::End,
+            Opcode::LocalGet => {
+                let index = reader.read_uleb128_u32()?;
+                Instruction::LocalGet(index)
             }
-        );
-        if opcode == Opcode::End { break }
+            Opcode::I32Add => Instruction::I32Add,
+        });
+        if opcode == Opcode::End {
+            break;
+        }
     }
 
     Ok(Function {
@@ -148,16 +153,14 @@ fn decode_code_section_func_body(contents: &[u8]) -> Result<Function, String> {
     })
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn decode_empty_module() {
-        let wasm = wat::parse_str("(module)")
-            .expect("unit test input WAT invalid");
-        
+        let wasm = wat::parse_str("(module)").expect("unit test input WAT invalid");
+
         let decoded = decode_wasm(&wasm).unwrap();
         let expected = Module::new();
         assert_eq!(decoded, expected);
@@ -165,94 +168,91 @@ mod tests {
 
     #[test]
     fn decode_empty_single_func_module() {
-        let wasm = wat::parse_str("(module (func))")
-            .expect("unit test input WAT invalid");
-        
+        let wasm = wat::parse_str("(module (func))").expect("unit test input WAT invalid");
+
         let decoded = decode_wasm(&wasm).unwrap();
 
         let mut expected = Module::new();
-        expected.type_section = Some(vec![
-            FuncType {
-                params: vec![],
-                results: vec![],
-            }
-        ]);
+        expected.type_section = Some(vec![FuncType {
+            params: vec![],
+            results: vec![],
+        }]);
         expected.function_section = Some(vec![0]);
-        expected.code_section = Some(vec![
-            Function {
-                locals: vec![],
-                code: vec![Instruction::End],
-            }
-        ]);
+        expected.code_section = Some(vec![Function {
+            locals: vec![],
+            code: vec![Instruction::End],
+        }]);
 
         assert_eq!(decoded, expected);
     }
 
     #[test]
     fn decode_decls_func_module() {
-        let wasm = wat::parse_str(r#"
+        let wasm = wat::parse_str(
+            r#"
 (module
   (func (param i32 i32) (result i32)
     (local i32)
     (local i64 i64)))
-        "#).expect("unit test input WAT invalid");
-        
+        "#,
+        )
+        .expect("unit test input WAT invalid");
+
         let decoded = decode_wasm(&wasm).unwrap();
 
         let mut expected = Module::new();
-        expected.type_section = Some(vec![
-            FuncType {
-                params: vec![ValueType::I32, ValueType::I32],
-                results: vec![ValueType::I32],
-            }
-        ]);
+        expected.type_section = Some(vec![FuncType {
+            params: vec![ValueType::I32, ValueType::I32],
+            results: vec![ValueType::I32],
+        }]);
         expected.function_section = Some(vec![0]);
-        expected.code_section = Some(vec![
-            Function {
-                locals: vec![
-                    FunctionLocal { type_count: 1, value_type: ValueType::I32 },
-                    FunctionLocal { type_count: 2, value_type: ValueType::I64 },
-                ],
-                code: vec![
-                    Instruction::End
-                ],
-            }
-        ]);
+        expected.code_section = Some(vec![Function {
+            locals: vec![
+                FunctionLocal {
+                    type_count: 1,
+                    value_type: ValueType::I32,
+                },
+                FunctionLocal {
+                    type_count: 2,
+                    value_type: ValueType::I64,
+                },
+            ],
+            code: vec![Instruction::End],
+        }]);
 
         assert_eq!(decoded, expected);
     }
 
     #[test]
     fn decode_add_func_module() {
-        let wasm = wat::parse_str(r#"
+        let wasm = wat::parse_str(
+            r#"
 (module
   (func (param i32 i32) (result i32)
     (local.get 0)
     (local.get 1)
     i32.add))
-        "#).expect("unit test input WAT invalid");
-        
+        "#,
+        )
+        .expect("unit test input WAT invalid");
+
         let decoded = decode_wasm(&wasm).unwrap();
 
         let mut expected = Module::new();
-        expected.type_section = Some(vec![
-            FuncType {
-                params: vec![ValueType::I32, ValueType::I32],
-                results: vec![ValueType::I32],
-            }
-        ]);
+        expected.type_section = Some(vec![FuncType {
+            params: vec![ValueType::I32, ValueType::I32],
+            results: vec![ValueType::I32],
+        }]);
         expected.function_section = Some(vec![0]);
-        expected.code_section = Some(vec![
-            Function {
-                locals: vec![],
-                code: vec![
-                    Instruction::LocalGet(0),
-                    Instruction::LocalGet(1),
-                    Instruction::I32Add,
-                    Instruction::End
-                ],
-            }
-        ]);
+        expected.code_section = Some(vec![Function {
+            locals: vec![],
+            code: vec![
+                Instruction::LocalGet(0),
+                Instruction::LocalGet(1),
+                Instruction::I32Add,
+                Instruction::End,
+            ],
+        }]);
 
         assert_eq!(decoded, expected);
     }
