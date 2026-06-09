@@ -39,4 +39,9 @@ pub enum Expr<'src> {
         right: Box<Expr<'src>>,
     },
     Variable(Token<'src>),
+    Call {
+        callee: Box<Expr<'src>>,
+        paren: Token<'src>,
+        arguments: Vec<Expr<'src>>,
+    }
 }

@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::error::RuntimeError;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
     Int(i64),
@@ -7,6 +9,7 @@ pub enum Object {
     String(String),
     Bool(bool),
     None,
+    Function(Callable),
 }
 
 impl Object {
@@ -17,6 +20,7 @@ impl Object {
             Object::Int(i) => *i != 0,
             Object::Float(f) => *f != 0.0,
             Object::String(s) => !s.is_empty(),
+            Object::Function(_) => true,
         }
     }
 
@@ -27,6 +31,7 @@ impl Object {
             Object::Int(_) => "int",
             Object::Float(_) => "float",
             Object::String(_) => "str",
+            Object::Function(_) => "function"
         }
     }
 }
@@ -40,6 +45,25 @@ impl fmt::Display for Object {
             Object::Bool(true) => write!(f, "True"),
             Object::Bool(false) => write!(f, "False"),
             Object::None => write!(f, "None"),
+            Object::Function(callable) => {
+                match callable {
+                    Callable::Native(native_fn) => {
+                        write!(f, "<function {} at {:?}>", native_fn.name, &native_fn)
+                    }
+                }
+            }
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Callable {
+    Native(NativeFunction),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct NativeFunction {
+    pub name: &'static str,
+    pub arity: usize,
+    pub body: fn(args: Vec<Object>) -> Result<Object, RuntimeError>,
 }

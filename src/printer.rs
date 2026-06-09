@@ -133,6 +133,13 @@ fn convert_expr(e: &Expr) -> SExpr {
             SExpr::List(vec![atom(operator.lexeme), convert_expr(left), convert_expr(right)])
         },
         Expr::Variable(token) => atom(token.lexeme),
+        Expr::Call { callee, paren, arguments } => {
+            let mut sexpr = vec![atom("call"), convert_expr(callee)];
+            for argument in arguments {
+                sexpr.push(convert_expr(argument))
+            }
+            SExpr::List(sexpr)
+        }
     }
 }
 

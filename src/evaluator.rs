@@ -1,9 +1,5 @@
 use crate::{
-    ast::{Expr, Stmt},
-    environment::Environment,
-    error::{ErrorReporter, RuntimeError},
-    object::Object,
-    token::{Literal, SourceLocation, Token, TokenKind},
+    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::{Object, Callable}, token::{Literal, SourceLocation, Token, TokenKind}
 };
 
 pub struct Evaluator<'err> {
@@ -209,9 +205,42 @@ impl<'err> Evaluator<'err> {
                     ));
                 }
             },
+
+            Expr::Call { callee, paren, arguments } => {
+                let callee = self.evaluate(callee, environment)?;
+
+                let mut arg_objects = vec![];
+                for argument in arguments {
+                    arg_objects.push(self.evaluate(argument, environment)?);
+                }
+
+                return self.call(&callee, paren, arg_objects);
+            },
         };
 
         Ok(value)
+    }
+
+    fn call<'src>(&self, callee: &Object, paren: &Token, arguments: Vec<Object>) -> Result<Object, RuntimeError> {
+        if let Object::Function(callable) = callee {
+            match callable {
+                Callable::Native(native_fn) => {
+                    if arguments.len() != native_fn.arity {
+                        return Err(RuntimeError::TypeError(
+                            SourceLocation { line: paren.line },
+                            format!("{}() expected {} arguments but got {}", native_fn.name, native_fn.arity, arguments.len()),
+                        ));
+                    }
+
+                    (native_fn.body)(arguments)
+                }
+            }
+        } else {
+            return Err(RuntimeError::TypeError(
+                SourceLocation { line: paren.line },
+                format!("'{}' object is not callable", callee.py_type()),
+            ));
+        }
     }
 
     fn binary_expr<'src>(

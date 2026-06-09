@@ -471,6 +471,23 @@ impl<'src, 'err> Parser<'src, 'err> {
         Ok(expr)
     }
 
+    fn call<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.primary(tokens)?;
+
+        loop {
+            if self.advance_if_peek_matches_any(tokens, &[TokenKind::LeftParen]) {
+                expr = self.finish_call(tokens, expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
     // TODO: currently the lexer doesn't fill out the literal field of
     // tokens representing None, True, or False in Python. But the parser
     // does put a Literal in the AST here. This means I have Literal variants
@@ -527,6 +544,46 @@ impl<'src, 'err> Parser<'src, 'err> {
                 tokens.peek().unwrap().kind
             ),
         ))
+    }
+
+    fn finish_call<I>(&mut self, tokens: &mut Peekable<I>, callee: Expr<'src>) -> Result<Expr<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut arguments = vec![];
+        if !self.peek_matches(tokens, TokenKind::RightParen) {
+            loop {
+                if arguments.len() >= 255 {
+                    return Err(ParseError::ParseError(
+                        SourceLocation {
+                            line: tokens.peek().unwrap().line,
+                        },
+                        "can't have more than 255 arguments".to_string(),
+                    ));
+                }
+                arguments.push(self.expression(tokens)?);
+                if !self.advance_if_peek_matches_any(tokens, &[TokenKind::Comma]) {
+                    break;
+                }
+            }
+        }
+
+        if !self.peek_matches(tokens, TokenKind::RightParen) {
+            return Err(ParseError::ParseError(
+                SourceLocation {
+                    line: tokens.peek().unwrap().line,
+                },
+                "'(' was never closed".to_string(),
+            ));
+        }
+
+        let paren = self.advance(tokens);
+
+        Ok(Expr::Call {
+            callee: Box::new(callee),
+            paren,
+            arguments
+        })
     }
 
     fn advance<I>(&mut self, tokens: &mut Peekable<I>) -> Token<'src>
