@@ -42,6 +42,8 @@ pub enum TokenKind {
     For,
     If,
     In,
+    Is,
+    IsNot,
     None,
     Not,
     Or,

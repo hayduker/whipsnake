@@ -121,6 +121,7 @@ test_binary_numeric_no_errors!(parse_less_equality, Less, "<");
 test_binary_numeric_no_errors!(parse_less_equal_equality, LessEqual, "<=");
 test_binary_numeric_no_errors!(parse_bang_equal_equality, BangEqual, "!=");
 test_binary_numeric_no_errors!(parse_equal_equal_equality, EqualEqual, "==");
+test_binary_numeric_no_errors!(parse_is, Is, "is");
 
 test_no_errors!(
     parse_precedence_0,

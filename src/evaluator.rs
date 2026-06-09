@@ -479,6 +479,8 @@ impl<'err> Evaluator<'err> {
 
             TokenKind::BangEqual => Object::Bool(right != left),
 
+            TokenKind::Is => Object::Bool(right.identity() == left.identity()),
+        
             _ => {
                 return Err(RuntimeError::RuntimeError(
                     SourceLocation {

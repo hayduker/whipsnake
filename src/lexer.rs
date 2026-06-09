@@ -400,6 +400,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             "for" => Some(TokenKind::For),
             "if" => Some(TokenKind::If),
             "in" => Some(TokenKind::In),
+            "is" => Some(TokenKind::Is),
             "None" => Some(TokenKind::None), // really a literal
             "not" => Some(TokenKind::Not),
             "or" => Some(TokenKind::Or),

@@ -322,18 +322,54 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        let mut expr = self.comparison(tokens)?;
+        let mut expr = self.identity(tokens)?;
 
         while self
             .advance_if_peek_matches_any(tokens, &[TokenKind::BangEqual, TokenKind::EqualEqual])
         {
             let operator = self.previous.unwrap();
-            let right = self.comparison(tokens)?;
+            let right = self.identity(tokens)?;
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
                 right: Box::new(right),
             };
+        }
+
+        Ok(expr)
+    }
+
+    fn identity<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr<'src>, ParseError>
+    where
+        I: Iterator<Item = Token<'src>>,
+    {
+        let mut expr = self.comparison(tokens)?;
+
+        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Is]) {
+            let is_operator = self.previous.unwrap();
+
+            if self.advance_if_peek_matches_any(tokens, &[TokenKind::Not]) {
+                let not_operator = self.previous.unwrap();
+                let right = self.comparison(tokens)?;
+
+                expr = Expr::Binary {
+                    left: Box::new(expr),
+                    operator: is_operator,
+                    right: Box::new(right),
+                };
+
+                expr = Expr::Unary {
+                    operator: not_operator,
+                    right: Box::new(expr),
+                };
+            } else {
+                let right = self.comparison(tokens)?;
+                expr = Expr::Binary {
+                    left: Box::new(expr),
+                    operator: is_operator,
+                    right: Box::new(right),
+                };
+            }
         }
 
         Ok(expr)
