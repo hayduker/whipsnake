@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::{Callable, NativeFunction, Object, Arity}, token::{Literal, SourceLocation, Token, TokenKind}, natives,
+    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::Object, token::{Literal, SourceLocation, Token, TokenKind}, callable::{Callable, Arity, PRINT_FUNC},
 };
 
 pub struct Evaluator<'err> {
@@ -17,15 +17,9 @@ impl<'err> Evaluator<'err> {
         environment: &mut Environment,
         interactive: bool,
     ) -> Option<Object> {
-        let print_func = NativeFunction {
-            name: "print2",
-            arity: Arity::Minimum(0),
-            body: natives::print_impl,
-        };
-
         environment.define(
-            print_func.name.to_string(),
-            Object::Function(Callable::Native(print_func)),
+            PRINT_FUNC.name.to_string(),
+            Object::Function(Callable::Native(PRINT_FUNC)),
         );
 
         statements.iter()
@@ -36,11 +30,6 @@ impl<'err> Evaluator<'err> {
 
     pub fn execute(&mut self, statement: &Stmt, environment: &mut Environment, interactive: bool) -> Option<Object> {
         match statement {
-            Stmt::Print(expr) => match self.evaluate(&expr, environment) {
-                Ok(value) => println!("{}", value),
-                Err(e) => self.error_reporter.register_runtime_error(e),
-            },
-
             Stmt::Expression(expr) => match self.evaluate(&expr, environment) {
                 Ok(value) => {
                     if interactive {

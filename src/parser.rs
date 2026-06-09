@@ -72,10 +72,6 @@ impl<'src, 'err> Parser<'src, 'err> {
     where
         I: Iterator<Item = Token<'src>>,
     {
-        if self.advance_if_peek_matches_any(tokens, &[TokenKind::Print]) {
-            return self.print_statement(tokens);
-        }
-
         if self.peek_matches(tokens, TokenKind::If) {
             return self.if_statement(tokens);
         }
@@ -147,47 +143,6 @@ impl<'src, 'err> Parser<'src, 'err> {
         }
 
         Ok(statements)
-    }
-
-    fn print_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt<'src>, ParseError>
-    where
-        I: Iterator<Item = Token<'src>>,
-    {
-        // This function is sort of a hack. It consumes open and close parens to make
-        // the print statement look like the Python standard library function 'print'
-        // without actually having functions implemented yet.
-
-        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::LeftParen]) {
-            return Err(ParseError::ParseError(
-                SourceLocation {
-                    line: tokens.peek().unwrap().line,
-                },
-                String::from("expected '(' after print keyword."),
-            ));
-        }
-
-        let value = self.expression(tokens)?;
-
-        if !self.advance_if_peek_matches_any(tokens, &[TokenKind::RightParen]) {
-            return Err(ParseError::ParseError(
-                SourceLocation {
-                    line: tokens.peek().unwrap().line,
-                },
-                String::from("expected ')' after print keyword."),
-            ));
-        }
-
-        if self.advance_if_peek_matches_any(tokens, &[TokenKind::NewLine]) || self.is_at_end(tokens)
-        {
-            return Ok(Stmt::Print(value));
-        }
-
-        Err(ParseError::ParseError(
-            SourceLocation {
-                line: tokens.peek().unwrap().line,
-            },
-            String::from("expected newline or EOF after print statement."),
-        ))
     }
 
     fn assignment_statement<I>(
@@ -675,7 +630,6 @@ impl<'src, 'err> Parser<'src, 'err> {
                         TokenKind::Class,
                         TokenKind::For,
                         TokenKind::While,
-                        TokenKind::Print,
                     ],
                 ) {
                     return;

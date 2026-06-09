@@ -1,6 +1,8 @@
 use std::fmt;
 
-use crate::error::RuntimeError;
+use crate::{
+    callable::Callable,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
@@ -55,22 +57,4 @@ impl fmt::Display for Object {
             }
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Callable {
-    Native(NativeFunction),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct NativeFunction {
-    pub name: &'static str,
-    pub arity: Arity,
-    pub body: fn(args: Vec<Object>) -> Result<Object, RuntimeError>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Arity {
-    Exact(usize),
-    Minimum(usize),
 }

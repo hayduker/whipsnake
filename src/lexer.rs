@@ -403,7 +403,6 @@ impl<'src, 'err> Lexer<'src, 'err> {
             "None" => Some(TokenKind::None), // really a literal
             "not" => Some(TokenKind::Not),
             "or" => Some(TokenKind::Or),
-            "print" => Some(TokenKind::Print),
             "return" => Some(TokenKind::Return),
             "super" => Some(TokenKind::Super),
             "self" => Some(TokenKind::This),

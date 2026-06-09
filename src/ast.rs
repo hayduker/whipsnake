@@ -3,7 +3,6 @@ use crate::token::{Literal, Token};
 #[derive(Debug, PartialEq, Clone)]
 pub enum Stmt<'src> {
     Expression(Expr<'src>),
-    Print(Expr<'src>),
     Assignment {
         name: Token<'src>,
         initializer: Expr<'src>,

@@ -230,7 +230,7 @@ test_suite_no_errors!([
             tok!(Colon, ":", 2),
             tok!(NewLine, "\n", 2),
             tok!(Indent, "", 3),
-            tok!(Print, "print", 3),
+            tok!(Identifier, "print", 3),
             tok!(LeftParen, "(", 3),
             tok_int(1, 3),
             tok!(RightParen, ")", 3),
@@ -241,7 +241,7 @@ test_suite_no_errors!([
             tok!(Colon, ":", 4),
             tok!(NewLine, "\n", 4),
             tok!(Indent, "", 5),
-            tok!(Print, "print", 5),
+            tok!(Identifier, "print", 5),
             tok!(LeftParen, "(", 5),
             tok_int(2, 5),
             tok!(RightParen, ")", 5),
@@ -251,7 +251,7 @@ test_suite_no_errors!([
             tok!(Colon, ":", 6),
             tok!(NewLine, "\n", 6),
             tok!(Indent, "", 7),
-            tok!(Print, "print", 7),
+            tok!(Identifier, "print", 7),
             tok!(LeftParen, "(", 7),
             tok_int(3, 7),
             tok!(RightParen, ")", 7),
@@ -262,7 +262,7 @@ test_suite_no_errors!([
             tok!(Colon, ":", 8),
             tok!(NewLine, "\n", 8),
             tok!(Indent, "", 9),
-            tok!(Print, "print", 9),
+            tok!(Identifier, "print", 9),
             tok!(LeftParen, "(", 9),
             tok_int(4, 9),
             tok!(RightParen, ")", 9),
@@ -450,15 +450,6 @@ test_suite_no_errors!([
         lex_or,
         "or",
         vec![tok![Or, "or", 1], tok![NewLine, "\n", 1], tok![Eof, "", 2],]
-    ),
-    (
-        lex_print,
-        "print",
-        vec![
-            tok![Print, "print", 1],
-            tok![NewLine, "\n", 1],
-            tok![Eof, "", 2],
-        ]
     ),
     (
         lex_return,

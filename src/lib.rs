@@ -7,5 +7,5 @@ pub mod object;
 pub mod parser;
 pub mod printer;
 pub mod token;
-pub mod natives;
+pub mod callable;
 pub mod wasm;
