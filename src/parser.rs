@@ -467,7 +467,7 @@ impl<'src, 'err> Parser<'src, 'err> {
             });
         }
 
-        let expr = self.primary(tokens)?;
+        let expr = self.call(tokens)?;
         Ok(expr)
     }
 
@@ -577,12 +577,14 @@ impl<'src, 'err> Parser<'src, 'err> {
             ));
         }
 
-        let paren = self.advance(tokens);
+        let right_paren = self.advance(tokens);
+
+        println!("after any arg parsing, got token {:?} which should be right paren", right_paren);
 
         Ok(Expr::Call {
             callee: Box::new(callee),
-            paren,
-            arguments
+            paren: right_paren,
+            arguments,
         })
     }
 

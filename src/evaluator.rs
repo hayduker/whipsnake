@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::{Object, Callable}, token::{Literal, SourceLocation, Token, TokenKind}
+    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::{Callable, NativeFunction, Object, Arity}, token::{Literal, SourceLocation, Token, TokenKind}, natives,
 };
 
 pub struct Evaluator<'err> {
@@ -17,6 +17,17 @@ impl<'err> Evaluator<'err> {
         environment: &mut Environment,
         interactive: bool,
     ) -> Option<Object> {
+        let print_func = NativeFunction {
+            name: "print2",
+            arity: Arity::Minimum(0),
+            body: natives::print_impl,
+        };
+
+        environment.define(
+            print_func.name.to_string(),
+            Object::Function(Callable::Native(print_func)),
+        );
+
         statements.iter()
             .map(|stmt| self.execute(stmt, environment, interactive))
             .last()
@@ -225,13 +236,7 @@ impl<'err> Evaluator<'err> {
         if let Object::Function(callable) = callee {
             match callable {
                 Callable::Native(native_fn) => {
-                    if arguments.len() != native_fn.arity {
-                        return Err(RuntimeError::TypeError(
-                            SourceLocation { line: paren.line },
-                            format!("{}() expected {} arguments but got {}", native_fn.name, native_fn.arity, arguments.len()),
-                        ));
-                    }
-
+                    self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren);
                     (native_fn.body)(arguments)
                 }
             }
@@ -241,6 +246,35 @@ impl<'err> Evaluator<'err> {
                 format!("'{}' object is not callable", callee.py_type()),
             ));
         }
+    }
+
+    fn check_arity<'src>(
+        &self,
+        num_args: usize,
+        arity: Arity,
+        name: &'static str,
+        paren: &Token<'src>,
+    ) -> Result<(), RuntimeError> {
+        match arity {
+            Arity::Exact(n) => {
+                if num_args != n {
+                    return Err(RuntimeError::TypeError(
+                        SourceLocation { line: paren.line },
+                        format!("{}() expected {} arguments but got {}", name, n, num_args),
+                    ));
+                }
+            },
+            Arity::Minimum(n) => {
+                if num_args < n {
+                    return Err(RuntimeError::TypeError(
+                        SourceLocation { line: paren.line },
+                        format!("{}() expected at least {} arguments but got {}", name, n, num_args),
+                    ));
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn binary_expr<'src>(

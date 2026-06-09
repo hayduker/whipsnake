@@ -48,7 +48,8 @@ impl fmt::Display for Object {
             Object::Function(callable) => {
                 match callable {
                     Callable::Native(native_fn) => {
-                        write!(f, "<function {} at {:?}>", native_fn.name, &native_fn)
+                        let address = native_fn.body as *const ();
+                        write!(f, "<function {} at {:p}>", native_fn.name, address)
                     }
                 }
             }
@@ -64,6 +65,12 @@ pub enum Callable {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct NativeFunction {
     pub name: &'static str,
-    pub arity: usize,
+    pub arity: Arity,
     pub body: fn(args: Vec<Object>) -> Result<Object, RuntimeError>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Arity {
+    Exact(usize),
+    Minimum(usize),
 }
