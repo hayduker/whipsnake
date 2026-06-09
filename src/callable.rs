@@ -36,3 +36,27 @@ pub const PRINT_FUNC: NativeFunction = NativeFunction {
     arity: Arity::Minimum(0),
     body: print_impl,
 };
+
+pub fn type_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+    Ok(Object::String(
+        format!("<class '{}'>", &args[0].py_type())
+    ))
+}
+
+pub const TYPE_FUNC: NativeFunction = NativeFunction {
+    name: "type",
+    arity: Arity::Exact(1),
+    body: type_impl,
+};
+
+pub fn id_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+    Ok(Object::Int(
+        args[0].identity()
+    ))
+}
+
+pub const ID_FUNC: NativeFunction = NativeFunction {
+    name: "id",
+    arity: Arity::Exact(1),
+    body: id_impl,
+};

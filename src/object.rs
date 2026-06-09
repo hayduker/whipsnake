@@ -33,7 +33,28 @@ impl Object {
             Object::Int(_) => "int",
             Object::Float(_) => "float",
             Object::String(_) => "str",
-            Object::Function(_) => "function"
+            Object::Function(callable) => {
+                match callable {
+                    Callable::Native(_) => "builtin_function_or_method"
+                }
+            } 
+        }
+    }
+
+    pub fn identity(&self) -> i64 {
+        match self {
+            Object::Bool(b) => {
+                if *b { 140735165470832 } else { 140735165470864 }
+            },
+            Object::Int(n) => {
+                if *n >= -5 && *n <= 256 {
+                    (1000000 + n) as i64
+                } else {
+                    self as *const Object as usize as i64
+                }
+            },
+            Object::None => 140735165431120,
+            _ => self as *const Object as usize as i64,
         }
     }
 }

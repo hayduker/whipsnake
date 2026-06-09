@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::Object, token::{Literal, SourceLocation, Token, TokenKind}, callable::{Callable, Arity, PRINT_FUNC},
+    ast::{Expr, Stmt}, environment::Environment, error::{ErrorReporter, RuntimeError}, object::Object, token::{Literal, SourceLocation, Token, TokenKind}, callable::{Callable, Arity, PRINT_FUNC, TYPE_FUNC, ID_FUNC},
 };
 
 pub struct Evaluator<'err> {
@@ -20,6 +20,16 @@ impl<'err> Evaluator<'err> {
         environment.define(
             PRINT_FUNC.name.to_string(),
             Object::Function(Callable::Native(PRINT_FUNC)),
+        );
+
+        environment.define(
+            TYPE_FUNC.name.to_string(),
+            Object::Function(Callable::Native(TYPE_FUNC)),
+        );
+
+        environment.define(
+            ID_FUNC.name.to_string(),
+            Object::Function(Callable::Native(ID_FUNC)),
         );
 
         statements.iter()
