@@ -11,7 +11,7 @@ use common::*;
 fn tok_macro() {
     assert_eq!(
         tok!(And, "and", 42),
-        Token::with_literal(TokenKind::And, "and", Literal::None, 42)
+        Token::new(TokenKind::And, "and", 42)
     )
 }
 

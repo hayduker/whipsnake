@@ -3,7 +3,7 @@ use crate::{
     error::{ErrorReporter, ParseError},
     token::{
         Literal, SourceLocation, Token,
-        TokenKind::{self, NewLine},
+        TokenKind,
     },
 };
 
@@ -457,7 +457,14 @@ impl<'src, 'err> Parser<'src, 'err> {
             tokens,
             &[TokenKind::Int, TokenKind::Float, TokenKind::String],
         ) {
-            return Ok(Expr::Literal(self.previous.unwrap().literal));
+            let token = self.previous.unwrap();
+            return match token.literal {
+                Some(literal) => Ok(Expr::Literal(literal)),
+                None => Err(ParseError::ParseError(
+                    SourceLocation { line: token.line },
+                    format!("got token type {:?} without literal", token.kind)
+                )),
+            };
         }
 
         if self.advance_if(tokens, TokenKind::Identifier) {

@@ -75,13 +75,18 @@ pub enum Literal<'src> {
 pub struct Token<'src> {
     pub kind: TokenKind,
     pub lexeme: &'src str,
-    pub literal: Literal<'src>,
+    pub literal: Option<Literal<'src>>,
     pub line: usize,
 }
 
 impl<'src> Token<'src> {
     pub fn new(kind: TokenKind, lexeme: &'src str, line: usize) -> Self {
-        Self::with_literal(kind, lexeme, Literal::None, line)
+        Self {
+            kind,
+            lexeme,
+            literal: None,
+            line,
+        }
     }
 
     pub fn with_literal(
@@ -93,7 +98,7 @@ impl<'src> Token<'src> {
         Self {
             kind,
             lexeme,
-            literal,
+            literal: Some(literal),
             line,
         }
     }
