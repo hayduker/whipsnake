@@ -122,7 +122,7 @@ impl<'err> Evaluator<'err> {
             Expr::Literal(literal) => match literal {
                 Literal::Int(int) => Object::Int(*int),
                 Literal::Float(float) => Object::Float(*float),
-                Literal::String(string) => Object::String(string.to_string()),
+                Literal::String(string) => Object::String(string.clone()),
                 Literal::Bool(b) => Object::Bool(*b),
                 Literal::None => Object::None,
             },
@@ -233,7 +233,7 @@ impl<'err> Evaluator<'err> {
                 return self.evaluate(right, environment);
             }
 
-            Expr::Variable(token) => match environment.get(token.lexeme) {
+            Expr::Variable(token) => match environment.get(token.lexeme.as_ref()) {
                 Some(object) => object.clone(),
                 None => {
                     return Err(RuntimeError::NameError(
@@ -262,7 +262,7 @@ impl<'err> Evaluator<'err> {
         Ok(value)
     }
 
-    fn call<'src>(
+    fn call(
         &self,
         callee: &Object,
         paren: &Token,
@@ -283,12 +283,12 @@ impl<'err> Evaluator<'err> {
         }
     }
 
-    fn check_arity<'src>(
+    fn check_arity(
         &self,
         num_args: usize,
         arity: Arity,
         name: &'static str,
-        paren: &Token<'src>,
+        paren: &Token,
     ) -> Result<(), RuntimeError> {
         match arity {
             Arity::Exact(n) => {
@@ -315,10 +315,10 @@ impl<'err> Evaluator<'err> {
         Ok(())
     }
 
-    fn binary_expr<'src>(
+    fn binary_expr(
         &self,
         left: &Object,
-        operator: &Token<'src>,
+        operator: &Token,
         right: &Object,
     ) -> Result<Object, RuntimeError> {
         let result = match operator.kind {

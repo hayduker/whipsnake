@@ -1,46 +1,46 @@
 use crate::token::{Literal, Token};
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Stmt<'src> {
-    Expression(Expr<'src>),
+pub enum Stmt {
+    Expression(Expr),
     Assignment {
-        name: Token<'src>,
-        initializer: Expr<'src>,
+        name: Token,
+        initializer: Expr,
     },
-    Block(Vec<Stmt<'src>>),
+    Block(Vec<Stmt>),
     If {
-        condition: Expr<'src>,
-        then_body: Box<Stmt<'src>>,
-        else_body: Option<Box<Stmt<'src>>>,
+        condition: Expr,
+        then_body: Box<Stmt>,
+        else_body: Option<Box<Stmt>>,
     },
     While {
-        condition: Expr<'src>,
-        body: Box<Stmt<'src>>,
+        condition: Expr,
+        body: Box<Stmt>,
     },
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Expr<'src> {
-    Literal(Literal<'src>),
-    Grouping(Box<Expr<'src>>),
+pub enum Expr {
+    Literal(Literal),
+    Grouping(Box<Expr>),
     Unary {
-        operator: Token<'src>,
-        right: Box<Expr<'src>>,
+        operator: Token,
+        right: Box<Expr>,
     },
     Binary {
-        left: Box<Expr<'src>>,
-        operator: Token<'src>,
-        right: Box<Expr<'src>>,
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
     },
     Logical {
-        left: Box<Expr<'src>>,
-        operator: Token<'src>,
-        right: Box<Expr<'src>>,
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
     },
-    Variable(Token<'src>),
+    Variable(Token),
     Call {
-        callee: Box<Expr<'src>>,
-        paren: Token<'src>,
-        arguments: Vec<Expr<'src>>,
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
     },
 }

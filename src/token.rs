@@ -62,42 +62,37 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Literal<'src> {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Literal {
     None,
-    String(&'src str),
+    String(String),
     Int(i64),
     Float(f64),
     Bool(bool),
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Token<'src> {
+#[derive(Debug, PartialEq, Clone)]
+pub struct Token {
     pub kind: TokenKind,
-    pub lexeme: &'src str,
-    pub literal: Option<Literal<'src>>,
+    pub lexeme: String,
+    pub literal: Option<Literal>,
     pub line: usize,
 }
 
-impl<'src> Token<'src> {
-    pub fn new(kind: TokenKind, lexeme: &'src str, line: usize) -> Self {
+impl Token {
+    pub fn new(kind: TokenKind, lexeme: &str, line: usize) -> Self {
         Self {
             kind,
-            lexeme,
+            lexeme: lexeme.into(),
             literal: None,
             line,
         }
     }
 
-    pub fn with_literal(
-        kind: TokenKind,
-        lexeme: &'src str,
-        literal: Literal<'src>,
-        line: usize,
-    ) -> Token<'src> {
+    pub fn with_literal(kind: TokenKind, lexeme: &str, literal: Literal, line: usize) -> Token {
         Self {
             kind,
-            lexeme,
+            lexeme: lexeme.into(),
             literal: Some(literal),
             line,
         }

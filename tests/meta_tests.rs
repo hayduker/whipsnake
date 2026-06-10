@@ -9,10 +9,7 @@ use common::*;
 
 #[test]
 fn tok_macro() {
-    assert_eq!(
-        tok!(And, "and", 42),
-        Token::new(TokenKind::And, "and", 42)
-    )
+    assert_eq!(tok!(And, "and", 42), Token::new(TokenKind::And, "and", 42))
 }
 
 #[test]
@@ -35,7 +32,12 @@ fn tok_float_fn() {
 fn tok_string_fn() {
     assert_eq!(
         tok_string("hello", 1),
-        Token::with_literal(TokenKind::String, "\"hello\"", Literal::String("hello"), 1)
+        Token::with_literal(
+            TokenKind::String,
+            "\"hello\"",
+            Literal::String("hello".to_string()),
+            1
+        )
     )
 }
 

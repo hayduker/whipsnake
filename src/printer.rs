@@ -85,7 +85,7 @@ fn convert_stmt(s: &Stmt) -> SExpr {
         Stmt::Expression(expr) => SExpr::List(vec![atom("stmt"), convert_expr(expr)]),
         Stmt::Assignment { name, initializer } => SExpr::List(vec![
             atom("="),
-            atom(name.lexeme),
+            atom(name.lexeme.as_str()),
             convert_expr(initializer),
         ]),
         Stmt::Block(stmts) => {
@@ -123,14 +123,14 @@ fn convert_expr(e: &Expr) -> SExpr {
 
         Expr::Grouping(expr) => SExpr::List(vec![atom("group"), convert_expr(expr)]),
         Expr::Unary { operator, right } => {
-            SExpr::List(vec![atom(operator.lexeme), convert_expr(right)])
+            SExpr::List(vec![atom(operator.lexeme.as_str()), convert_expr(right)])
         }
         Expr::Binary {
             left,
             operator,
             right,
         } => SExpr::List(vec![
-            atom(operator.lexeme),
+            atom(operator.lexeme.as_str()),
             convert_expr(left),
             convert_expr(right),
         ]),
@@ -139,11 +139,11 @@ fn convert_expr(e: &Expr) -> SExpr {
             operator,
             right,
         } => SExpr::List(vec![
-            atom(operator.lexeme),
+            atom(operator.lexeme.as_str()),
             convert_expr(left),
             convert_expr(right),
         ]),
-        Expr::Variable(token) => atom(token.lexeme),
+        Expr::Variable(token) => atom(token.lexeme.as_str()),
         Expr::Call {
             callee,
             paren: _paren,

@@ -31,7 +31,7 @@ macro_rules! test_no_errors {
 
 test_no_errors!(
     evaluate_string_literal,
-    Expr::Literal(Literal::String("hey")),
+    Expr::Literal(Literal::String("hey".to_string())),
     Object::String(String::from("hey"))
 );
 
