@@ -11,11 +11,17 @@ pub enum Arity {
     Minimum(usize),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct NativeFunction {
     pub name: &'static str,
     pub arity: Arity,
     pub body: fn(args: Vec<Object>) -> Result<Object, RuntimeError>,
+}
+
+impl PartialEq for NativeFunction {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
 }
 
 pub fn print_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {

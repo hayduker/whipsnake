@@ -54,6 +54,11 @@ impl Object {
                 }
             }
             Object::None => 140735165431120,
+            Object::Function(callable) => match callable {
+                Callable::Native(native) => {
+                    native.name.as_ptr() as usize as i64
+                }
+            },
             _ => self as *const Object as usize as i64,
         }
     }
