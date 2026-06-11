@@ -65,11 +65,11 @@ impl<'err> Evaluator<'err> {
         environment: &mut Environment,
         interactive: bool,
     ) -> Result<Object, ControlFlow> {
-        statements
-            .iter()
-            .map(|stmt| Ok(self.execute_statement(stmt, environment, interactive)?))
-            .last()
-            .unwrap_or(Ok(Object::None))
+        let mut last_value = Object::None;
+        for statement in statements {
+            last_value = self.execute_statement(statement, environment, interactive)?;
+        }
+        Ok(last_value)
     }
 
     fn execute_statement(
@@ -280,7 +280,10 @@ impl<'err> Evaluator<'err> {
                     match self.execute_statements(&user_fn.body, &mut environment, false) {
                         Ok(_) => Ok(Object::None),
                         Err(ControlFlow::Error(e)) => return Err(e),
-                        Err(ControlFlow::Return { keyword: _keyword, value }) => return Ok(value)
+                        Err(ControlFlow::Return { keyword: _keyword, value }) => {
+                            println!("got return from executing statements within call, value = {}", value);
+                            return Ok(value)
+                        }
                     }
                 },
                 Callable::Native(native_fn) => {
