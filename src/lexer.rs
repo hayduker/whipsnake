@@ -129,7 +129,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
                 }
             }
             '#' => return self.scan_comment(),
-            '"' => return self.scan_string_literal(),
+            '"' | '\'' => return self.scan_string_literal(c),
             '0'..='9' => return self.scan_number_literal(),
             'a'..='z' | 'A'..='Z' | '_' => return self.scan_indentifier(),
             _ => {
@@ -244,8 +244,8 @@ impl<'src, 'err> Lexer<'src, 'err> {
         return Ok(None);
     }
 
-    fn scan_string_literal(&mut self) -> Result<Option<Vec<Token>>, LexError> {
-        while self.peek() != Some('"') {
+    fn scan_string_literal(&mut self, quote: char) -> Result<Option<Vec<Token>>, LexError> {        
+        while self.peek() != Some(quote) {
             if self.peek() == Some('\n') || self.is_at_end() {
                 return Err(LexError::UnterminatedString(SourceLocation {
                     line: self.line,
@@ -254,7 +254,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             self.advance();
         }
 
-        self.advance(); // eat the closing "
+        self.advance(); // eat the closing quote
 
         let lexeme = self.current_lexeme();
         let literal = lexeme.get(1..lexeme.len() - 1).expect(

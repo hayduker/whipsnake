@@ -60,6 +60,52 @@ test_case!(interpret_true_literal, "True", Object::Bool(true));
 test_case!(interpret_false_literal, "False", Object::Bool(false));
 
 // =======================================================
+// Single-Quoted Strings
+// =======================================================
+
+test_case!(
+    single_quoted_basic,
+    r#" 'hello world' "#,
+    // A standard single-quoted string should evaluate to a string object
+    Object::String("hello world".into())
+);
+
+test_case!(
+    single_quoted_empty,
+    r#" '' "#,
+    // An empty single-quoted string should be supported seamlessly
+    Object::String("".into())
+);
+
+test_case!(
+    single_quoted_containing_double_quotes,
+    r#" 'He said, "Hello there!"' "#,
+    // Double quotes inside a single-quoted string should be treated as literal characters
+    Object::String("He said, \"Hello there!\"".into())
+);
+
+test_case!(
+    double_quoted_containing_single_quotes,
+    r#" "It's a beautiful day" "#,
+    // Conversely, a single quote (apostrophe) inside a double-quoted string is literal
+    Object::String("It's a beautiful day".into())
+);
+
+test_case!(
+    single_quoted_equality,
+    r#" 'abc' == "abc" "#,
+    // A string defined with single quotes must equal an identical string defined with double quotes
+    Object::Bool(true)
+);
+
+test_case!(
+    single_quoted_escape_sequence,
+    r#" 'line one\nline two' "#,
+    // Escape sequences should behave the same way inside single quotes
+    Object::String("line one\nline two".into())
+);
+
+// =======================================================
 // Logical NOT Tests (Always returns a Bool)
 // =======================================================
 

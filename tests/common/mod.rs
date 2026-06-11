@@ -38,6 +38,18 @@ pub fn tok_string(value: &'static str, line: usize) -> Token {
     )
 }
 
+pub fn tok_sq_string(value: &'static str, line: usize) -> Token {
+    let quoted_string = format!("'{value}'");
+    let static_lexeme: &'static str = Box::leak(quoted_string.into_boxed_str());
+
+    Token::with_literal(
+        TokenKind::String,
+        static_lexeme,
+        Literal::String(value.to_string()),
+        line,
+    )
+}
+
 pub fn tok_true(line: usize) -> Token {
     Token::new(TokenKind::True, "True", line)
 }

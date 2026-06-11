@@ -65,6 +65,22 @@ test_no_errors!(
 );
 
 test_no_errors!(
+    lex_single_quotedstring,
+    "'hello!'",
+    vec![
+        tok_sq_string("hello!", 1),
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
+    ]
+);
+
+test_no_errors!(
+    lex_empty_single_quoted_string,
+    "''",
+    vec![tok_sq_string("", 1), tok![NewLine, "\n", 1], tok![Eof, "", 2],]
+);
+
+test_no_errors!(
     lex_float,
     "3.14159",
     vec![
