@@ -1154,29 +1154,28 @@ deeply_nested()"#,
 // Scope and Recursion
 // =======================================================
 
-// test_case!(
-//     function_recursive_factorial,
-//     r#"
-// def factorial(n):
-//     if n <= 1:
-//         return 1
-//     return n * factorial(n - 1)
+test_case!(
+    function_recursive_fibonacci,
+    r#"
+def fib(n):
+    if n <= 1:
+        return n
+    return fib(n - 2) + fib(n - 1)
     
-// factorial(5)"#,
-//     // Verifies that call-stack frames are uniquely maintained during evaluation recursion
-//     Object::Int(120)
-// );
+fib(15)"#,
+    // Verifies that call-stack frames are uniquely maintained during evaluation recursion
+    Object::Int(610)
+);
 
-// test_case!(
-//     function_mutating_outer_scope_fails,
-//     r#"
-//     count = 0
-//     def increment():
-//         count = count + 1
-        
-//     increment()
-//     "#,
-//     // Since we don't have a 'global' or 'nonlocal' keyword, referencing a variable before local
-//     // assignment should trigger an evaluation error (UnboundLocalError / RuntimeError)
-//     Object::RuntimeError("Local variable 'count' referenced before assignment".into())
-// );
+test_case!(
+    function_recursive_factorial,
+    r#"
+def factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+    
+factorial(5)"#,
+    // Verifies that call-stack frames are uniquely maintained during evaluation recursion
+    Object::Int(120)
+);
