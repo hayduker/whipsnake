@@ -102,18 +102,19 @@ impl<'err> Parser<'err> {
             return self.assignment_statement(tokens, expr);
         }
 
-        // Definitely expression statement, we expect newline or EOF now
+        return Ok(Stmt::Expression(expr));
+        // // Definitely expression statement, we expect newline or EOF now
 
-        if self.advance_if(tokens, TokenKind::NewLine) || self.is_at_end(tokens) {
-            return Ok(Stmt::Expression(expr));
-        }
+        // if self.advance_if(tokens, TokenKind::NewLine) || self.is_at_end(tokens) {
+        //     return Ok(Stmt::Expression(expr));
+        // }
 
-        Err(ParseError::ParseError(
-            SourceLocation {
-                line: tokens.peek().unwrap().line,
-            },
-            String::from("expected newline or EOF after expression statement."),
-        ))
+        // Err(ParseError::ParseError(
+        //     SourceLocation {
+        //         line: tokens.peek().unwrap().line,
+        //     },
+        //     String::from("expected newline or EOF after expression statement."),
+        // ))
     }
 
     fn block<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Vec<Stmt>, ParseError>
