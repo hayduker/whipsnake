@@ -998,3 +998,150 @@ test_case!(
     // Verification for how you want to represent built-in functions
     Object::String("<class 'builtin_function_or_method'>".to_string())
 );
+
+// =======================================================
+// Function Definitions & Basic Calls
+// =======================================================
+
+test_case!(
+    function_no_args_no_return,
+    r#"
+    def say_hi():
+        print("hi")
+    
+    say_hi() == None
+    "#,
+    // Functions without an explicit return statement should implicitly evaluate to None
+    Object::Bool(true)
+);
+
+test_case!(
+    function_single_arg_return,
+    r#"
+    def identity(x):
+        return x
+        
+    identity(42) == 42
+    "#,
+    Object::Bool(true)
+);
+
+test_case!(
+    function_multiple_args,
+    r#"
+    def add(a, b, c):
+        return a + b + c
+        
+    add(10, 20, 30) == 60
+    "#,
+    Object::Bool(true)
+);
+
+test_case!(
+    function_shadowing_parameters,
+    r#"
+    x = 10
+    def shadow(x):
+        return x
+        
+    shadow(5) == 5 and x == 10
+    "#,
+    // Parameters should locally shadow outer variables without overwriting them
+    Object::Bool(true)
+);
+
+// =======================================================
+// Return Statement Control Flow
+// =======================================================
+
+test_case!(
+    return_early_blocks_execution,
+    r#"
+    def early_exit():
+        return "first"
+        return "second"
+        
+    early_exit() == "first"
+    "#,
+    // Execution should drop completely out of the function on the first return hit
+    Object::Bool(true)
+);
+
+test_case!(
+    return_nested_in_if,
+    r#"
+    def max(a, b):
+        if a > b:
+            return a
+        return b
+        
+    max(10, 5) == 10 and max(3, 7) == 7
+    "#,
+    // Return nested inside a conditional block should correctly pop the stack
+    Object::Bool(true)
+);
+
+test_case!(
+    return_nested_deep_in_while,
+    r#"
+    def find_threshold():
+        i = 1
+        while i < 100:
+            if i * i > 50:
+                return i
+            i = i + 1
+        return None
+        
+    find_threshold() == 8
+    "#,
+    // Return nested inside an if statement, inside a while loop, must cascade un-winding safely
+    Object::Bool(true)
+);
+
+test_case!(
+    return_from_deep_block_nesting,
+    r#"
+    def deeply_nested():
+        if True:
+            while True:
+                if True:
+                    return "escaped!"
+        return "failed"
+        
+    deeply_nested() == "escaped!"
+    "#,
+    // Verifies the ? operator completely bypasses loop mechanics once Return is activated
+    Object::Bool(true)
+);
+
+// =======================================================
+// Scope and Recursion
+// =======================================================
+
+test_case!(
+    function_recursive_factorial,
+    r#"
+    def factorial(n):
+        if n <= 1:
+            return 1
+        return n * factorial(n - 1)
+        
+    factorial(5) == 120
+    "#,
+    // Verifies that call-stack frames are uniquely maintained during evaluation recursion
+    Object::Bool(true)
+);
+
+test_case!(
+    function_mutating_outer_scope_fails,
+    r#"
+    count = 0
+    def increment():
+        count = count + 1
+        
+    increment()
+    "#,
+    // Since we don't have a 'global' or 'nonlocal' keyword, referencing a variable before local
+    // assignment should trigger an evaluation error (UnboundLocalError / RuntimeError)
+    Object::RuntimeError("Local variable 'count' referenced before assignment".into())
+);

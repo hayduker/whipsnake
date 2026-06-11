@@ -1,7 +1,7 @@
 use crate::{
     ast::{Expr, Stmt},
     error::{ErrorReporter, ParseError},
-    token::{Literal, SourceLocation, Token, TokenKind::{self, Identifier, NewLine}},
+    token::{Literal, SourceLocation, Token, TokenKind},
 };
 
 use std::iter::Peekable;
@@ -268,7 +268,7 @@ impl<'err> Parser<'err> {
     {
         let keyword = self.advance(tokens); // consume "return";
 
-        let value = if self.peek_matches(tokens, NewLine) || self.is_at_end(tokens) {
+        let value = if self.peek_matches(tokens, TokenKind::NewLine) || self.is_at_end(tokens) {
             None
         } else {
             Some(self.expression(tokens)?)

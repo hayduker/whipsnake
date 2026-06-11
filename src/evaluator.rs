@@ -1,5 +1,3 @@
-use std::env;
-
 use crate::{
     ast::{Expr, Stmt},
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
@@ -10,7 +8,7 @@ use crate::{
 };
 
 enum ControlFlow {
-    Return(Object),
+    Return { keyword: Token, value: Object },
     Error(RuntimeError),
 }
 
@@ -49,8 +47,8 @@ impl<'err> Evaluator<'err> {
             Err(c) => {
                 let error = match c {
                     ControlFlow::Error(e) => e,
-                    ControlFlow::Return(_) => RuntimeError::RuntimeError(
-                        SourceLocation { line: 0 },
+                    ControlFlow::Return { keyword, value: _value } => RuntimeError::RuntimeError(
+                        SourceLocation { line: keyword.line },
                         "got return statement outside of function call".to_string(),
                     ) 
                 };
@@ -92,7 +90,7 @@ impl<'err> Evaluator<'err> {
             },
 
             Stmt::Block(stmts) => {
-                self.execute_statements(stmts, environment, interactive);
+                self.execute_statements(stmts, environment, interactive)?;
             }
 
             Stmt::Assignment { name, initializer } => {
@@ -106,13 +104,11 @@ impl<'err> Evaluator<'err> {
                 condition,
                 then_body,
                 else_body,
-            } => match self.if_statement(condition, then_body, else_body, environment) {
-                Ok(value) => {
-                    if interactive {
-                        return Ok(value);
-                    }
+            } => {
+                let value = self.if_statement(condition, then_body, else_body, environment)?;
+                if interactive {
+                    return Ok(value);
                 }
-                Err(e) => return Err(ControlFlow::Error(e)),
             },
 
             Stmt::While { condition, body } => {
@@ -120,7 +116,7 @@ impl<'err> Evaluator<'err> {
                     match self.evaluate(condition, environment) {
                         Ok(value) => {
                             if value.is_truthy() {
-                                self.execute_statement(body, environment, interactive);
+                                self.execute_statement(body, environment, interactive)?;
                             } else {
                                 break;
                             }
@@ -155,7 +151,7 @@ impl<'err> Evaluator<'err> {
                 // This looks weird. A return value isn't really an error, but we lump it under Err here
                 // so that we can bubble it up to the call function using the ? operator. To keep returns
                 // separated from actual errors, we make them different variants of the ControlFlow enum.
-                return Err(ControlFlow::Return(return_value))
+                return Err(ControlFlow::Return { keyword: keyword.clone(), value: return_value })
             }
         }
 
@@ -168,13 +164,16 @@ impl<'err> Evaluator<'err> {
         then_body: &Stmt,
         else_body: &Option<Box<Stmt>>,
         environment: &mut Environment,
-    ) -> Result<Object, RuntimeError> {
-        let condition = self.evaluate(condition, environment)?;
+    ) -> Result<Object, ControlFlow> {
+        let condition = match self.evaluate(condition, environment) {
+            Ok(condition) => condition,
+            Err(e) => return Err(ControlFlow::Error(e)),
+        };
 
         if condition.is_truthy() {
-            self.execute_statement(then_body, environment, false);
+            self.execute_statement(then_body, environment, false)?;
         } else if let Some(else_body) = else_body {
-            self.execute_statement(else_body, environment, false);
+            self.execute_statement(else_body, environment, false)?;
         }
 
         Ok(Object::None)
@@ -281,7 +280,7 @@ impl<'err> Evaluator<'err> {
                     match self.execute_statements(&user_fn.body, &mut environment, false) {
                         Ok(_) => Ok(Object::None),
                         Err(ControlFlow::Error(e)) => return Err(e),
-                        Err(ControlFlow::Return(return_value)) => return Ok(return_value)
+                        Err(ControlFlow::Return { keyword: _keyword, value }) => return Ok(value)
                     }
                 },
                 Callable::Native(native_fn) => {
