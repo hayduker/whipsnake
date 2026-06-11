@@ -21,6 +21,10 @@ pub enum Stmt {
         name: Token,
         params: Vec<Token>,
         body: Vec<Stmt>,
+    },
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
     }
 }
 

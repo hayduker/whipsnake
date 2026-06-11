@@ -110,12 +110,33 @@ fn convert_stmt(s: &Stmt) -> SExpr {
             convert_expr(condition),
             convert_stmt(body),
         ]),
-        Stmt::Function { name, params, body } => SExpr::List(vec![
-            atom("def"),
-            atom(name.lexeme.as_str()),
-            SExpr::List(vec![atom("params")]),
-            SExpr::List(vec![atom("body")]),
-        ]),
+        Stmt::Function { name, params, body } => {
+            let mut params: Vec<SExpr> = params.iter()
+                .map(|p| atom(p.lexeme.as_str()))
+                .collect();
+            let mut params_sexpr = vec![atom("params")];
+            params_sexpr.append(&mut params);
+
+            let mut body: Vec<SExpr> = body.iter()
+                .map(|s| convert_stmt(s))
+                .collect();
+            let mut body_sexpr = vec![atom("body")];
+            body_sexpr.append(&mut body);
+
+            SExpr::List(vec![
+                atom("def"),
+                atom(name.lexeme.as_str()),
+                SExpr::List(params_sexpr),
+                SExpr::List(body_sexpr),
+            ])
+        },
+        Stmt::Return { keyword: _keywprd, value } => {
+            let mut sexpr = vec![atom("return")];
+            if let Some(value) = value {
+                sexpr.push(convert_expr(value));
+            }
+            SExpr::List(sexpr)
+        }
     }
 }
 

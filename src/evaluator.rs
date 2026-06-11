@@ -9,6 +9,11 @@ use crate::{
     token::{Literal, SourceLocation, Token, TokenKind},
 };
 
+enum ControlFlow {
+    Return(Object),
+    Error(RuntimeError),
+}
+
 pub struct Evaluator<'err> {
     error_reporter: &'err mut ErrorReporter,
 }
@@ -39,7 +44,21 @@ impl<'err> Evaluator<'err> {
             Object::Function(Callable::Native(ID_FUNC)),
         );
 
-        self.execute_statements(statements, environment, interactive)
+        match self.execute_statements(statements, environment, interactive) {
+            Ok(last_value) => Some(last_value),
+            Err(c) => {
+                let error = match c {
+                    ControlFlow::Error(e) => e,
+                    ControlFlow::Return(_) => RuntimeError::RuntimeError(
+                        SourceLocation { line: 0 },
+                        "got return statement outside of function call".to_string(),
+                    ) 
+                };
+
+                self.error_reporter.register_runtime_error(error);
+                None
+            }
+        }
     }
 
     fn execute_statements(
@@ -47,12 +66,12 @@ impl<'err> Evaluator<'err> {
         statements: &Vec<Stmt>,
         environment: &mut Environment,
         interactive: bool,
-    ) -> Option<Object> {
+    ) -> Result<Object, ControlFlow> {
         statements
             .iter()
-            .map(|stmt| self.execute_statement(stmt, environment, interactive))
+            .map(|stmt| Ok(self.execute_statement(stmt, environment, interactive)?))
             .last()
-            .unwrap_or(None)
+            .unwrap_or(Ok(Object::None))
     }
 
     fn execute_statement(
@@ -60,28 +79,26 @@ impl<'err> Evaluator<'err> {
         statement: &Stmt,
         environment: &mut Environment,
         interactive: bool,
-    ) -> Option<Object> {
+    ) -> Result<Object, ControlFlow> {
         match statement {
             Stmt::Expression(expr) => match self.evaluate(&expr, environment) {
                 Ok(value) => {
                     if interactive {
                         println!("{}", value);
-                        return Some(value);
+                        return Ok(value);
                     }
                 }
-                Err(e) => self.error_reporter.register_runtime_error(e),
+                Err(e) => return Err(ControlFlow::Error(e)),
             },
 
             Stmt::Block(stmts) => {
-                for stmt in stmts {
-                    self.execute_statement(stmt, environment, interactive);
-                }
+                self.execute_statements(stmts, environment, interactive);
             }
 
             Stmt::Assignment { name, initializer } => {
                 match self.evaluate(initializer, environment) {
                     Ok(value) => environment.define(name.lexeme.to_string(), value),
-                    Err(e) => self.error_reporter.register_runtime_error(e),
+                    Err(e) => return Err(ControlFlow::Error(e)),
                 }
             }
 
@@ -92,17 +109,24 @@ impl<'err> Evaluator<'err> {
             } => match self.if_statement(condition, then_body, else_body, environment) {
                 Ok(value) => {
                     if interactive {
-                        return Some(value);
+                        return Ok(value);
                     }
                 }
-                Err(e) => self.error_reporter.register_runtime_error(e),
+                Err(e) => return Err(ControlFlow::Error(e)),
             },
 
             Stmt::While { condition, body } => {
-                while let value = self.evaluate(condition, environment).ok()?
-                    && value.is_truthy()
-                {
-                    self.execute_statement(body, environment, interactive);
+                loop {
+                    match self.evaluate(condition, environment) {
+                        Ok(value) => {
+                            if value.is_truthy() {
+                                self.execute_statement(body, environment, interactive);
+                            } else {
+                                break;
+                            }
+                        },
+                        Err(e) => return Err(ControlFlow::Error(e)),
+                    }
                 }
             },
 
@@ -116,10 +140,26 @@ impl<'err> Evaluator<'err> {
                 }));
 
                 environment.define(name, user_fn);
+            },
+
+            Stmt::Return { keyword, value } => {
+                let return_value = if let Some(value_expr) = value {
+                    match self.evaluate(value_expr, environment) {
+                        Ok(value) => value,
+                        Err(e) => return Err(ControlFlow::Error(e))
+                    }
+                } else {
+                    Object::None
+                };
+
+                // This looks weird. A return value isn't really an error, but we lump it under Err here
+                // so that we can bubble it up to the call function using the ? operator. To keep returns
+                // separated from actual errors, we make them different variants of the ControlFlow enum.
+                return Err(ControlFlow::Return(return_value))
             }
         }
 
-        None
+        Ok(Object::None)
     }
 
     fn if_statement(
@@ -153,82 +193,13 @@ impl<'err> Evaluator<'err> {
             Expr::Grouping(inner_expr) => self.evaluate(inner_expr, environment)?,
 
             Expr::Unary { operator, right } => {
-                match self.evaluate(right, environment) {
-                    Ok(right) => {
-                        match operator.kind {
-                            TokenKind::Plus => {
-                                // unary + is identity
-                                match right {
-                                    Object::Int(_) | Object::Float(_) => right,
-                                    _ => {
-                                        return Err(RuntimeError::TypeError(
-                                            SourceLocation {
-                                                line: operator.line,
-                                            },
-                                            format!(
-                                                "bad operand type for unary -: '{}'",
-                                                right.py_type()
-                                            ),
-                                        ));
-                                    }
-                                }
-                            }
-                            TokenKind::Minus => match right {
-                                Object::Int(int) => Object::Int(-int),
-                                Object::Float(float) => Object::Float(-float),
-                                _ => {
-                                    return Err(RuntimeError::TypeError(
-                                        SourceLocation {
-                                            line: operator.line,
-                                        },
-                                        format!(
-                                            "bad operand type for unary -: '{}'",
-                                            right.py_type()
-                                        ),
-                                    ));
-                                }
-                            },
-                            TokenKind::Tilde => {
-                                // unary ~ is bitwise inversion, which for two's complement integers
-                                // works out to:  ~x = -(x+1)
-                                match right {
-                                    Object::Int(int) => Object::Int(-(int + 1)),
-                                    _ => {
-                                        return Err(RuntimeError::TypeError(
-                                            SourceLocation {
-                                                line: operator.line,
-                                            },
-                                            format!(
-                                                "bad operand type for unary -: '{}'",
-                                                right.py_type()
-                                            ),
-                                        ));
-                                    }
-                                }
-                            }
-                            TokenKind::Not => Object::Bool(!right.is_truthy()),
-                            _ => {
-                                return Err(RuntimeError::TypeError(
-                                    SourceLocation {
-                                        line: operator.line,
-                                    },
-                                    format!("invalid unary operator: '{}'", operator.lexeme),
-                                ));
-                            }
-                        }
-                    }
-                    Err(e) => return Err(e),
-                }
+                let right = self.evaluate(right, environment)?;
+                return self.unary_expr(operator, right);
             }
 
-            Expr::Binary {
-                left,
-                operator,
-                right,
-            } => {
+            Expr::Binary { left, operator, right } => {
                 let left = self.evaluate(left, environment)?;
                 let right = self.evaluate(right, environment)?;
-
                 return self.binary_expr(&left, operator, &right);
             }
 
@@ -307,14 +278,16 @@ impl<'err> Evaluator<'err> {
                         environment.define(param.lexeme, arg.clone());
                     }
 
-                    self.execute_statements(&user_fn.body, &mut environment, false);
-
-                    Ok(Object::None)
+                    match self.execute_statements(&user_fn.body, &mut environment, false) {
+                        Ok(_) => Ok(Object::None),
+                        Err(ControlFlow::Error(e)) => return Err(e),
+                        Err(ControlFlow::Return(return_value)) => return Ok(return_value)
+                    }
                 },
                 Callable::Native(native_fn) => {
                     self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren)?;
                     (native_fn.body)(arguments)
-                }
+                },
             }
         } else {
             return Err(RuntimeError::TypeError(
@@ -356,6 +329,81 @@ impl<'err> Evaluator<'err> {
         Ok(())
     }
 
+    fn unary_expr(
+        &self,
+        operator: &Token,
+        right: Object,
+    ) -> Result<Object, RuntimeError> {
+        let result = match operator.kind {
+
+            TokenKind::Plus => {
+                // unary + is identity
+                match right {
+                    Object::Int(_) | Object::Float(_) => right,
+                    _ => {
+                        return Err(RuntimeError::TypeError(
+                            SourceLocation {
+                                line: operator.line,
+                            },
+                            format!(
+                                "bad operand type for unary -: '{}'",
+                                right.py_type()
+                            ),
+                        ));
+                    }
+                }
+            },
+
+            TokenKind::Minus => match right {
+                Object::Int(int) => Object::Int(-int),
+                Object::Float(float) => Object::Float(-float),
+                _ => {
+                    return Err(RuntimeError::TypeError(
+                        SourceLocation {
+                            line: operator.line,
+                        },
+                        format!(
+                            "bad operand type for unary -: '{}'",
+                            right.py_type()
+                        ),
+                    ));
+                }
+            },
+
+            TokenKind::Tilde => {
+                // unary ~ is bitwise inversion, which for two's complement integers
+                // works out to:  ~x = -(x+1)
+                match right {
+                    Object::Int(int) => Object::Int(-(int + 1)),
+                    _ => {
+                        return Err(RuntimeError::TypeError(
+                            SourceLocation {
+                                line: operator.line,
+                            },
+                            format!(
+                                "bad operand type for unary -: '{}'",
+                                right.py_type()
+                            ),
+                        ));
+                    }
+                }
+            }
+
+            TokenKind::Not => Object::Bool(!right.is_truthy()),
+            
+            _ => {
+                return Err(RuntimeError::TypeError(
+                    SourceLocation {
+                        line: operator.line,
+                    },
+                    format!("invalid unary operator: '{}'", operator.lexeme),
+                ));
+            }
+        };
+
+        Ok(result)
+    }
+
     fn binary_expr(
         &self,
         left: &Object,
@@ -363,6 +411,7 @@ impl<'err> Evaluator<'err> {
         right: &Object,
     ) -> Result<Object, RuntimeError> {
         let result = match operator.kind {
+            
             TokenKind::Plus => match (&left, &right) {
                 (Object::Int(l), Object::Int(r)) => Object::Int(l + r),
                 (Object::Float(l), Object::Float(r)) => Object::Float(l + r),

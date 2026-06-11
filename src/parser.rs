@@ -1,7 +1,7 @@
 use crate::{
     ast::{Expr, Stmt},
     error::{ErrorReporter, ParseError},
-    token::{Literal, SourceLocation, Token, TokenKind::{self, Identifier}},
+    token::{Literal, SourceLocation, Token, TokenKind::{self, Identifier, NewLine}},
 };
 
 use std::iter::Peekable;
@@ -88,6 +88,10 @@ impl<'err> Parser<'err> {
 
         if self.peek_matches(tokens, TokenKind::Def) {
             return self.function_def(tokens);
+        }
+
+        if self.peek_matches(tokens, TokenKind::Return) {
+            return self.return_statement(tokens);
         }
 
         // It appears than we have an expression (including the beginning of an assignment)
@@ -256,6 +260,21 @@ impl<'err> Parser<'err> {
         let body = self.block(tokens)?;
 
         Ok(Stmt::Function { name, params, body })
+    }
+
+    fn return_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt, ParseError>
+    where
+        I: Iterator<Item = Token>,
+    {
+        let keyword = self.advance(tokens); // consume "return";
+
+        let value = if self.peek_matches(tokens, NewLine) || self.is_at_end(tokens) {
+            None
+        } else {
+            Some(self.expression(tokens)?)
+        };
+
+        Ok(Stmt::Return { keyword, value })
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr, ParseError>
@@ -551,11 +570,6 @@ impl<'err> Parser<'err> {
         }
 
         let right_paren = self.consume(tokens, TokenKind::RightParen, "'(' was never closed")?;
-
-        println!(
-            "after any arg parsing, got token {:?} which should be right paren",
-            right_paren
-        );
 
         Ok(Expr::Call {
             callee: Box::new(callee),
