@@ -1,7 +1,7 @@
 use crate::{
     ast::{Expr, Stmt},
     error::{ErrorReporter, ParseError},
-    token::{Literal, SourceLocation, Token, TokenKind},
+    token::{Literal, SourceLocation, Token, TokenKind::{self, Identifier}},
 };
 
 use std::iter::Peekable;
@@ -84,6 +84,10 @@ impl<'err> Parser<'err> {
             if self.peek_matches(tokens, TokenKind::Indent) {
                 return Ok(Stmt::Block(self.block(tokens)?));
             }
+        }
+
+        if self.peek_matches(tokens, TokenKind::Def) {
+            return self.function_def(tokens);
         }
 
         // It appears than we have an expression (including the beginning of an assignment)
@@ -213,6 +217,45 @@ impl<'err> Parser<'err> {
             condition,
             body: Box::new(body),
         })
+    }
+
+    fn function_def<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt, ParseError>
+    where
+        I: Iterator<Item = Token>,
+    {
+        self.advance(tokens); // consume "def"
+
+        let name = self.consume(tokens, TokenKind::Identifier, "expected identifier name after 'def'")?;
+
+        self.consume(tokens, TokenKind::LeftParen, "expected '(' after function name")?;
+
+        let mut params = vec![];
+        if !self.peek_matches(tokens, TokenKind::RightParen) {
+            loop {
+                if params.len() > 255 {
+                    return Err(ParseError::ParseError(
+                        SourceLocation {
+                            line: tokens.peek().unwrap().line,
+                        },
+                        String::from("can't have more than 255 parameters."),
+                    ));
+                }
+
+                params.push(
+                    self.consume(tokens, TokenKind::Identifier, "expected parameter name")?
+                );
+
+                if !self.advance_if(tokens, TokenKind::Comma) { break; }
+            }
+        }
+
+        self.consume(tokens, TokenKind::RightParen, "expected ')' after parameters")?;
+        self.consume(tokens, TokenKind::Colon, "expected ':' after ')'")?;
+        self.consume(tokens, TokenKind::NewLine, "expected new line after ':'")?;
+
+        let body = self.block(tokens)?;
+
+        Ok(Stmt::Function { name, params, body })
     }
 
     fn expression<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr, ParseError>

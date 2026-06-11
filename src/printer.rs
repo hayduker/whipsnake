@@ -110,6 +110,12 @@ fn convert_stmt(s: &Stmt) -> SExpr {
             convert_expr(condition),
             convert_stmt(body),
         ]),
+        Stmt::Function { name, params, body } => SExpr::List(vec![
+            atom("def"),
+            atom(name.lexeme.as_str()),
+            SExpr::List(vec![atom("params")]),
+            SExpr::List(vec![atom("body")]),
+        ]),
     }
 }
 

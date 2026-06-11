@@ -32,6 +32,7 @@ impl Object {
             Object::Float(_) => "float",
             Object::String(_) => "str",
             Object::Function(callable) => match callable {
+                Callable::UserDefined(_) => "function",
                 Callable::Native(_) => "builtin_function_or_method",
             },
         }
@@ -55,6 +56,9 @@ impl Object {
             }
             Object::None => 140735165431120,
             Object::Function(callable) => match callable {
+                Callable::UserDefined(user_defined) => {
+                    user_defined.body.as_ptr() as usize as i64
+                }
                 Callable::Native(native) => {
                     native.name.as_ptr() as usize as i64
                 }
@@ -74,9 +78,12 @@ impl fmt::Display for Object {
             Object::Bool(false) => write!(f, "False"),
             Object::None => write!(f, "None"),
             Object::Function(callable) => match callable {
+                Callable::UserDefined(user_fn) => {
+                    let address = user_fn.body.as_ptr();
+                    write!(f, "<function {} at {:p}>", user_fn.name, address)
+                }
                 Callable::Native(native_fn) => {
-                    let address = native_fn.body as *const ();
-                    write!(f, "<function {} at {:p}>", native_fn.name, address)
+                    write!(f, "<built-in function or method {}>", native_fn.name)
                 }
             },
         }

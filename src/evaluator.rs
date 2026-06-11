@@ -1,6 +1,8 @@
+use std::env;
+
 use crate::{
     ast::{Expr, Stmt},
-    callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC},
+    callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
     environment::Environment,
     error::{ErrorReporter, RuntimeError},
     object::Object,
@@ -37,14 +39,23 @@ impl<'err> Evaluator<'err> {
             Object::Function(Callable::Native(ID_FUNC)),
         );
 
+        self.execute_statements(statements, environment, interactive)
+    }
+
+    fn execute_statements(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: &mut Environment,
+        interactive: bool,
+    ) -> Option<Object> {
         statements
             .iter()
-            .map(|stmt| self.execute(stmt, environment, interactive))
+            .map(|stmt| self.execute_statement(stmt, environment, interactive))
             .last()
             .unwrap_or(None)
     }
 
-    pub fn execute(
+    fn execute_statement(
         &mut self,
         statement: &Stmt,
         environment: &mut Environment,
@@ -63,7 +74,7 @@ impl<'err> Evaluator<'err> {
 
             Stmt::Block(stmts) => {
                 for stmt in stmts {
-                    self.execute(stmt, environment, interactive);
+                    self.execute_statement(stmt, environment, interactive);
                 }
             }
 
@@ -91,8 +102,20 @@ impl<'err> Evaluator<'err> {
                 while let value = self.evaluate(condition, environment).ok()?
                     && value.is_truthy()
                 {
-                    self.execute(body, environment, interactive);
+                    self.execute_statement(body, environment, interactive);
                 }
+            },
+
+            Stmt::Function { name, params, body } => {
+                let name = name.lexeme.clone();
+
+                let user_fn = Object::Function(Callable::UserDefined(UserDefinedFn {
+                    name: name.clone(),
+                    params: params.clone(),
+                    body: body.clone()
+                }));
+
+                environment.define(name, user_fn);
             }
         }
 
@@ -109,15 +132,15 @@ impl<'err> Evaluator<'err> {
         let condition = self.evaluate(condition, environment)?;
 
         if condition.is_truthy() {
-            self.execute(then_body, environment, false);
+            self.execute_statement(then_body, environment, false);
         } else if let Some(else_body) = else_body {
-            self.execute(else_body, environment, false);
+            self.execute_statement(else_body, environment, false);
         }
 
         Ok(Object::None)
     }
 
-    pub fn evaluate(&self, expr: &Expr, environment: &Environment) -> Result<Object, RuntimeError> {
+    pub fn evaluate(&mut self, expr: &Expr, environment: &Environment) -> Result<Object, RuntimeError> {
         let value = match expr {
             Expr::Literal(literal) => match literal {
                 Literal::Int(int) => Object::Int(*int),
@@ -255,7 +278,7 @@ impl<'err> Evaluator<'err> {
                     arg_objects.push(self.evaluate(argument, environment)?);
                 }
 
-                return self.call(&callee, paren, arg_objects);
+                return self.call(&callee, paren, arg_objects, environment);
             }
         };
 
@@ -263,13 +286,31 @@ impl<'err> Evaluator<'err> {
     }
 
     fn call(
-        &self,
+        &mut self,
         callee: &Object,
         paren: &Token,
         arguments: Vec<Object>,
+        enclosing: &Environment,
     ) -> Result<Object, RuntimeError> {
         if let Object::Function(callable) = callee {
             match callable {
+                Callable::UserDefined(user_fn) => {
+                    if arguments.len() != user_fn.params.len() {
+                        return Err(RuntimeError::RuntimeError(
+                            SourceLocation { line: paren.line },
+                            format!("Function {} expects {} arguments but got {}", user_fn.name, user_fn.params.len(), arguments.len()),
+                        ));
+                    }
+
+                    let mut environment = Environment::new_local(enclosing);
+                    for (arg, param) in arguments.iter().zip(user_fn.params.clone()) {
+                        environment.define(param.lexeme, arg.clone());
+                    }
+
+                    self.execute_statements(&user_fn.body, &mut environment, false);
+
+                    Ok(Object::None)
+                },
                 Callable::Native(native_fn) => {
                     self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren)?;
                     (native_fn.body)(arguments)
