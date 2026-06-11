@@ -329,7 +329,7 @@ impl<'err> Parser<'err> {
     {
         if self.advance_if(tokens, TokenKind::Not) {
             let operator = self.previous.clone().unwrap();
-            let right = self.unary(tokens)?;
+            let right = self.equality(tokens)?;
             return Ok(Expr::Unary {
                 operator,
                 right: Box::new(right),

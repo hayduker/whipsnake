@@ -1,5 +1,1 @@
-def early_exit():
-    return "first"
-    return "second"
-    
-early_exit()
+print(not 5 - 5 or 10 * 0)
