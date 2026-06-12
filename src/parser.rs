@@ -102,19 +102,13 @@ impl<'err> Parser<'err> {
             return self.assignment_statement(tokens, expr);
         }
 
-        return Ok(Stmt::Expression(expr));
-        // // Definitely expression statement, we expect newline or EOF now
+        // Definitely expression statement, we expect newline or EOF now
 
-        // if self.advance_if(tokens, TokenKind::NewLine) || self.is_at_end(tokens) {
-        //     return Ok(Stmt::Expression(expr));
-        // }
+        if self.advance_if(tokens, TokenKind::NewLine) || self.is_at_end(tokens) {
+            return Ok(Stmt::Expression(expr));
+        }
 
-        // Err(ParseError::ParseError(
-        //     SourceLocation {
-        //         line: tokens.peek().unwrap().line,
-        //     },
-        //     String::from("expected newline or EOF after expression statement."),
-        // ))
+        Err(self.error(tokens, "expected newline or EOF after expression statement."))
     }
 
     fn block<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Vec<Stmt>, ParseError>
@@ -152,20 +146,10 @@ impl<'err> Parser<'err> {
                 });
             }
 
-            return Err(ParseError::ParseError(
-                SourceLocation {
-                    line: tokens.peek().unwrap().line,
-                },
-                String::from("expected newline or EOF after assignment statement."),
-            ));
+            return Err(self.error(tokens, "expected newline or EOF after assignment statement."));
         }
 
-        Err(ParseError::ParseError(
-            SourceLocation {
-                line: tokens.peek().unwrap().line,
-            },
-            String::from("cannot assign to expression here. Maybe you meant '==' instead of '='?"),
-        ))
+        Err(self.error(tokens, "cannot assign to expression here. Maybe you meant '==' instead of '='?"))
     }
 
     fn if_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt, ParseError>
@@ -238,12 +222,7 @@ impl<'err> Parser<'err> {
         if !self.peek_matches(tokens, TokenKind::RightParen) {
             loop {
                 if params.len() > 255 {
-                    return Err(ParseError::ParseError(
-                        SourceLocation {
-                            line: tokens.peek().unwrap().line,
-                        },
-                        String::from("can't have more than 255 parameters."),
-                    ));
+                    return Err(self.error(tokens, "can't have more than 255 parameters."));
                 }
 
                 params.push(
@@ -520,10 +499,7 @@ impl<'err> Parser<'err> {
             let token = self.previous.clone().unwrap();
             return match token.literal {
                 Some(literal) => Ok(Expr::Literal(literal)),
-                None => Err(ParseError::ParseError(
-                    SourceLocation { line: token.line },
-                    format!("got token type {:?} without literal", token.kind),
-                )),
+                None => Err(self.error(tokens, &format!("got token type {:?} without literal", token.kind)))
             };
         }
 
@@ -537,15 +513,9 @@ impl<'err> Parser<'err> {
             return Ok(Expr::Grouping(Box::new(expr)));
         }
 
-        Err(ParseError::ParseError(
-            SourceLocation {
-                line: tokens.peek().unwrap().line,
-            },
-            format!(
-                "don't know how to parse token {:?} here",
-                tokens.peek().unwrap().kind
-            ),
-        ))
+
+        let peek_kind = tokens.peek().unwrap().kind;
+        Err(self.error(tokens, &format!("don't know how to parse token {:?} here", peek_kind)))
     }
 
     fn finish_call<I>(&mut self, tokens: &mut Peekable<I>, callee: Expr) -> Result<Expr, ParseError>
@@ -556,12 +526,7 @@ impl<'err> Parser<'err> {
         if !self.peek_matches(tokens, TokenKind::RightParen) {
             loop {
                 if arguments.len() >= 255 {
-                    return Err(ParseError::ParseError(
-                        SourceLocation {
-                            line: tokens.peek().unwrap().line,
-                        },
-                        "can't have more than 255 arguments".to_string(),
-                    ));
+                    return Err(self.error(tokens, "can't have more than 255 arguments"));
                 }
                 arguments.push(self.expression(tokens)?);
                 if !self.advance_if(tokens, TokenKind::Comma) {
@@ -579,6 +544,22 @@ impl<'err> Parser<'err> {
         })
     }
 
+    fn error<I>(
+        &mut self,
+        tokens: &mut Peekable<I>,
+        msg: &str,
+    ) -> ParseError
+    where
+        I: Iterator<Item = Token>,
+    {
+        ParseError::ParseError(
+            SourceLocation {
+                line: tokens.peek().unwrap().line,
+            },
+            msg.into(),
+        )
+    }
+
     fn consume<I>(
         &mut self,
         tokens: &mut Peekable<I>,
@@ -591,12 +572,7 @@ impl<'err> Parser<'err> {
         if self.peek_matches(tokens, kind) {
             Ok(self.advance(tokens))
         } else {
-            Err(ParseError::ParseError(
-                SourceLocation {
-                    line: tokens.peek().unwrap().line,
-                },
-                err_msg.to_string(),
-            ))
+            Err(self.error(tokens, err_msg))
         }
     }
 

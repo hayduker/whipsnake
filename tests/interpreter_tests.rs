@@ -1163,7 +1163,6 @@ def fib(n):
     return fib(n - 2) + fib(n - 1)
     
 fib(15)"#,
-    // Verifies that call-stack frames are uniquely maintained during evaluation recursion
     Object::Int(610)
 );
 
@@ -1176,6 +1175,36 @@ def factorial(n):
     return n * factorial(n - 1)
     
 factorial(5)"#,
-    // Verifies that call-stack frames are uniquely maintained during evaluation recursion
     Object::Int(120)
 );
+
+test_case!(
+    function_nested_function_def,
+    r#"
+def make_printer():
+    def printer():
+        return "hi!"
+    
+    return printer
+
+printer = make_printer()
+printer()"#,
+    Object::String("hi!".to_string())
+);
+
+// test_case!(
+//     function_closure,
+//     r#"
+// def make_counter():
+//     i = 0
+//     def counter():
+//         i = i + 1
+//         print(i)
+    
+//     return counter
+
+// counter = make_counter()
+// counter()
+// counter()"#,
+//     Object::String("hi!".to_string())
+// );
