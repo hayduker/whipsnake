@@ -1208,3 +1208,84 @@ printer()"#,
 // counter()"#,
 //     Object::String("hi!".to_string())
 // );
+
+// =======================================================
+// Augmented Assignment Operators
+// =======================================================
+
+test_case!(
+    augmented_add_int,
+    r#"
+x = 10
+x += 5
+x"#, 
+    Object::Int(15)
+);
+
+test_case!(
+    augmented_subtract_int,
+    r#"
+x = 20
+x -= 7
+x"#, 
+    Object::Int(13)
+);
+
+test_case!(
+    augmented_multiply_int,
+    r#"
+x = 6
+x *= 4
+x"#, 
+    Object::Int(24)
+);
+
+test_case!(
+    augmented_divide_int,
+    r#"
+x = 20
+x /= 4
+x"#, 
+    // In Python, standard division always returns a float
+    Object::Float(5.0)
+);
+
+test_case!(
+    augmented_add_string_concat,
+    r#"
+text = "hello"
+text += " world"
+text"#, 
+    Object::String("hello world".to_string())
+);
+
+test_case!(
+    augmented_multiply_string_repeat,
+    r#"
+pattern = "Ab"
+pattern *= 3
+pattern"#, 
+    Object::String("AbAbAb".to_string())
+);
+
+test_case!(
+    augmented_assignment_expression_rvalue,
+    r#"
+x = 5
+y = 2
+x += y * 3 + 1  # Equivalent to: x = x + (2 * 3 + 1) -> 5 + 7
+x"#, 
+    Object::Int(12)
+);
+
+test_case!(
+    augmented_assignment_in_while_loop,
+    r#"
+count = 0
+total = 0
+while count < 4:
+    total += count
+    count += 1
+total"#, // 0 + 1 + 2 + 3 = 6
+    Object::Int(6)
+);

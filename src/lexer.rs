@@ -92,11 +92,11 @@ impl<'src, 'err> Lexer<'src, 'err> {
             ':' => TokenKind::Colon,
             ',' => TokenKind::Comma,
             '.' => TokenKind::Dot,
-            '-' => TokenKind::Minus,
-            '+' => TokenKind::Plus,
-            '/' => TokenKind::Slash,
-            '*' => TokenKind::Star,
             '~' => TokenKind::Tilde,
+            '+' => if self.advance_if_match('=') { TokenKind::PlusEqual } else { TokenKind::Plus },
+            '-' => if self.advance_if_match('=') { TokenKind::MinusEqual } else { TokenKind::Minus },
+            '*' => if self.advance_if_match('=') { TokenKind::StarEqual } else { TokenKind::Star },
+            '/' => if self.advance_if_match('=') { TokenKind::SlashEqual } else { TokenKind::Slash },
             '!' => {
                 if self.advance_if_match('=') {
                     TokenKind::BangEqual

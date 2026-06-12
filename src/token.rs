@@ -25,6 +25,10 @@ pub enum TokenKind {
     GreaterEqual,
     Less,
     LessEqual,
+    PlusEqual,
+    MinusEqual,
+    StarEqual,
+    SlashEqual,
 
     // literals
     Identifier,

@@ -458,6 +458,13 @@ impl<'err> Evaluator<'err> {
                 (Object::Float(l), Object::Float(r)) => Object::Float(l * r),
                 (Object::Int(l), Object::Float(r)) => Object::Float(*l as f64 * r),
                 (Object::Float(l), Object::Int(r)) => Object::Float(l * *r as f64),
+                (Object::String(l), Object::Int(r)) => {
+                    let mut string = String::new();
+                    for _ in 0..*r {
+                        string.push_str(l);
+                    }
+                    Object::String(string)
+                },
                 _ => {
                     return Err(RuntimeError::TypeError(
                         SourceLocation {

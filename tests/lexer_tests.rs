@@ -132,6 +132,46 @@ test_no_errors!(
     ]
 );
 
+test_no_errors!(
+    lex_plus_equal,
+    "+=",
+    vec![
+        tok!(PlusEqual, "+=", 1),
+        tok![NewLine, "\n", 1],
+        tok!(Eof, "", 2),
+    ]
+);
+
+test_no_errors!(
+    lex_minus_equal,
+    "-=",
+    vec![
+        tok!(MinusEqual, "-=", 1),
+        tok![NewLine, "\n", 1],
+        tok!(Eof, "", 2),
+    ]
+);
+
+test_no_errors!(
+    lex_star_equal,
+    "*=",
+    vec![
+        tok!(StarEqual, "*=", 1),
+        tok![NewLine, "\n", 1],
+        tok!(Eof, "", 2),
+    ]
+);
+
+test_no_errors!(
+    lex_slash_equal,
+    "/=",
+    vec![
+        tok!(SlashEqual, "/=", 1),
+        tok![NewLine, "\n", 1],
+        tok!(Eof, "", 2),
+    ]
+);
+
 test_suite_no_errors!([
     (
         lex_multiple_lines,
