@@ -1,3 +1,7 @@
+//! The `parser` module is responsible for parsing a stream of `Token`s into an abstract Syntax Tree (AST).
+//! It implements a recursive descent parser to construct `Expr` and `Stmt` nodes based on the grammar
+//! rules of the Python subset.
+
 use crate::{
     ast::{Expr, Stmt},
     error::{ErrorReporter, ParseError},
@@ -6,12 +10,24 @@ use crate::{
 
 use std::iter::Peekable;
 
+/// The `Parser` struct is responsible for transforming a peekable iterator of `Token`s
+/// into a vector of `Stmt` (statement) nodes, representing the abstract syntax tree (AST).
+/// It uses a recursive descent parsing strategy and reports any parsing errors encountered
+/// via an `ErrorReporter`.
 pub struct Parser<'err> {
     previous: Option<Token>,
     error_reporter: &'err mut ErrorReporter,
 }
 
 impl<'err> Parser<'err> {
+    /// Creates a new `Parser` instance.
+    ///
+    /// Initializes the parser with an `ErrorReporter` to handle and report any syntax errors
+    /// during the parsing process.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_reporter` - A mutable reference to an `ErrorReporter` for error handling.
     pub fn new(error_reporter: &'err mut ErrorReporter) -> Self {
         Parser {
             previous: None,
@@ -19,6 +35,75 @@ impl<'err> Parser<'err> {
         }
     }
 
+    /// Parses the given stream of `Token`s into a vector of `Stmt`.
+    ///
+    /// This is the entry point for the parsing process. It consumes tokens from the iterator
+    /// and attempts to build a list of statements that form the program's AST.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `I` - An iterator that yields `Token`s.
+    ///
+    /// # Arguments
+    ///
+    /// * `tokens` - A mutable, peekable iterator over the input `Token`s.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<Stmt>` representing the parsed Abstract Syntax Tree.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use whipsnake::{error::ErrorReporter, lexer::Lexer, parser::Parser, ast::{Stmt, Expr, self}, token::{Token, TokenKind, SourceLocation, Literal}};
+    ///
+    /// let mut error_reporter = ErrorReporter::new();
+    /// let mut lexer = Lexer::new(&mut error_reporter);
+    /// let tokens = lexer.lex("x = 1 + 2");
+    /// let mut token_iter = tokens.into_iter().peekable();
+    /// let mut parser = Parser::new(&mut error_reporter);
+    /// let statements = parser.parse(&mut token_iter);
+    ///
+    /// assert_eq!(statements.len(), 1);
+    /// match &statements[0] {
+    ///     Stmt::Assignment { name, initializer } => {
+    ///         assert_eq!(name.kind, TokenKind::Identifier);
+    ///         assert_eq!(name.lexeme, "x");
+    ///         match initializer {
+    ///             Expr::Binary { left, operator, right } => {
+    ///                 assert_eq!(**left, Expr::Literal(Literal::Int(1)));
+    ///                 assert_eq!(operator.kind, TokenKind::Plus);
+    ///                 assert_eq!(**right, Expr::Literal(Literal::Int(2)));
+    ///             },
+    ///             _ => panic!("Expected binary expression"),
+    ///         }
+    ///     },
+    ///     _ => panic!("Expected assignment statement"),
+    /// }
+    /// ```
+    ///
+    /// ```
+    /// use whipsnake::{error::ErrorReporter, lexer::Lexer, parser::Parser, ast::{Stmt, Expr, self}, token::{Token, TokenKind, SourceLocation, Literal}};
+    ///
+    /// let mut error_reporter = ErrorReporter::new();
+    /// let mut lexer = Lexer::new(&mut error_reporter);
+    /// let tokens = lexer.lex("if True:\n    x = 1");
+    /// let mut token_iter = tokens.into_iter().peekable();
+    /// let mut parser = Parser::new(&mut error_reporter);
+    /// let statements = parser.parse(&mut token_iter);
+    ///
+    /// assert_eq!(statements.len(), 1);
+    /// if let Stmt::If { condition, then_body, else_body: _ } = &statements[0] {
+    ///     assert_eq!(*condition, Expr::Literal(Literal::Bool(true)));
+    ///     if let Stmt::Block(block_stmts) = &**then_body {
+    ///         assert_eq!(block_stmts.len(), 1);
+    ///     } else {
+    ///         panic!("Expected a block statement");
+    ///     }
+    /// } else {
+    ///     panic!("Expected an if statement");
+    /// }
+    /// ```
     pub fn parse<I>(&mut self, tokens: &mut Peekable<I>) -> Vec<Stmt>
     where
         I: Iterator<Item = Token>,
