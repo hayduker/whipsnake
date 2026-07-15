@@ -1,3 +1,7 @@
+//! The `evaluator` module is responsible for executing the AST.
+//! It walks the AST, evaluates expressions, and executes statements to produce results.
+//! It also manages the runtime environment and handles runtime errors.
+
 use crate::{
     ast::{Expr, Stmt},
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
@@ -7,20 +11,64 @@ use crate::{
     token::{Literal, SourceLocation, Token, TokenKind},
 };
 
+/// Represents the control flow of the interpreter, used to handle returns from functions
+/// and propagate runtime errors.
 enum ControlFlow {
     Return { keyword: Token, value: Object },
     Error(RuntimeError),
 }
 
+/// The `Evaluator` struct is responsible for interpreting the AST.
+/// It traverses the AST, evaluates expressions, and executes statements in a given environment.
 pub struct Evaluator<'err> {
     error_reporter: &'err mut ErrorReporter,
 }
 
 impl<'err> Evaluator<'err> {
+    /// Creates a new `Evaluator` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_reporter` - A mutable reference to an `ErrorReporter` for reporting runtime errors.
     pub fn new(error_reporter: &'err mut ErrorReporter) -> Self {
         Evaluator { error_reporter }
     }
 
+    /// Interprets a list of statements in a given environment.
+    ///
+    /// This is the main entry point for executing the program's AST. It sets up the initial
+    /// environment with native functions and then executes each statement sequentially.
+    /// If `interactive` mode is true, it will print the result of expression statements.
+    ///
+    /// # Arguments
+    ///
+    /// * `statements` - A reference to a vector of `Stmt` to be executed.
+    /// * `environment` - A mutable reference to the `Environment` in which to execute the statements.
+    /// * `interactive` - A boolean indicating whether the interpreter is running in interactive mode.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<Object>` containing the last evaluated value in interactive mode, or `None` otherwise.
+    /// If a runtime error occurs, it reports the error and returns `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use whipsnake::{error::ErrorReporter, lexer::Lexer, parser::Parser, evaluator::Evaluator, environment::Environment, object::Object};
+    ///
+    /// let mut error_reporter = ErrorReporter::new();
+    /// let mut lexer = Lexer::new(&mut error_reporter);
+    /// let tokens = lexer.lex("x = 10\nprint(x)");
+    /// let mut token_iter = tokens.into_iter().peekable();
+    /// let mut parser = Parser::new(&mut error_reporter);
+    /// let statements = parser.parse(&mut token_iter);
+    ///
+    /// let mut evaluator = Evaluator::new(&mut error_reporter);
+    /// let mut environment = Environment::new_global();
+    /// let result = evaluator.interpret(&statements, &mut environment, true);
+    ///
+    /// assert_eq!(result, Some(Object::None)); // print returns None
+    /// ```
     pub fn interpret(
         &mut self,
         statements: &Vec<Stmt>,
@@ -50,7 +98,7 @@ impl<'err> Evaluator<'err> {
                     ControlFlow::Return { keyword, value: _value } => RuntimeError::RuntimeError(
                         SourceLocation { line: keyword.line },
                         "got return statement outside of function call".to_string(),
-                    ) 
+                    )
                 };
 
                 self.error_reporter.register_runtime_error(error);
@@ -179,6 +227,47 @@ impl<'err> Evaluator<'err> {
         Ok(Object::None)
     }
 
+    /// Evaluates a given expression within the current environment.
+    ///
+    /// This function recursively evaluates expressions based on their type (literals, unary,
+    /// binary, logical, variable, or function calls) and returns the resulting `Object`.
+    /// It handles type checking and runtime errors during evaluation.
+    ///
+    /// # Arguments
+    ///
+    /// * `expr` - A reference to the `Expr` to be evaluated.
+    /// * `environment` - A reference to the `Environment` containing variable bindings.
+    ///
+    /// # Returns
+    ///
+    /// A `Result<Object, RuntimeError>` indicating the evaluated `Object` on success,
+    /// or a `RuntimeError` if an error occurs during evaluation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use whipsnake::{error::ErrorReporter, ast::{Expr, self}, evaluator::Evaluator, environment::Environment, token::{Token, TokenKind, SourceLocation, Literal}, object::Object};
+    ///
+    /// let mut error_reporter = ErrorReporter::new();
+    /// let mut evaluator = Evaluator::new(&mut error_reporter);
+    /// let mut environment = Environment::new_global();
+    ///
+    /// let expr = Expr::Binary {
+    ///     left: Box::new(Expr::Literal(Literal::Int(1))),
+    ///     operator: Token::new(TokenKind::Plus, "+", 1),
+    ///     right: Box::new(Expr::Literal(Literal::Int(2))),
+    /// };
+    /// let result = evaluator.evaluate(&expr, &environment).unwrap();
+    /// assert_eq!(result, Object::Int(3));
+    ///
+    /// let expr_float = Expr::Binary {
+    ///     left: Box::new(Expr::Literal(Literal::Float(1.5))),
+    ///     operator: Token::new(TokenKind::Star, "*", 1),
+    ///     right: Box::new(Expr::Literal(Literal::Int(2))),
+    /// };
+    /// let result_float = evaluator.evaluate(&expr_float, &environment).unwrap();
+    /// assert_eq!(result_float, Object::Float(3.0));
+    /// ```
     pub fn evaluate(&mut self, expr: &Expr, environment: &Environment) -> Result<Object, RuntimeError> {
         let value = match expr {
             Expr::Literal(literal) => match literal {
