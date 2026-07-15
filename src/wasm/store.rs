@@ -1,14 +1,17 @@
 use crate::wasm::{FuncType, Function, Module};
 
+#[allow(unused)]
 struct InternalFuncInst {
     func_type: FuncType,
     code: Function,
 }
 
+#[allow(unused)]
 enum FuncInst {
     Internal(InternalFuncInst),
 }
 
+#[allow(unused)]
 pub struct Store {
     functions: Vec<FuncInst>,
 }
