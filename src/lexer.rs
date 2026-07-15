@@ -1,3 +1,7 @@
+//! The `lexer` module is responsible for tokenizing the source code into a stream of `Token`s.
+//! It handles the recognition of keywords, identifiers, literals, operators, and manages
+//! semantic indentation and dedentation.
+
 use std::{iter::Peekable, str::CharIndices};
 
 use crate::{
@@ -5,6 +9,11 @@ use crate::{
     token::{Literal, SourceLocation, Token, TokenKind},
 };
 
+/// The `Lexer` struct is responsible for taking a raw source string and converting it into a
+/// sequence of `Token`s.
+///
+/// It handles character by character scanning, recognizes different token types (like keywords,
+/// identifiers, literals, and operators), and manages semantic whitespace.
 pub struct Lexer<'src, 'err> {
     source: &'src str,
     chars: Peekable<CharIndices<'src>>,
@@ -17,6 +26,14 @@ pub struct Lexer<'src, 'err> {
 }
 
 impl<'src, 'err> Lexer<'src, 'err> {
+    /// Creates a new `Lexer` instance.
+    ///
+    /// Initializes the lexer with an `ErrorReporter` to report any lexical errors encountered
+    /// during the tokenization process.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_reporter` - A mutable reference to an `ErrorReporter` for error handling.
     pub fn new(error_reporter: &'err mut ErrorReporter) -> Lexer<'src, 'err> {
         Lexer {
             source: "",
@@ -30,6 +47,55 @@ impl<'src, 'err> Lexer<'src, 'err> {
         }
     }
 
+    /// Lexes the provided source string and returns a vector of `Token`s.
+    ///
+    /// This is the primary method for tokenizing the input source code. It iterates through
+    /// the source, identifying lexemes and converting them into `Token`s. It also handles
+    /// the generation of `Indent` and `Dedent` tokens based on changes in indentation levels,
+    /// and appends an `Eof` token at the end of the token stream.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The input string to be tokenized.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<Token>` representing the tokenized output of the source code.
+    ///
+    /// # Examples
+    ///
+    /// ## Basic arithmetic expression
+    /// ```
+    /// use whipsnake::{token::{TokenKind, Token, SourceLocation, Literal}, error::ErrorReporter, lexer::Lexer};
+    /// let mut error_reporter = ErrorReporter::new();
+    /// let mut lexer = Lexer::new(&mut error_reporter);
+    /// let tokens = lexer.lex("1 + 2");
+    /// assert_eq!(tokens[0], Token::with_literal(TokenKind::Int, "1", Literal::Int(1), 1));
+    /// assert_eq!(tokens[1], Token::new(TokenKind::Plus, "+", 1));
+    /// assert_eq!(tokens[2], Token::with_literal(TokenKind::Int, "2", Literal::Int(2), 1));
+    /// ```
+    ///
+    /// ## Indentation and dedentation
+    /// ```
+    /// use whipsnake::{token::{TokenKind, Token, SourceLocation}, error::ErrorReporter, lexer::Lexer};
+    /// let mut error_reporter = ErrorReporter::new();
+    /// let mut lexer = Lexer::new(&mut error_reporter);
+    /// let tokens = lexer.lex("if True:\n    pass");
+    /// assert_eq!(tokens[3], Token::new(TokenKind::NewLine, "\n", 1));
+    /// assert_eq!(tokens[4], Token::new(TokenKind::Indent, "", 2));
+    /// assert_eq!(tokens[5], Token::new(TokenKind::Identifier, "pass", 2));
+    /// assert_eq!(tokens[6], Token::new(TokenKind::NewLine, "\n", 2));
+    /// assert_eq!(tokens[7], Token::new(TokenKind::Dedent, "", 3));
+    /// ```
+    ///
+    /// ## String literal
+    /// ```
+    /// use whipsnake::{token::{TokenKind, Token, SourceLocation, Literal}, error::ErrorReporter, lexer::Lexer};
+    /// let mut error_reporter = ErrorReporter::new();
+    /// let mut lexer = Lexer::new(&mut error_reporter);
+    /// let tokens = lexer.lex("\"hello\"");
+    /// assert_eq!(tokens[0], Token::with_literal(TokenKind::String, "\"hello\"", Literal::String("hello".to_string()), 1));
+    /// ```
     pub fn lex(&mut self, source: &'src str) -> Vec<Token> {
         self.source = source;
         self.chars = source.char_indices().peekable();
