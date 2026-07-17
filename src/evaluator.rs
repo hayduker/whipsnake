@@ -370,7 +370,6 @@ impl<'err> Evaluator<'err> {
                         Ok(_) => Ok(Object::None),
                         Err(ControlFlow::Error(e)) => return Err(e),
                         Err(ControlFlow::Return { keyword: _keyword, value }) => {
-                            println!("got return from executing statements within call, value = {}", value);
                             return Ok(value)
                         }
                     }
