@@ -2,3 +2,4 @@
 .venv
 src/wasm/scratch.wat
 src/wasm/scratch.wasm
+.direnv
