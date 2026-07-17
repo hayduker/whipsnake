@@ -1,6 +1,6 @@
 # Whipsake: A Python Subset Interpreter
 
-Whipsake is a simple interpreter for a subset of the Python programming language, implemented in Rust. It features a lexer, a recursive descent parser, and a tree-walking evaluator. Once the interpreter is in a good place, I aim to use WebAssembly as a compile target, and to implemented a simple Wasm runtime along with it to act as the stack-based virtual machine that runs the Wasm bytecode.
+Whipsake is an interpreter for a subset of the Python programming language, implemented in Rust. It features a lexer, a recursive descent parser, and a tree-walking evaluator. Once the interpreter is in a good place, I aim to use WebAssembly as a compile target, and to implemented a simple Wasm runtime along with it to act as the stack-based virtual machine that runs the Wasm bytecode.
 
 ## Features
 
@@ -31,7 +31,7 @@ To run the interpreter in interactive mode:
 cargo run
 ```
 
-You can then type Python-like code directly into the console. For example:
+You can then type Python code right into the REPL:
 
 ```python
 >>> x = 10
@@ -44,16 +44,10 @@ You can then type Python-like code directly into the console. For example:
 Hello, World!
 ```
 
-To run a specific Python file:
+To run a specific Python:
 
 ```bash
 cargo run -- <file_path>
-```
-
-Replace `<file_path>` with the path to your Python-like source file. For example:
-
-```bash
-cargo run -- examples/hello.py
 ```
 
 ## Project Structure
@@ -67,10 +61,6 @@ cargo run -- examples/hello.py
 *   `src/environment.rs`: Manages the runtime environment for variable and function bindings.
 *   `src/object.rs`: Defines the `Object` enum, representing runtime values.
 *   `src/callable.rs`: Defines traits and structs for callable objects (functions).
-
-## Contributing
-
-Contributions are welcome! Please feel free to open issues or submit pull requests.
 
 ## License
 
