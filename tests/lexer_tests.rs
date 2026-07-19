@@ -77,14 +77,18 @@ test_no_errors!(
 test_no_errors!(
     lex_empty_single_quoted_string,
     "''",
-    vec![tok_sq_string("", 1), tok![NewLine, "\n", 1], tok![Eof, "", 2],]
+    vec![
+        tok_sq_string("", 1),
+        tok![NewLine, "\n", 1],
+        tok![Eof, "", 2],
+    ]
 );
 
 test_no_errors!(
     lex_float,
-    "3.14159",
+    "1.2345",
     vec![
-        tok_float(3.14159, 1),
+        tok_float(1.2345, 1),
         tok![NewLine, "\n", 1],
         tok![Eof, "", 2],
     ]

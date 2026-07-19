@@ -8,4 +8,4 @@ pub mod object;
 pub mod parser;
 pub mod printer;
 pub mod token;
-pub mod wasm;
+// pub mod wasm;

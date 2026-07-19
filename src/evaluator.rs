@@ -95,10 +95,13 @@ impl<'err> Evaluator<'err> {
             Err(c) => {
                 let error = match c {
                     ControlFlow::Error(e) => e,
-                    ControlFlow::Return { keyword, value: _value } => RuntimeError::RuntimeError(
+                    ControlFlow::Return {
+                        keyword,
+                        value: _value,
+                    } => RuntimeError::RuntimeError(
                         SourceLocation { line: keyword.line },
                         "got return statement outside of function call".to_string(),
-                    )
+                    ),
                 };
 
                 self.error_reporter.register_runtime_error(error);
@@ -157,20 +160,18 @@ impl<'err> Evaluator<'err> {
                 if interactive {
                     return Ok(value);
                 }
-            },
+            }
 
-            Stmt::While { condition, body } => {
-                loop {
-                    match self.evaluate(condition, environment) {
-                        Ok(value) => {
-                            if value.is_truthy() {
-                                self.execute_statement(body, environment, interactive)?;
-                            } else {
-                                break;
-                            }
-                        },
-                        Err(e) => return Err(ControlFlow::Error(e)),
+            Stmt::While { condition, body } => loop {
+                match self.evaluate(condition, environment) {
+                    Ok(value) => {
+                        if value.is_truthy() {
+                            self.execute_statement(body, environment, interactive)?;
+                        } else {
+                            break;
+                        }
                     }
+                    Err(e) => return Err(ControlFlow::Error(e)),
                 }
             },
 
@@ -180,17 +181,17 @@ impl<'err> Evaluator<'err> {
                 let user_fn = Object::Function(Callable::UserDefined(UserDefinedFn {
                     name: name.clone(),
                     params: params.clone(),
-                    body: body.clone()
+                    body: body.clone(),
                 }));
 
                 environment.define(name, user_fn);
-            },
+            }
 
             Stmt::Return { keyword, value } => {
                 let return_value = if let Some(value_expr) = value {
                     match self.evaluate(value_expr, environment) {
                         Ok(value) => value,
-                        Err(e) => return Err(ControlFlow::Error(e))
+                        Err(e) => return Err(ControlFlow::Error(e)),
                     }
                 } else {
                     Object::None
@@ -199,7 +200,10 @@ impl<'err> Evaluator<'err> {
                 // This looks weird. A return value isn't really an error, but we lump it under Err here
                 // so that we can bubble it up to the call function using the ? operator. To keep returns
                 // separated from actual errors, we make them different variants of the ControlFlow enum.
-                return Err(ControlFlow::Return { keyword: keyword.clone(), value: return_value })
+                return Err(ControlFlow::Return {
+                    keyword: keyword.clone(),
+                    value: return_value,
+                });
             }
         }
 
@@ -268,7 +272,11 @@ impl<'err> Evaluator<'err> {
     /// let result_float = evaluator.evaluate(&expr_float, &environment).unwrap();
     /// assert_eq!(result_float, Object::Float(3.0));
     /// ```
-    pub fn evaluate(&mut self, expr: &Expr, environment: &Environment) -> Result<Object, RuntimeError> {
+    pub fn evaluate(
+        &mut self,
+        expr: &Expr,
+        environment: &Environment,
+    ) -> Result<Object, RuntimeError> {
         let value = match expr {
             Expr::Literal(literal) => match literal {
                 Literal::Int(int) => Object::Int(*int),
@@ -285,7 +293,11 @@ impl<'err> Evaluator<'err> {
                 return self.unary_expr(operator, right);
             }
 
-            Expr::Binary { left, operator, right } => {
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => {
                 let left = self.evaluate(left, environment)?;
                 let right = self.evaluate(right, environment)?;
                 return self.binary_expr(&left, operator, &right);
@@ -357,7 +369,12 @@ impl<'err> Evaluator<'err> {
                     if arguments.len() != user_fn.params.len() {
                         return Err(RuntimeError::RuntimeError(
                             SourceLocation { line: paren.line },
-                            format!("Function {} expects {} arguments but got {}", user_fn.name, user_fn.params.len(), arguments.len()),
+                            format!(
+                                "Function {} expects {} arguments but got {}",
+                                user_fn.name,
+                                user_fn.params.len(),
+                                arguments.len()
+                            ),
                         ));
                     }
 
@@ -369,15 +386,16 @@ impl<'err> Evaluator<'err> {
                     match self.execute_statements(&user_fn.body, &mut environment, false) {
                         Ok(_) => Ok(Object::None),
                         Err(ControlFlow::Error(e)) => return Err(e),
-                        Err(ControlFlow::Return { keyword: _keyword, value }) => {
-                            return Ok(value)
-                        }
+                        Err(ControlFlow::Return {
+                            keyword: _keyword,
+                            value,
+                        }) => return Ok(value),
                     }
-                },
+                }
                 Callable::Native(native_fn) => {
                     self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren)?;
                     (native_fn.body)(arguments)
-                },
+                }
             }
         } else {
             return Err(RuntimeError::TypeError(
@@ -419,13 +437,8 @@ impl<'err> Evaluator<'err> {
         Ok(())
     }
 
-    fn unary_expr(
-        &self,
-        operator: &Token,
-        right: Object,
-    ) -> Result<Object, RuntimeError> {
+    fn unary_expr(&self, operator: &Token, right: Object) -> Result<Object, RuntimeError> {
         let result = match operator.kind {
-
             TokenKind::Plus => {
                 // unary + is identity
                 match right {
@@ -435,14 +448,11 @@ impl<'err> Evaluator<'err> {
                             SourceLocation {
                                 line: operator.line,
                             },
-                            format!(
-                                "bad operand type for unary -: '{}'",
-                                right.py_type()
-                            ),
+                            format!("bad operand type for unary -: '{}'", right.py_type()),
                         ));
                     }
                 }
-            },
+            }
 
             TokenKind::Minus => match right {
                 Object::Int(int) => Object::Int(-int),
@@ -452,10 +462,7 @@ impl<'err> Evaluator<'err> {
                         SourceLocation {
                             line: operator.line,
                         },
-                        format!(
-                            "bad operand type for unary -: '{}'",
-                            right.py_type()
-                        ),
+                        format!("bad operand type for unary -: '{}'", right.py_type()),
                     ));
                 }
             },
@@ -470,17 +477,14 @@ impl<'err> Evaluator<'err> {
                             SourceLocation {
                                 line: operator.line,
                             },
-                            format!(
-                                "bad operand type for unary -: '{}'",
-                                right.py_type()
-                            ),
+                            format!("bad operand type for unary -: '{}'", right.py_type()),
                         ));
                     }
                 }
             }
 
             TokenKind::Not => Object::Bool(!right.is_truthy()),
-            
+
             _ => {
                 return Err(RuntimeError::TypeError(
                     SourceLocation {
@@ -501,7 +505,6 @@ impl<'err> Evaluator<'err> {
         right: &Object,
     ) -> Result<Object, RuntimeError> {
         let result = match operator.kind {
-            
             TokenKind::Plus => match (&left, &right) {
                 (Object::Int(l), Object::Int(r)) => Object::Int(l + r),
                 (Object::Float(l), Object::Float(r)) => Object::Float(l + r),
@@ -552,7 +555,7 @@ impl<'err> Evaluator<'err> {
                         string.push_str(l);
                     }
                     Object::String(string)
-                },
+                }
                 _ => {
                     return Err(RuntimeError::TypeError(
                         SourceLocation {

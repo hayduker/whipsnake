@@ -27,7 +27,9 @@ macro_rules! test_case {
             }
 
             let mut evaluator = Evaluator::new(&mut reporter);
-            let value = evaluator.interpret(&statements, &mut environment, true).unwrap();
+            let value = evaluator
+                .interpret(&statements, &mut environment, true)
+                .unwrap();
 
             if reporter.has_errors() {
                 reporter.print_errors();
@@ -219,7 +221,7 @@ test_case!(
 
 test_case!(unary_plus_integer, r#"+5"#, Object::Int(5));
 
-test_case!(unary_plus_float, r#"+3.14"#, Object::Float(3.14));
+test_case!(unary_plus_float, r#"+1.234"#, Object::Float(1.234));
 
 test_case!(unary_plus_negative_integer, r#"+-10"#, Object::Int(-10));
 
@@ -514,9 +516,9 @@ x"#,
 
 test_case!(
     assign_and_read_float,
-    r#"pi = 3.14159
+    r#"pi = 1.2345
 pi"#,
-    Object::Float(3.14159)
+    Object::Float(1.2345)
 );
 
 test_case!(
@@ -747,11 +749,11 @@ test_case!(
     r#"if False:
     a = 1
 elif True:
-    leaked_from_elif = 3.14
+    leaked_from_elif = 1.23
 else:
     b = 2
 leaked_from_elif"#,
-    Object::Float(3.14)
+    Object::Float(1.23)
 );
 
 // =======================================================
@@ -1200,7 +1202,7 @@ printer()"#,
 //     def counter():
 //         i = i + 1
 //         print(i)
-    
+
 //     return counter
 
 // counter = make_counter()
@@ -1218,7 +1220,7 @@ test_case!(
     r#"
 x = 10
 x += 5
-x"#, 
+x"#,
     Object::Int(15)
 );
 
@@ -1227,7 +1229,7 @@ test_case!(
     r#"
 x = 20
 x -= 7
-x"#, 
+x"#,
     Object::Int(13)
 );
 
@@ -1236,7 +1238,7 @@ test_case!(
     r#"
 x = 6
 x *= 4
-x"#, 
+x"#,
     Object::Int(24)
 );
 
@@ -1245,7 +1247,7 @@ test_case!(
     r#"
 x = 20
 x /= 4
-x"#, 
+x"#,
     // In Python, standard division always returns a float
     Object::Float(5.0)
 );
@@ -1255,7 +1257,7 @@ test_case!(
     r#"
 text = "hello"
 text += " world"
-text"#, 
+text"#,
     Object::String("hello world".to_string())
 );
 
@@ -1264,7 +1266,7 @@ test_case!(
     r#"
 pattern = "Ab"
 pattern *= 3
-pattern"#, 
+pattern"#,
     Object::String("AbAbAb".to_string())
 );
 
@@ -1274,7 +1276,7 @@ test_case!(
 x = 5
 y = 2
 x += y * 3 + 1  # Equivalent to: x = x + (2 * 3 + 1) -> 5 + 7
-x"#, 
+x"#,
     Object::Int(12)
 );
 
@@ -1288,4 +1290,44 @@ while count < 4:
     count += 1
 total"#, // 0 + 1 + 2 + 3 = 6
     Object::Int(6)
+);
+
+test_case!(
+    simple_function_no_return,
+    r#"
+def noop():
+    x = 1 + 2
+
+noop()"#,
+    Object::None
+);
+
+test_case!(
+    simple_function_no_params,
+    r#"
+def hello():
+    return 123
+
+hello()"#,
+    Object::Int(123)
+);
+
+test_case!(
+    simple_function_one_param,
+    r#"
+def add1(x):
+    return x + 1
+
+add1(1) + add1(2)"#,
+    Object::Int(5)
+);
+
+test_case!(
+    simple_function_two_params,
+    r#"
+def multiply(x, y):
+    return x * y
+
+multiply(4, 5)"#,
+    Object::Int(20)
 );
