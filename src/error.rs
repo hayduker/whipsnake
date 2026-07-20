@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{default::Default, fmt};
 
 use crate::token::SourceLocation;
 
@@ -78,13 +78,14 @@ pub enum CompilerError {
     Runtime(RuntimeError),
 }
 
+#[derive(Default)]
 pub struct ErrorReporter {
     pub errors: Vec<CompilerError>,
 }
 
 impl ErrorReporter {
     pub fn new() -> Self {
-        ErrorReporter { errors: Vec::new() }
+        ErrorReporter::default()
     }
 
     fn register_error(&mut self, error: CompilerError) {

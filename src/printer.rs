@@ -90,7 +90,7 @@ fn convert_stmt(s: &Stmt) -> SExpr {
         ]),
         Stmt::Block(stmts) => {
             let mut sexpr = vec![atom("block")];
-            sexpr.extend(stmts.iter().map(|stmt| convert_stmt(stmt)));
+            sexpr.extend(stmts.iter().map(convert_stmt));
             SExpr::List(sexpr)
         }
         Stmt::If {
@@ -111,15 +111,11 @@ fn convert_stmt(s: &Stmt) -> SExpr {
             convert_stmt(body),
         ]),
         Stmt::Function { name, params, body } => {
-            let mut params: Vec<SExpr> = params.iter()
-                .map(|p| atom(p.lexeme.as_str()))
-                .collect();
+            let mut params: Vec<SExpr> = params.iter().map(|p| atom(p.lexeme.as_str())).collect();
             let mut params_sexpr = vec![atom("params")];
             params_sexpr.append(&mut params);
 
-            let mut body: Vec<SExpr> = body.iter()
-                .map(|s| convert_stmt(s))
-                .collect();
+            let mut body: Vec<SExpr> = body.iter().map(convert_stmt).collect();
             let mut body_sexpr = vec![atom("body")];
             body_sexpr.append(&mut body);
 
@@ -129,8 +125,11 @@ fn convert_stmt(s: &Stmt) -> SExpr {
                 SExpr::List(params_sexpr),
                 SExpr::List(body_sexpr),
             ])
-        },
-        Stmt::Return { keyword: _keywprd, value } => {
+        }
+        Stmt::Return {
+            keyword: _keywprd,
+            value,
+        } => {
             let mut sexpr = vec![atom("return")];
             if let Some(value) = value {
                 sexpr.push(convert_expr(value));
@@ -185,7 +184,7 @@ fn convert_expr(e: &Expr) -> SExpr {
     }
 }
 
-pub fn print_ast(stmts: &Vec<Stmt>) -> String {
+pub fn print_ast(stmts: &[Stmt]) -> String {
     stmts
         .iter()
         .map(|stmt| format_sexpr(&convert_stmt(stmt), 0))

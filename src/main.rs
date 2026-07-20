@@ -1,9 +1,9 @@
+use clap::Parser as ClapParser;
 use std::{
     fs::read_to_string,
     io::{self, Write},
     path::PathBuf,
 };
-use clap::Parser as ClapParser;
 use whipsnake::{
     environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
     parser::Parser, printer::print_ast, token::Token,
@@ -27,7 +27,7 @@ fn main() -> Result<(), &'static str> {
         Some(path) => {
             let filename = path.to_str().ok_or("Invalid filename provided")?;
             run_file(filename, args.verbose);
-        },
+        }
         None => run_repl(args.verbose),
     }
 
@@ -128,7 +128,6 @@ fn run_file(filename: &str, verbose: bool) {
         }
     }
 
-
     if reporter.has_errors() {
         reporter.print_errors();
         return;
@@ -147,11 +146,10 @@ fn run_file(filename: &str, verbose: bool) {
 
     if reporter.has_errors() {
         reporter.print_errors();
-        return;
     }
 }
 
-fn next_to_last_equals(s: &String, target: char) -> bool {
+fn next_to_last_equals(s: &str, target: char) -> bool {
     let mut rev_chars = s.chars().rev();
     rev_chars.next();
     rev_chars.next() == Some(target)

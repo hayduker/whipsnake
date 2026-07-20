@@ -1,4 +1,4 @@
-//! The `object` module defines the `Object` enum, which represents all Python runtime values 
+//! The `object` module defines the `Object` enum, which represents all Python runtime values
 //! in Whipsake. This includes integers, floats, strings, booleans, None, and callable functions.
 //! It also provides methods for type introspection and truthiness checking.
 
@@ -125,19 +125,15 @@ impl Object {
             }
             Object::Int(n) => {
                 if *n >= -5 && *n <= 256 {
-                    (1000000 + n) as i64
+                    1000000 + n
                 } else {
                     self as *const Object as usize as i64
                 }
             }
             Object::None => 140735165431120,
             Object::Function(callable) => match callable {
-                Callable::UserDefined(user_defined) => {
-                    user_defined.body.as_ptr() as usize as i64
-                }
-                Callable::Native(native) => {
-                    native.name.as_ptr() as usize as i64
-                }
+                Callable::UserDefined(user_defined) => user_defined.body.as_ptr() as usize as i64,
+                Callable::Native(native) => native.name.as_ptr() as usize as i64,
             },
             _ => self as *const Object as usize as i64,
         }

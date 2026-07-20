@@ -130,7 +130,7 @@ impl<'err> Evaluator<'err> {
         interactive: bool,
     ) -> Result<Object, ControlFlow> {
         match statement {
-            Stmt::Expression(expr) => match self.evaluate(&expr, environment) {
+            Stmt::Expression(expr) => match self.evaluate(expr, environment) {
                 Ok(value) => {
                     if interactive {
                         println!("{}", value);
@@ -385,11 +385,11 @@ impl<'err> Evaluator<'err> {
 
                     match self.execute_statements(&user_fn.body, &mut environment, false) {
                         Ok(_) => Ok(Object::None),
-                        Err(ControlFlow::Error(e)) => return Err(e),
+                        Err(ControlFlow::Error(e)) => Err(e),
                         Err(ControlFlow::Return {
                             keyword: _keyword,
                             value,
-                        }) => return Ok(value),
+                        }) => Ok(value),
                     }
                 }
                 Callable::Native(native_fn) => {
@@ -398,10 +398,10 @@ impl<'err> Evaluator<'err> {
                 }
             }
         } else {
-            return Err(RuntimeError::TypeError(
+            Err(RuntimeError::TypeError(
                 SourceLocation { line: paren.line },
                 format!("'{}' object is not callable", callee.py_type()),
-            ));
+            ))
         }
     }
 

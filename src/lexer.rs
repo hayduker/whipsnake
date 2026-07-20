@@ -114,7 +114,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             }
         }
 
-        if tokens.len() > 0 {
+        if !tokens.is_empty() {
             // Trailing newline and dedents are added in case file ends in
             // the middle of an indented block. This simplifies the parser.
 
@@ -159,19 +159,40 @@ impl<'src, 'err> Lexer<'src, 'err> {
             ',' => TokenKind::Comma,
             '.' => TokenKind::Dot,
             '~' => TokenKind::Tilde,
-            '+' => if self.advance_if_match('=') { TokenKind::PlusEqual } else { TokenKind::Plus },
-            '-' => if self.advance_if_match('=') { TokenKind::MinusEqual } else { TokenKind::Minus },
-            '*' => if self.advance_if_match('=') { TokenKind::StarEqual } else { TokenKind::Star },
-            '/' => if self.advance_if_match('=') { TokenKind::SlashEqual } else { TokenKind::Slash },
-            '!' => {
+            '+' => {
                 if self.advance_if_match('=') {
-                    TokenKind::BangEqual
+                    TokenKind::PlusEqual
                 } else {
-                    return Err(LexError::UnexpectedCharacter(
-                        SourceLocation { line: self.line },
-                        c,
-                    ));
+                    TokenKind::Plus
                 }
+            }
+            '-' => {
+                if self.advance_if_match('=') {
+                    TokenKind::MinusEqual
+                } else {
+                    TokenKind::Minus
+                }
+            }
+            '*' => {
+                if self.advance_if_match('=') {
+                    TokenKind::StarEqual
+                } else {
+                    TokenKind::Star
+                }
+            }
+            '/' => {
+                if self.advance_if_match('=') {
+                    TokenKind::SlashEqual
+                } else {
+                    TokenKind::Slash
+                }
+            }
+            '!' if self.advance_if_match('=') => TokenKind::BangEqual,
+            '!' => {
+                return Err(LexError::UnexpectedCharacter(
+                    SourceLocation { line: self.line },
+                    c,
+                ));
             }
             '=' => {
                 if self.advance_if_match('=') {
@@ -307,10 +328,10 @@ impl<'src, 'err> Lexer<'src, 'err> {
         while self.peek() != Some('\n') && !self.is_at_end() {
             self.advance();
         }
-        return Ok(None);
+        Ok(None)
     }
 
-    fn scan_string_literal(&mut self, quote: char) -> Result<Option<Vec<Token>>, LexError> {        
+    fn scan_string_literal(&mut self, quote: char) -> Result<Option<Vec<Token>>, LexError> {
         while self.peek() != Some(quote) {
             if self.peek() == Some('\n') || self.is_at_end() {
                 return Err(LexError::UnterminatedString(SourceLocation {
@@ -327,12 +348,12 @@ impl<'src, 'err> Lexer<'src, 'err> {
             "String literal should be the same as the lexeme without the quotes on either side",
         );
 
-        return Ok(Some(vec![Token::with_literal(
+        Ok(Some(vec![Token::with_literal(
             TokenKind::String,
             lexeme,
             Literal::String(literal.to_string()),
             self.line,
-        )]));
+        )]))
     }
 
     fn scan_number_literal(&mut self) -> Result<Option<Vec<Token>>, LexError> {
@@ -370,25 +391,33 @@ impl<'src, 'err> Lexer<'src, 'err> {
             .parse()
             .expect("Lexer guarantees a well-formed numeric value in earlier part of this method.");
 
-        return Ok(Some(vec![Token::with_literal(
+        Ok(Some(vec![Token::with_literal(
             TokenKind::Int,
             self.current_lexeme(),
             Literal::Int(int),
             self.line,
-        )]));
+        )]))
     }
 
     fn peek_is_digit(&mut self) -> bool {
-        self.peek().map_or(false, |c| self.is_digit(c))
+        if let Some(c) = self.peek()
+            && c.is_ascii_digit()
+        {
+            return true;
+        }
+
+        false
     }
 
     fn scan_indentifier(&mut self) -> Result<Option<Vec<Token>>, LexError> {
-        while self.peek().map_or(false, |c| self.is_alpha_numeric(c)) {
+        while let Some(c) = self.peek()
+            && self.is_alpha_numeric(c)
+        {
             self.advance();
         }
 
         let kind = self
-            .lookup_keyword(&self.current_lexeme())
+            .lookup_keyword(self.current_lexeme())
             .unwrap_or(TokenKind::Identifier);
 
         Ok(Some(vec![Token::new(
@@ -399,21 +428,11 @@ impl<'src, 'err> Lexer<'src, 'err> {
     }
 
     fn is_alpha(&self, c: char) -> bool {
-        match c {
-            'a'..='z' | 'A'..='Z' | '_' => true,
-            _ => false,
-        }
-    }
-
-    fn is_digit(&self, c: char) -> bool {
-        match c {
-            '0'..='9' => true,
-            _ => false,
-        }
+        matches!(c, 'a'..='z' | 'A'..='Z' | '_')
     }
 
     fn is_alpha_numeric(&self, c: char) -> bool {
-        self.is_alpha(c) || self.is_digit(c)
+        self.is_alpha(c) || c.is_ascii_digit()
     }
 
     fn advance(&mut self) -> Option<char> {

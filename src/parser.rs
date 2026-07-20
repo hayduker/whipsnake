@@ -112,7 +112,7 @@ impl<'err> Parser<'err> {
 
         while !self.peek_matches(tokens, TokenKind::Eof) {
             let mut statements = self.statements(tokens);
-            if statements.len() == 0 {
+            if statements.is_empty() {
                 break;
             }
 
@@ -165,10 +165,10 @@ impl<'err> Parser<'err> {
             return self.while_loop(tokens);
         }
 
-        if self.advance_if(tokens, TokenKind::NewLine) {
-            if self.peek_matches(tokens, TokenKind::Indent) {
-                return Ok(Stmt::Block(self.block(tokens)?));
-            }
+        if self.advance_if(tokens, TokenKind::NewLine)
+            && self.peek_matches(tokens, TokenKind::Indent)
+        {
+            return Ok(Stmt::Block(self.block(tokens)?));
         }
 
         if self.peek_matches(tokens, TokenKind::Def) {
@@ -183,13 +183,16 @@ impl<'err> Parser<'err> {
 
         let expr = self.expression(tokens)?;
 
-        if self.peek_matches_any(tokens, &[
-            TokenKind::Equal,
-            TokenKind::PlusEqual,
-            TokenKind::MinusEqual,
-            TokenKind::StarEqual,
-            TokenKind::SlashEqual,
-        ]) {
+        if self.peek_matches_any(
+            tokens,
+            &[
+                TokenKind::Equal,
+                TokenKind::PlusEqual,
+                TokenKind::MinusEqual,
+                TokenKind::StarEqual,
+                TokenKind::SlashEqual,
+            ],
+        ) {
             return self.assignment_statement(tokens, expr);
         }
 
@@ -199,7 +202,10 @@ impl<'err> Parser<'err> {
             return Ok(Stmt::Expression(expr));
         }
 
-        Err(self.error(tokens, "expected newline or EOF after expression statement."))
+        Err(self.error(
+            tokens,
+            "expected newline or EOF after expression statement.",
+        ))
     }
 
     fn block<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Vec<Stmt>, ParseError>
@@ -239,7 +245,7 @@ impl<'err> Parser<'err> {
                             name: token,
                             initializer: r_value,
                         });
-                    },
+                    }
                     TokenKind::PlusEqual => {
                         return Ok(Stmt::Assignment {
                             name: token,
@@ -247,9 +253,9 @@ impl<'err> Parser<'err> {
                                 left: Box::new(l_value),
                                 operator: Token::new(TokenKind::Plus, "+", operator.line),
                                 right: Box::new(r_value),
-                            }
+                            },
                         });
-                    },
+                    }
                     TokenKind::MinusEqual => {
                         return Ok(Stmt::Assignment {
                             name: token,
@@ -257,9 +263,9 @@ impl<'err> Parser<'err> {
                                 left: Box::new(l_value),
                                 operator: Token::new(TokenKind::Minus, "-", operator.line),
                                 right: Box::new(r_value),
-                            }
+                            },
                         });
-                    },
+                    }
                     TokenKind::StarEqual => {
                         return Ok(Stmt::Assignment {
                             name: token,
@@ -267,9 +273,9 @@ impl<'err> Parser<'err> {
                                 left: Box::new(l_value),
                                 operator: Token::new(TokenKind::Star, "*", operator.line),
                                 right: Box::new(r_value),
-                            }
+                            },
                         });
-                    },
+                    }
                     TokenKind::SlashEqual => {
                         return Ok(Stmt::Assignment {
                             name: token,
@@ -277,19 +283,28 @@ impl<'err> Parser<'err> {
                                 left: Box::new(l_value),
                                 operator: Token::new(TokenKind::Slash, "/", operator.line),
                                 right: Box::new(r_value),
-                            }
+                            },
                         });
-                    },
+                    }
                     _ => {
-                        return Err(self.error(tokens, &format!("unexpected operator {:?} treated as assignment", operator)));
+                        return Err(self.error(
+                            tokens,
+                            &format!("unexpected operator {:?} treated as assignment", operator),
+                        ));
                     }
                 }
             }
-            
-            return Err(self.error(tokens, "expected newline or EOF after assignment statement."));   
+
+            return Err(self.error(
+                tokens,
+                "expected newline or EOF after assignment statement.",
+            ));
         }
-        
-        Err(self.error(tokens, "cannot assign to expression here. Maybe you meant '==' instead of '='?"))
+
+        Err(self.error(
+            tokens,
+            "cannot assign to expression here. Maybe you meant '==' instead of '='?",
+        ))
     }
 
     fn if_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt, ParseError>
@@ -322,7 +337,7 @@ impl<'err> Parser<'err> {
         Ok(Stmt::If {
             condition,
             then_body: Box::new(then_body),
-            else_body: else_body,
+            else_body,
         })
     }
 
@@ -354,9 +369,17 @@ impl<'err> Parser<'err> {
     {
         self.advance(tokens); // consume "def"
 
-        let name = self.consume(tokens, TokenKind::Identifier, "expected identifier name after 'def'")?;
+        let name = self.consume(
+            tokens,
+            TokenKind::Identifier,
+            "expected identifier name after 'def'",
+        )?;
 
-        self.consume(tokens, TokenKind::LeftParen, "expected '(' after function name")?;
+        self.consume(
+            tokens,
+            TokenKind::LeftParen,
+            "expected '(' after function name",
+        )?;
 
         let mut params = vec![];
         if !self.peek_matches(tokens, TokenKind::RightParen) {
@@ -365,15 +388,23 @@ impl<'err> Parser<'err> {
                     return Err(self.error(tokens, "can't have more than 255 parameters."));
                 }
 
-                params.push(
-                    self.consume(tokens, TokenKind::Identifier, "expected parameter name")?
-                );
+                params.push(self.consume(
+                    tokens,
+                    TokenKind::Identifier,
+                    "expected parameter name",
+                )?);
 
-                if !self.advance_if(tokens, TokenKind::Comma) { break; }
+                if !self.advance_if(tokens, TokenKind::Comma) {
+                    break;
+                }
             }
         }
 
-        self.consume(tokens, TokenKind::RightParen, "expected ')' after parameters")?;
+        self.consume(
+            tokens,
+            TokenKind::RightParen,
+            "expected ')' after parameters",
+        )?;
         self.consume(tokens, TokenKind::Colon, "expected ':' after ')'")?;
         self.consume(tokens, TokenKind::NewLine, "expected new line after ':'")?;
 
@@ -639,7 +670,10 @@ impl<'err> Parser<'err> {
             let token = self.previous.clone().unwrap();
             return match token.literal {
                 Some(literal) => Ok(Expr::Literal(literal)),
-                None => Err(self.error(tokens, &format!("got token type {:?} without literal", token.kind)))
+                None => Err(self.error(
+                    tokens,
+                    &format!("got token type {:?} without literal", token.kind),
+                )),
             };
         }
 
@@ -653,9 +687,11 @@ impl<'err> Parser<'err> {
             return Ok(Expr::Grouping(Box::new(expr)));
         }
 
-
         let peek_kind = tokens.peek().unwrap().kind;
-        Err(self.error(tokens, &format!("don't know how to parse token {:?} here", peek_kind)))
+        Err(self.error(
+            tokens,
+            &format!("don't know how to parse token {:?} here", peek_kind),
+        ))
     }
 
     fn finish_call<I>(&mut self, tokens: &mut Peekable<I>, callee: Expr) -> Result<Expr, ParseError>
@@ -684,11 +720,7 @@ impl<'err> Parser<'err> {
         })
     }
 
-    fn error<I>(
-        &mut self,
-        tokens: &mut Peekable<I>,
-        msg: &str,
-    ) -> ParseError
+    fn error<I>(&mut self, tokens: &mut Peekable<I>, msg: &str) -> ParseError
     where
         I: Iterator<Item = Token>,
     {
@@ -764,7 +796,9 @@ impl<'err> Parser<'err> {
 
     fn previous_matches_any(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
-            if self.previous.take().map_or(false, |t| t.kind == *kind) {
+            if let Some(t) = self.previous.take()
+                && t.kind == *kind
+            {
                 return true;
             }
         }
@@ -775,7 +809,13 @@ impl<'err> Parser<'err> {
     where
         I: Iterator<Item = Token>,
     {
-        tokens.peek().map_or(false, |t| t.kind == kind)
+        if let Some(t) = tokens.peek()
+            && t.kind == kind
+        {
+            return true;
+        }
+
+        false
     }
 
     fn is_at_end<I>(&mut self, tokens: &mut Peekable<I>) -> bool
@@ -799,20 +839,18 @@ impl<'err> Parser<'err> {
                 TokenKind::NewLine,
                 TokenKind::Indent,
                 TokenKind::Dedent,
-            ]) {
-                if self.peek_matches_any(
-                    tokens,
-                    &[
-                        TokenKind::Return,
-                        TokenKind::Def,
-                        TokenKind::If,
-                        TokenKind::Class,
-                        TokenKind::For,
-                        TokenKind::While,
-                    ],
-                ) {
-                    return;
-                }
+            ]) && self.peek_matches_any(
+                tokens,
+                &[
+                    TokenKind::Return,
+                    TokenKind::Def,
+                    TokenKind::If,
+                    TokenKind::Class,
+                    TokenKind::For,
+                    TokenKind::While,
+                ],
+            ) {
+                return;
             }
 
             self.advance(tokens);
