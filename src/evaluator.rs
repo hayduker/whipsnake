@@ -14,7 +14,7 @@ use crate::{
 /// Represents the control flow of the interpreter, used to handle returns from functions
 /// and propagate runtime errors.
 enum ControlFlow {
-    Return { keyword: Token, value: Object },
+    Return { keyword: Token, value: Box<Object> },
     Error(RuntimeError),
 }
 
@@ -202,7 +202,7 @@ impl<'err> Evaluator<'err> {
                 // separated from actual errors, we make them different variants of the ControlFlow enum.
                 return Err(ControlFlow::Return {
                     keyword: keyword.clone(),
-                    value: return_value,
+                    value: Box::new(return_value),
                 });
             }
         }
@@ -389,7 +389,7 @@ impl<'err> Evaluator<'err> {
                         Err(ControlFlow::Return {
                             keyword: _keyword,
                             value,
-                        }) => Ok(value),
+                        }) => Ok(*value),
                     }
                 }
                 Callable::Native(native_fn) => {
