@@ -83,7 +83,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
     /// let tokens = lexer.lex("if True:\n    pass");
     /// assert_eq!(tokens[3], Token::new(TokenKind::NewLine, "\n", 1));
     /// assert_eq!(tokens[4], Token::new(TokenKind::Indent, "", 2));
-    /// assert_eq!(tokens[5], Token::new(TokenKind::Identifier, "pass", 2));
+    /// assert_eq!(tokens[5], Token::new(TokenKind::Pass, "pass", 2));
     /// assert_eq!(tokens[6], Token::new(TokenKind::NewLine, "\n", 2));
     /// assert_eq!(tokens[7], Token::new(TokenKind::Dedent, "", 3));
     /// ```
@@ -486,6 +486,7 @@ impl<'src, 'err> Lexer<'src, 'err> {
             "None" => Some(TokenKind::None), // really a literal
             "not" => Some(TokenKind::Not),
             "or" => Some(TokenKind::Or),
+            "pass" => Some(TokenKind::Pass),
             "return" => Some(TokenKind::Return),
             "super" => Some(TokenKind::Super),
             "self" => Some(TokenKind::This),

@@ -517,6 +517,15 @@ test_suite_no_errors!([
         vec![tok![Or, "or", 1], tok![NewLine, "\n", 1], tok![Eof, "", 2],]
     ),
     (
+        lex_pass,
+        "pass",
+        vec![
+            tok![Pass, "pass", 1],
+            tok![NewLine, "\n", 1],
+            tok![Eof, "", 2],
+        ]
+    ),
+    (
         lex_return,
         "return",
         vec![

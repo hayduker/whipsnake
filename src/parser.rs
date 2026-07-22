@@ -157,6 +157,11 @@ impl<'err> Parser<'err> {
     where
         I: Iterator<Item = Token>,
     {
+        if self.peek_matches(tokens, TokenKind::Pass) {
+            self.advance(tokens); // consume 'pass'
+            return Ok(Stmt::Pass);
+        }
+
         if self.peek_matches(tokens, TokenKind::If) {
             return self.if_statement(tokens);
         }

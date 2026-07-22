@@ -82,6 +82,7 @@ fn format_sexpr(expr: &SExpr, indent: usize) -> String {
 
 fn convert_stmt(s: &Stmt) -> SExpr {
     match s {
+        Stmt::Pass => SExpr::List(vec![atom("pass")]),
         Stmt::Expression(expr) => SExpr::List(vec![atom("stmt"), convert_expr(expr)]),
         Stmt::Assignment { name, initializer } => SExpr::List(vec![
             atom("="),

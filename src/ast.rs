@@ -2,6 +2,7 @@ use crate::token::{Literal, Token};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
+    Pass,
     Expression(Expr),
     Assignment {
         name: Token,

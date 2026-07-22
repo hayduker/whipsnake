@@ -131,6 +131,7 @@ impl<'err> Evaluator<'err> {
         interactive: bool,
     ) -> Result<Object, ControlFlow> {
         match statement {
+            Stmt::Pass => (),
             Stmt::Expression(expr) => match self.evaluate(expr, environment) {
                 Ok(value) => {
                     if interactive {

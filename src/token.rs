@@ -51,6 +51,7 @@ pub enum TokenKind {
     None,
     Not,
     Or,
+    Pass,
     Return,
     Super,
     This,
