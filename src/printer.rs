@@ -136,6 +136,17 @@ fn convert_stmt(s: &Stmt) -> SExpr {
             }
             SExpr::List(sexpr)
         }
+        Stmt::Class { name, body } => {
+            let mut body: Vec<SExpr> = body.iter().map(convert_stmt).collect();
+            let mut body_sexpr = vec![atom("body")];
+            body_sexpr.append(&mut body);
+
+            SExpr::List(vec![
+                atom("class"),
+                atom(name.lexeme.as_str()),
+                SExpr::List(body_sexpr),
+            ])
+        }
     }
 }
 

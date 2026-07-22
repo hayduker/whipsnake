@@ -1,4 +1,4 @@
-use crate::{error::RuntimeError, object::Object, token::Token, ast::Stmt};
+use crate::{ast::Stmt, error::RuntimeError, object::Object, token::Token};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {

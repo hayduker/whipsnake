@@ -18,6 +18,7 @@ pub enum Object {
     Bool(bool),
     None,
     Function(Callable),
+    Class(PyClass),
 }
 
 impl Object {
@@ -54,6 +55,7 @@ impl Object {
             Object::Float(f) => *f != 0.0,
             Object::String(s) => !s.is_empty(),
             Object::Function(_) => true,
+            Object::Class(_) => true,
         }
     }
 
@@ -83,6 +85,7 @@ impl Object {
                 Callable::UserDefined(_) => "function",
                 Callable::Native(_) => "builtin_function_or_method",
             },
+            Object::Class(_) => "type",
         }
     }
 
@@ -158,6 +161,14 @@ impl fmt::Display for Object {
                     write!(f, "<built-in function or method {}>", native_fn.name)
                 }
             },
+            Object::Class(class) => {
+                write!(f, "<class {}>", class.name)
+            }
         }
     }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct PyClass {
+    pub name: String,
 }

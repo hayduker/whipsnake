@@ -25,7 +25,11 @@ pub enum Stmt {
     Return {
         keyword: Token,
         value: Option<Expr>,
-    }
+    },
+    Class {
+        name: Token,
+        body: Vec<Stmt>,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]

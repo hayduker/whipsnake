@@ -175,6 +175,10 @@ impl<'err> Parser<'err> {
             return self.function_def(tokens);
         }
 
+        if self.peek_matches(tokens, TokenKind::Class) {
+            return self.class_decl(tokens);
+        }
+
         if self.peek_matches(tokens, TokenKind::Return) {
             return self.return_statement(tokens);
         }
@@ -411,6 +415,26 @@ impl<'err> Parser<'err> {
         let body = self.block(tokens)?;
 
         Ok(Stmt::Function { name, params, body })
+    }
+
+    fn class_decl<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt, ParseError>
+    where
+        I: Iterator<Item = Token>,
+    {
+        self.advance(tokens); // consume "class"
+
+        let name = self.consume(
+            tokens,
+            TokenKind::Identifier,
+            "expected identifier name after 'class'",
+        )?;
+
+        self.consume(tokens, TokenKind::Colon, "expected ':' after ')'")?;
+        self.consume(tokens, TokenKind::NewLine, "expected new line after ':'")?;
+
+        let body = self.block(tokens)?;
+
+        Ok(Stmt::Class { name, body })
     }
 
     fn return_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt, ParseError>

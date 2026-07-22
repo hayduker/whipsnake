@@ -7,7 +7,7 @@ use crate::{
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
     environment::Environment,
     error::{ErrorReporter, RuntimeError},
-    object::Object,
+    object::{Object, PyClass},
     token::{Literal, SourceLocation, Token, TokenKind},
 };
 
@@ -185,6 +185,13 @@ impl<'err> Evaluator<'err> {
                 }));
 
                 environment.define(name, user_fn);
+            }
+
+            Stmt::Class { name, body: _body } => {
+                let name = name.lexeme.clone();
+                let class = Object::Class(PyClass { name: name.clone() });
+
+                environment.define(name, class);
             }
 
             Stmt::Return { keyword, value } => {
