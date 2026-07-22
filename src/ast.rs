@@ -31,6 +31,11 @@ pub enum Stmt {
         name: Token,
         body: Vec<Stmt>,
     },
+    Set {
+        object: Expr,
+        name: Token,
+        value: Expr,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -56,5 +61,9 @@ pub enum Expr {
         callee: Box<Expr>,
         paren: Token,
         arguments: Vec<Expr>,
+    },
+    Get {
+        object: Box<Expr>,
+        name: Token,
     },
 }

@@ -192,8 +192,7 @@ impl<'err> Evaluator<'err> {
             Stmt::Class { name, body: _body } => {
                 let name = name.lexeme.clone();
                 let class = Object::Class(PyClass::new(name.clone()));
-
-                environment.define(name, class);
+                environment.define(name.clone(), class);
             }
 
             Stmt::Return { keyword, value } => {
@@ -213,6 +212,29 @@ impl<'err> Evaluator<'err> {
                     keyword: keyword.clone(),
                     value: Box::new(return_value),
                 });
+            }
+
+            Stmt::Set {
+                object,
+                name,
+                value,
+            } => {
+                let object = self
+                    .evaluate(object, environment)
+                    .map_err(ControlFlow::Error)?;
+
+                if let Object::Instance(mut instance) = object {
+                    let value = self
+                        .evaluate(value, environment)
+                        .map_err(ControlFlow::Error)?;
+
+                    instance.set(name, value);
+                } else {
+                    return Err(ControlFlow::Error(RuntimeError::TypeError(
+                        SourceLocation { line: name.line },
+                        "only instances have fields.".into(),
+                    )));
+                }
             }
         }
 
@@ -359,6 +381,18 @@ impl<'err> Evaluator<'err> {
                 }
 
                 return self.call(callee, paren, arg_objects, environment);
+            }
+
+            Expr::Get { object, name } => {
+                let object = self.evaluate(object, environment)?;
+                if let Object::Instance(instance) = object {
+                    instance.get(name)?
+                } else {
+                    return Err(RuntimeError::NameError(
+                        SourceLocation { line: name.line },
+                        String::from("only instances have properties."),
+                    ));
+                }
             }
         };
 

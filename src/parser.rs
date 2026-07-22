@@ -246,68 +246,83 @@ impl<'err> Parser<'err> {
 
         let r_value = self.expression(tokens)?;
 
-        if let Expr::Variable(token) = l_value.clone() {
-            if self.advance_if(tokens, TokenKind::NewLine) || self.is_at_end(tokens) {
-                match operator.kind {
-                    TokenKind::Equal => {
-                        return Ok(Stmt::Assignment {
-                            name: token,
-                            initializer: r_value,
-                        });
-                    }
-                    TokenKind::PlusEqual => {
-                        return Ok(Stmt::Assignment {
-                            name: token,
-                            initializer: Expr::Binary {
-                                left: Box::new(l_value),
-                                operator: Token::new(TokenKind::Plus, "+", operator.line),
-                                right: Box::new(r_value),
-                            },
-                        });
-                    }
-                    TokenKind::MinusEqual => {
-                        return Ok(Stmt::Assignment {
-                            name: token,
-                            initializer: Expr::Binary {
-                                left: Box::new(l_value),
-                                operator: Token::new(TokenKind::Minus, "-", operator.line),
-                                right: Box::new(r_value),
-                            },
-                        });
-                    }
-                    TokenKind::StarEqual => {
-                        return Ok(Stmt::Assignment {
-                            name: token,
-                            initializer: Expr::Binary {
-                                left: Box::new(l_value),
-                                operator: Token::new(TokenKind::Star, "*", operator.line),
-                                right: Box::new(r_value),
-                            },
-                        });
-                    }
-                    TokenKind::SlashEqual => {
-                        return Ok(Stmt::Assignment {
-                            name: token,
-                            initializer: Expr::Binary {
-                                left: Box::new(l_value),
-                                operator: Token::new(TokenKind::Slash, "/", operator.line),
-                                right: Box::new(r_value),
-                            },
-                        });
-                    }
-                    _ => {
-                        return Err(self.error(
-                            tokens,
-                            &format!("unexpected operator {:?} treated as assignment", operator),
-                        ));
+        match l_value.clone() {
+            Expr::Variable(token) => {
+                if self.advance_if(tokens, TokenKind::NewLine) || self.is_at_end(tokens) {
+                    match operator.kind {
+                        TokenKind::Equal => {
+                            return Ok(Stmt::Assignment {
+                                name: token,
+                                initializer: r_value,
+                            });
+                        }
+                        TokenKind::PlusEqual => {
+                            return Ok(Stmt::Assignment {
+                                name: token,
+                                initializer: Expr::Binary {
+                                    left: Box::new(l_value),
+                                    operator: Token::new(TokenKind::Plus, "+", operator.line),
+                                    right: Box::new(r_value),
+                                },
+                            });
+                        }
+                        TokenKind::MinusEqual => {
+                            return Ok(Stmt::Assignment {
+                                name: token,
+                                initializer: Expr::Binary {
+                                    left: Box::new(l_value),
+                                    operator: Token::new(TokenKind::Minus, "-", operator.line),
+                                    right: Box::new(r_value),
+                                },
+                            });
+                        }
+                        TokenKind::StarEqual => {
+                            return Ok(Stmt::Assignment {
+                                name: token,
+                                initializer: Expr::Binary {
+                                    left: Box::new(l_value),
+                                    operator: Token::new(TokenKind::Star, "*", operator.line),
+                                    right: Box::new(r_value),
+                                },
+                            });
+                        }
+                        TokenKind::SlashEqual => {
+                            return Ok(Stmt::Assignment {
+                                name: token,
+                                initializer: Expr::Binary {
+                                    left: Box::new(l_value),
+                                    operator: Token::new(TokenKind::Slash, "/", operator.line),
+                                    right: Box::new(r_value),
+                                },
+                            });
+                        }
+                        _ => {
+                            return Err(self.error(
+                                tokens,
+                                &format!(
+                                    "unexpected operator {:?} treated as assignment",
+                                    operator
+                                ),
+                            ));
+                        }
                     }
                 }
             }
 
-            return Err(self.error(
-                tokens,
-                "expected newline or EOF after assignment statement.",
-            ));
+            Expr::Get { object, name } => {
+                return Ok(Stmt::Set {
+                    object: *object,
+                    name,
+                    value: r_value,
+                });
+            }
+
+            _ => {
+                return Err(self.error(
+                    tokens,
+                    "expected newline or EOF after assignment statement.",
+                ));
+            }
         }
 
         Err(self.error(
@@ -668,6 +683,17 @@ impl<'err> Parser<'err> {
         loop {
             if self.advance_if(tokens, TokenKind::LeftParen) {
                 expr = self.finish_call(tokens, expr)?;
+            } else if self.advance_if(tokens, TokenKind::Dot) {
+                let name = self.consume(
+                    tokens,
+                    TokenKind::Identifier,
+                    "expected property name after '.'.",
+                )?;
+
+                expr = Expr::Get {
+                    object: Box::new(expr),
+                    name,
+                };
             } else {
                 break;
             }

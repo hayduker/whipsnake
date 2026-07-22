@@ -148,6 +148,19 @@ fn convert_stmt(s: &Stmt) -> SExpr {
                 SExpr::List(body_sexpr),
             ])
         }
+        Stmt::Set {
+            object,
+            name,
+            value,
+        } => {
+            let sexpr = vec![
+                atom("set"),
+                convert_expr(object),
+                atom(name.lexeme.as_str()),
+                convert_expr(value),
+            ];
+            SExpr::List(sexpr)
+        }
     }
 }
 
@@ -191,6 +204,14 @@ fn convert_expr(e: &Expr) -> SExpr {
             for argument in arguments {
                 sexpr.push(convert_expr(argument))
             }
+            SExpr::List(sexpr)
+        }
+        Expr::Get { object, name } => {
+            let sexpr = vec![
+                atom("get"),
+                convert_expr(object),
+                atom(name.lexeme.as_str()),
+            ];
             SExpr::List(sexpr)
         }
     }

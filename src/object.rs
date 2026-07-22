@@ -79,19 +79,19 @@ impl Object {
     /// assert_eq!(Object::String("test".to_string()).py_type(), "str");
     /// assert_eq!(Object::None.py_type(), "NoneType");
     /// ```
-    pub fn py_type(&self) -> &str {
+    pub fn py_type(&self) -> String {
         match self {
-            Object::None => "NoneType",
-            Object::Bool(_) => "bool",
-            Object::Int(_) => "int",
-            Object::Float(_) => "float",
-            Object::String(_) => "str",
+            Object::None => "NoneType".to_string(),
+            Object::Bool(_) => "bool".to_string(),
+            Object::Int(_) => "int".to_string(),
+            Object::Float(_) => "float".to_string(),
+            Object::String(_) => "str".to_string(),
             Object::Function(callable) => match callable {
-                Callable::UserDefined(_) => "function",
-                Callable::Native(_) => "builtin_function_or_method",
+                Callable::UserDefined(_) => "function".to_string(),
+                Callable::Native(_) => "builtin_function_or_method".to_string(),
             },
-            Object::Class(_) => "type",
-            Object::Instance(instance) => instance.class.name.as_str(),
+            Object::Class(_) => "type".to_string(),
+            Object::Instance(instance) => instance.inner.borrow().class.name.clone(),
         }
     }
 
@@ -172,7 +172,12 @@ impl fmt::Display for Object {
             }
             Object::Instance(instance) => {
                 let raw_ptr = instance as *const _;
-                write!(f, "<{} object at {:p}>", instance.class.name, raw_ptr)
+                write!(
+                    f,
+                    "<{} object at {:p}>",
+                    instance.inner.borrow().class.name,
+                    raw_ptr
+                )
             }
         }
     }

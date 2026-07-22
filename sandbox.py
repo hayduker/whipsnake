@@ -1,11 +1,7 @@
-def make_counter():
-    i = 0
-    def counter():
-        i += 1
-        print(i)
-    
-    return counter
+class Klass:
+    pass
 
-counter = make_counter()
-counter()
-counter()
+k = Klass()
+
+k.thing = 3
+print(k.thing)

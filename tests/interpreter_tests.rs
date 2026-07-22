@@ -1391,3 +1391,20 @@ class Klass:
 Klass()"#,
     Object::Instance(PyInstance::new(PyClass::new("Klass".into())))
 );
+
+// =======================================================
+// Class Fields
+// =======================================================
+
+test_case!(
+    class_set_get_field,
+    r#"
+class Klass:
+    pass
+
+k = Klass()
+
+k.thing = 3
+k.thing"#,
+    Object::Int(3)
+);

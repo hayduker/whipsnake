@@ -53,6 +53,7 @@ pub enum RuntimeError {
     TypeError(SourceLocation, String),
     NameError(SourceLocation, String),
     RuntimeError(SourceLocation, String),
+    AttributeError(SourceLocation, String),
 }
 
 impl fmt::Display for RuntimeError {
@@ -66,6 +67,9 @@ impl fmt::Display for RuntimeError {
             }
             RuntimeError::RuntimeError(location, message) => {
                 write!(f, "RuntimeError at line {}: {}", location.line, message)
+            }
+            RuntimeError::AttributeError(location, message) => {
+                write!(f, "AttributeError at line {}: {}", location.line, message)
             }
         }
     }
