@@ -1,6 +1,11 @@
 use whipsnake::{
-    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
-    object::Object, parser::Parser,
+    class::{PyClass, PyInstance},
+    environment::Environment,
+    error::ErrorReporter,
+    evaluator::Evaluator,
+    lexer::Lexer,
+    object::Object,
+    parser::Parser,
 };
 
 macro_rules! test_case {
@@ -1292,6 +1297,10 @@ total"#, // 0 + 1 + 2 + 3 = 6
     Object::Int(6)
 );
 
+// =======================================================
+// Functions
+// =======================================================
+
 test_case!(
     simple_function_no_return,
     r#"
@@ -1330,4 +1339,32 @@ def multiply(x, y):
 
 multiply(4, 5)"#,
     Object::Int(20)
+);
+
+// =======================================================
+// Class Definitions
+// =======================================================
+
+test_case!(
+    class_definition,
+    r#"
+class Klass:
+    print(1)
+
+Klass"#,
+    Object::Class(PyClass::new("Klass".into()))
+);
+
+// =======================================================
+// Class Instantiation
+// =======================================================
+
+test_case!(
+    class_instantiation,
+    r#"
+class Klass:
+    print(1)
+
+Klass()"#,
+    Object::Instance(PyInstance::new(PyClass::new("Klass".into())))
 );

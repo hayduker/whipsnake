@@ -1,5 +1,27 @@
 use crate::{ast::Stmt, error::RuntimeError, object::Object, token::Token};
 
+// TODO: Technically class constructors should be represented here, but
+// when I tried it that way the evaluator balked in its call() method
+// because the Object being called wasn't a Function variant, but rather
+// a Class variant.
+//
+// For now I've just matched on Object::Class in call(), but this means
+// constructors don't get registered here, which feels a little weird.
+// One idea would be to register a new user-defined function with the
+// same name as the class whenever we evaluate a class definition. Then
+// we could promote an Object::Class in a call() setting to an
+// Object::Function. This feels a little weird though.
+//
+// As I'm implementing classes, I am starting to feel like the model
+// I've used in the interpreter isn't exactly meshing with Python's
+// representation of things. For example, I have an Object::Instance
+// variant but really, as they always say, everything in Python is an
+// instance (or "object" in the Python parlance) so it feel a bit weird
+// that objects of user-defined classes are treated differently than
+// objects of built-in classes, like int and str and so on. I suspect
+// this will make things more complex down the road when implementing
+// namespaces and dynamic attributes and so on. So I'll want to revisit
+// this issue.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {
     UserDefined(UserDefinedFn),

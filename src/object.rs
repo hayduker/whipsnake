@@ -4,7 +4,10 @@
 
 use std::fmt;
 
-use crate::callable::Callable;
+use crate::{
+    callable::Callable,
+    class::{PyClass, PyInstance},
+};
 
 /// Represents all possible runtime values in the Whipsake interpreter.
 ///
@@ -19,6 +22,7 @@ pub enum Object {
     None,
     Function(Callable),
     Class(PyClass),
+    Instance(PyInstance),
 }
 
 impl Object {
@@ -56,6 +60,7 @@ impl Object {
             Object::String(s) => !s.is_empty(),
             Object::Function(_) => true,
             Object::Class(_) => true,
+            Object::Instance(_) => true,
         }
     }
 
@@ -86,6 +91,7 @@ impl Object {
                 Callable::Native(_) => "builtin_function_or_method",
             },
             Object::Class(_) => "type",
+            Object::Instance(instance) => instance.class.name.as_str(),
         }
     }
 
@@ -164,11 +170,10 @@ impl fmt::Display for Object {
             Object::Class(class) => {
                 write!(f, "<class {}>", class.name)
             }
+            Object::Instance(instance) => {
+                let raw_ptr = instance as *const _;
+                write!(f, "<{} object at {:p}>", instance.class.name, raw_ptr)
+            }
         }
     }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct PyClass {
-    pub name: String,
 }

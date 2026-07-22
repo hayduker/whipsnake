@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod callable;
+pub mod class;
 pub mod environment;
 pub mod error;
 pub mod evaluator;

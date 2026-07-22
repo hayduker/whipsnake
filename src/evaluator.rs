@@ -5,9 +5,10 @@
 use crate::{
     ast::{Expr, Stmt},
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
+    class::{PyClass, PyInstance},
     environment::Environment,
     error::{ErrorReporter, RuntimeError},
-    object::{Object, PyClass},
+    object::Object,
     token::{Literal, SourceLocation, Token, TokenKind},
 };
 
@@ -189,7 +190,7 @@ impl<'err> Evaluator<'err> {
 
             Stmt::Class { name, body: _body } => {
                 let name = name.lexeme.clone();
-                let class = Object::Class(PyClass { name: name.clone() });
+                let class = Object::Class(PyClass::new(name.clone()));
 
                 environment.define(name, class);
             }
@@ -356,7 +357,7 @@ impl<'err> Evaluator<'err> {
                     arg_objects.push(self.evaluate(argument, environment)?);
                 }
 
-                return self.call(&callee, paren, arg_objects, environment);
+                return self.call(callee, paren, arg_objects, environment);
             }
         };
 
@@ -365,13 +366,13 @@ impl<'err> Evaluator<'err> {
 
     fn call(
         &mut self,
-        callee: &Object,
+        callee: Object,
         paren: &Token,
         arguments: Vec<Object>,
         enclosing: &Environment,
     ) -> Result<Object, RuntimeError> {
-        if let Object::Function(callable) = callee {
-            match callable {
+        match callee {
+            Object::Function(callable) => match callable {
                 Callable::UserDefined(user_fn) => {
                     if arguments.len() != user_fn.params.len() {
                         return Err(RuntimeError::RuntimeError(
@@ -403,12 +404,16 @@ impl<'err> Evaluator<'err> {
                     self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren)?;
                     (native_fn.body)(arguments)
                 }
+            },
+            Object::Class(class) => {
+                self.check_arity(arguments.len(), Arity::Exact(0), &class.name, paren)?;
+                let instance = PyInstance::new(class.clone());
+                Ok(Object::Instance(instance))
             }
-        } else {
-            Err(RuntimeError::TypeError(
+            _ => Err(RuntimeError::TypeError(
                 SourceLocation { line: paren.line },
                 format!("'{}' object is not callable", callee.py_type()),
-            ))
+            )),
         }
     }
 
@@ -416,7 +421,7 @@ impl<'err> Evaluator<'err> {
         &self,
         num_args: usize,
         arity: Arity,
-        name: &'static str,
+        name: &str,
         paren: &Token,
     ) -> Result<(), RuntimeError> {
         match arity {
