@@ -63,6 +63,10 @@ fn run_repl(verbose: bool) {
             }
         }
 
+        if input.trim().is_empty() {
+            continue;
+        }
+
         if verbose {
             println!("Got input: >{input}<");
         }
