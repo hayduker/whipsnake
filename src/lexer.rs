@@ -489,7 +489,6 @@ impl<'src, 'err> Lexer<'src, 'err> {
             "pass" => Some(TokenKind::Pass),
             "return" => Some(TokenKind::Return),
             "super" => Some(TokenKind::Super),
-            "self" => Some(TokenKind::This),
             "True" => Some(TokenKind::True), // really a literal
             "while" => Some(TokenKind::While),
             _ => None,

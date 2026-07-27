@@ -1,7 +1,3 @@
-class Klass:
-    pass
-
-k = Klass()
-
-k.thing = 3
-print(k.thing)
+class Person:
+    def say_name(self):
+        print(self.name)

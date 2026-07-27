@@ -544,15 +544,6 @@ test_suite_no_errors!([
         ]
     ),
     (
-        lex_self,
-        "self",
-        vec![
-            tok![This, "self", 1],
-            tok![NewLine, "\n", 1],
-            tok![Eof, "", 2],
-        ]
-    ),
-    (
         lex_true,
         "True",
         vec![

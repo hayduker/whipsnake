@@ -9,11 +9,12 @@ use crate::{
 #[derive(Debug, PartialEq, Clone)]
 pub struct PyClass {
     pub name: String,
+    pub attrs: HashMap<String, Object>,
 }
 
 impl PyClass {
-    pub fn new(name: String) -> Self {
-        PyClass { name }
+    pub fn new(name: String, attrs: HashMap<String, Object>) -> Self {
+        PyClass { name, attrs }
     }
 }
 

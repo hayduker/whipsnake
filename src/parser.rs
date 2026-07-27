@@ -139,6 +139,7 @@ impl<'err> Parser<'err> {
                     statements.push(stmt);
                 }
                 Err(e) => {
+                    println!("{:?}", e);
                     self.error_reporter.register_parse_error(e);
                     self.synchronize(tokens);
                 }
@@ -417,6 +418,8 @@ impl<'err> Parser<'err> {
                     TokenKind::Identifier,
                     "expected parameter name",
                 )?);
+
+                println!("Got identifier {:?}", params.iter().rev().peekable().peek());
 
                 if !self.advance_if(tokens, TokenKind::Comma) {
                     break;

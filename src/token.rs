@@ -54,7 +54,6 @@ pub enum TokenKind {
     Pass,
     Return,
     Super,
-    This,
     True,
     While,
 

@@ -2,6 +2,8 @@
 //! It walks the AST, evaluates expressions, and executes statements to produce results.
 //! It also manages the runtime environment and handles runtime errors.
 
+use std::{collections::HashMap, env};
+
 use crate::{
     ast::{Expr, Stmt},
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
@@ -189,9 +191,31 @@ impl<'err> Evaluator<'err> {
                 environment.define(name, user_fn);
             }
 
-            Stmt::Class { name, body: _body } => {
+            Stmt::Class { name, body } => {
                 let name = name.lexeme.clone();
-                let class = Object::Class(PyClass::new(name.clone()));
+
+                let mut attrs = HashMap::new();
+                for stmt in body {
+                    if let Stmt::Function {
+                        name: fn_name,
+                        params,
+                        body,
+                    } = stmt
+                    {
+                        let fn_name = fn_name.lexeme.clone();
+                        let method = Object::Function(Callable::UserDefined(UserDefinedFn {
+                            name: fn_name.clone(),
+                            params: params.clone(),
+                            body: body.clone(),
+                        }));
+
+                        attrs.insert(fn_name, method);
+                    }
+                }
+
+                println!("After class def, env = {:?}", environment);
+
+                let class = Object::Class(PyClass::new(name.clone(), attrs));
                 environment.define(name.clone(), class);
             }
 

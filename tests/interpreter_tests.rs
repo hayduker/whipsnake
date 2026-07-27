@@ -1,3 +1,5 @@
+use std::collections::{HashMap, hash_map};
+
 use whipsnake::{
     class::{PyClass, PyInstance},
     environment::Environment,
@@ -1375,7 +1377,7 @@ class Klass:
     print(1)
 
 Klass"#,
-    Object::Class(PyClass::new("Klass".into()))
+    Object::Class(PyClass::new("Klass".into(), HashMap::new()))
 );
 
 // =======================================================
@@ -1389,7 +1391,10 @@ class Klass:
     print(1)
 
 Klass()"#,
-    Object::Instance(PyInstance::new(PyClass::new("Klass".into())))
+    Object::Instance(PyInstance::new(PyClass::new(
+        "Klass".into(),
+        HashMap::new()
+    )))
 );
 
 // =======================================================
