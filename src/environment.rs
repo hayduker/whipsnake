@@ -4,7 +4,7 @@ use crate::object::Object;
 
 #[derive(Debug)]
 pub struct Environment<'a> {
-    values: HashMap<String, Object>,
+    pub values: HashMap<String, Object>,
     enclosing: Option<&'a Environment<'a>>,
 }
 

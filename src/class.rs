@@ -58,7 +58,7 @@ impl PyInstance {
         }
     }
 
-    pub fn set(&mut self, name: &Token, value: Object) {
+    pub fn set(&self, name: &Token, value: Object) {
         self.inner
             .borrow_mut()
             .fields

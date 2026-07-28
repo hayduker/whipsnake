@@ -7,6 +7,8 @@ use std::{cell::RefCell, fmt, rc::Rc};
 use crate::{
     callable::Callable,
     class::{PyClass, PyInstance},
+    error::RuntimeError,
+    token::{SourceLocation, Token},
 };
 
 /// Represents all possible runtime values in the Whipsake interpreter.
@@ -30,6 +32,49 @@ pub enum Object {
 }
 
 impl Object {
+    pub fn get_attr(&self, name: &Token) -> Result<Object, RuntimeError> {
+        match self {
+            Object::Instance(instance) => instance.get(name),
+            Object::Class(class) => {
+                let class_borrow = class.borrow();
+                class_borrow
+                    .attrs
+                    .get(&name.lexeme)
+                    .cloned()
+                    .ok_or_else(|| {
+                        RuntimeError::AttributeError(
+                            SourceLocation { line: name.line },
+                            format!(
+                                "type object '{}' has no attribute '{}'",
+                                class_borrow.name, name.lexeme
+                            ),
+                        )
+                    })
+            }
+            _ => Err(RuntimeError::TypeError(
+                SourceLocation { line: name.line },
+                format!("'{}' object has no attributes", self.py_type()),
+            )),
+        }
+    }
+
+    pub fn set_attr(&self, name: &Token, value: Object) -> Result<(), RuntimeError> {
+        match self {
+            Object::Instance(instance) => {
+                instance.set(name, value);
+                Ok(())
+            }
+            Object::Class(class) => {
+                class.borrow_mut().attrs.insert(name.lexeme.clone(), value);
+                Ok(())
+            }
+            _ => Err(RuntimeError::TypeError(
+                SourceLocation { line: name.line },
+                format!("'{}' object has no attributes", self.py_type()),
+            )),
+        }
+    }
+
     /// Determines the truthiness of an `Object` according to Python's rules.
     ///
     /// In Python, `None`, `False`, zero (0 or 0.0), and empty strings are considered falsy.

@@ -1461,3 +1461,16 @@ bill.name = jane.name
 say_bill()"#,
     Object::String("Jane".into())
 );
+
+// test_case!(
+//     class_complex_def,
+//     r#"
+// class MetaDemo:
+//     print("Executing class body right now!")
+
+//     a = 5
+//     b = a * 2
+
+// MetaDemob"#,
+//     Object::Int(10)
+// );

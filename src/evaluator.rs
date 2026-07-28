@@ -193,28 +193,9 @@ impl<'err> Evaluator<'err> {
 
             Stmt::Class { name, body } => {
                 let name = name.lexeme.clone();
-
-                let mut attrs = HashMap::new();
-                for stmt in body {
-                    if let Stmt::Function {
-                        name: fn_name,
-                        params,
-                        body,
-                    } = stmt
-                    {
-                        let fn_name = fn_name.lexeme.clone();
-                        let method = Object::Function(Callable::UserDefined(UserDefinedFn {
-                            name: fn_name.clone(),
-                            params: params.clone(),
-                            body: body.clone(),
-                        }));
-
-                        attrs.insert(fn_name, method);
-                    }
-                }
-
-                println!("After class def, env = {:?}", environment);
-
+                let mut tmp_env = Environment::new_local(environment);
+                self.execute_statements(body, &mut tmp_env, interactive)?;
+                let attrs = std::mem::take(&mut tmp_env.values);
                 let class = Object::Class(Rc::new(RefCell::new(PyClass::new(name.clone(), attrs))));
                 environment.define(name.clone(), class);
             }
@@ -247,24 +228,11 @@ impl<'err> Evaluator<'err> {
                     .evaluate(object, environment)
                     .map_err(ControlFlow::Error)?;
 
-                if let Object::Instance(mut instance) = object {
-                    let value = self
-                        .evaluate(value, environment)
-                        .map_err(ControlFlow::Error)?;
+                let value = self
+                    .evaluate(value, environment)
+                    .map_err(ControlFlow::Error)?;
 
-                    instance.set(name, value);
-                } else if let Object::Class(mut class) = object {
-                    let value = self
-                        .evaluate(value, environment)
-                        .map_err(ControlFlow::Error)?;
-
-                    class.borrow_mut().attrs.insert(name.lexeme.clone(), value);
-                } else {
-                    return Err(ControlFlow::Error(RuntimeError::TypeError(
-                        SourceLocation { line: name.line },
-                        "only instances and classes have fields.".into(),
-                    )));
-                }
+                object.set_attr(name, value).map_err(ControlFlow::Error)?;
             }
         }
 
@@ -415,26 +383,8 @@ impl<'err> Evaluator<'err> {
 
             Expr::Get { object, name } => {
                 let object = self.evaluate(object, environment)?;
-                if let Object::Instance(instance) = object {
-                    instance.get(name)?
-                } else if let Object::Class(class) = object {
-                    class
-                        .borrow()
-                        .attrs
-                        .get(&name.lexeme)
-                        .ok_or_else(|| {
-                            RuntimeError::AttributeError(
-                                SourceLocation { line: name.line },
-                                "class aint gat dat".into(),
-                            )
-                        })?
-                        .clone()
-                } else {
-                    return Err(RuntimeError::NameError(
-                        SourceLocation { line: name.line },
-                        String::from("only instances and classes have properties."),
-                    ));
-                }
+
+                object.get_attr(name)?
             }
         };
 

@@ -1,15 +1,15 @@
-class Person:
-    def say_name(self):
-        return self.name
+class MetaDemo:
+    print("Executing class body right now!")
+    
+    a = 5
+    b = a * 2
 
-bill = Person()
-bill.name = "Bill"
-say_bill = bill.say_name
+    while True:
+        x = 11
+        break
 
-jane = Person()
-jane.name = "Jane"
-say_jane = jane.say_name
+    def call_me(self):
+        return self.x
 
-bill.name = jane.name
-assert say_bill() == "Jane"
-
+m = MetaDemo()
+print(MetaDemo.b + m.call_me())
