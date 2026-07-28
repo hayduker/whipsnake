@@ -24,7 +24,7 @@ pub struct PyInstance {
 }
 
 impl PyInstance {
-    pub fn new(class: PyClass) -> Self {
+    pub fn new(class: Rc<RefCell<PyClass>>) -> Self {
         Self {
             inner: Rc::new(RefCell::new(PyInstanceData {
                 class,
@@ -35,17 +35,27 @@ impl PyInstance {
 
     pub fn get(&self, name: &Token) -> Result<Object, RuntimeError> {
         let inner = self.inner.borrow();
-
         // TODO: Should we clone here?
-        inner.fields.get(&name.lexeme).cloned().ok_or_else(|| {
-            RuntimeError::AttributeError(
+        if let Some(value) = inner.fields.get(&name.lexeme) {
+            Ok(value.clone())
+        } else if let Some(value) = inner.class.borrow().attrs.get(&name.lexeme) {
+            match value {
+                Object::Function(callable) => Ok(Object::BoundMethod {
+                    receiver: self.clone(),
+                    function: callable.clone(),
+                }),
+                _ => Ok(value.clone()),
+            }
+        } else {
+            Err(RuntimeError::AttributeError(
                 SourceLocation { line: name.line },
                 format!(
                     "'{}' object has no attribute '{}'",
-                    inner.class.name, name.lexeme
+                    inner.class.borrow().name,
+                    name.lexeme
                 ),
-            )
-        })
+            ))
+        }
     }
 
     pub fn set(&mut self, name: &Token, value: Object) {
@@ -58,6 +68,6 @@ impl PyInstance {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PyInstanceData {
-    pub class: PyClass,
+    pub class: Rc<RefCell<PyClass>>,
     fields: HashMap<String, Object>,
 }

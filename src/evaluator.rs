@@ -2,7 +2,7 @@
 //! It walks the AST, evaluates expressions, and executes statements to produce results.
 //! It also manages the runtime environment and handles runtime errors.
 
-use std::{collections::HashMap, env};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{Expr, Stmt},
@@ -215,7 +215,7 @@ impl<'err> Evaluator<'err> {
 
                 println!("After class def, env = {:?}", environment);
 
-                let class = Object::Class(PyClass::new(name.clone(), attrs));
+                let class = Object::Class(Rc::new(RefCell::new(PyClass::new(name.clone(), attrs))));
                 environment.define(name.clone(), class);
             }
 
@@ -253,10 +253,16 @@ impl<'err> Evaluator<'err> {
                         .map_err(ControlFlow::Error)?;
 
                     instance.set(name, value);
+                } else if let Object::Class(mut class) = object {
+                    let value = self
+                        .evaluate(value, environment)
+                        .map_err(ControlFlow::Error)?;
+
+                    class.borrow_mut().attrs.insert(name.lexeme.clone(), value);
                 } else {
                     return Err(ControlFlow::Error(RuntimeError::TypeError(
                         SourceLocation { line: name.line },
-                        "only instances have fields.".into(),
+                        "only instances and classes have fields.".into(),
                     )));
                 }
             }
@@ -411,10 +417,22 @@ impl<'err> Evaluator<'err> {
                 let object = self.evaluate(object, environment)?;
                 if let Object::Instance(instance) = object {
                     instance.get(name)?
+                } else if let Object::Class(class) = object {
+                    class
+                        .borrow()
+                        .attrs
+                        .get(&name.lexeme)
+                        .ok_or_else(|| {
+                            RuntimeError::AttributeError(
+                                SourceLocation { line: name.line },
+                                "class aint gat dat".into(),
+                            )
+                        })?
+                        .clone()
                 } else {
                     return Err(RuntimeError::NameError(
                         SourceLocation { line: name.line },
-                        String::from("only instances have properties."),
+                        String::from("only instances and classes have properties."),
                     ));
                 }
             }
@@ -427,7 +445,7 @@ impl<'err> Evaluator<'err> {
         &mut self,
         callee: Object,
         paren: &Token,
-        arguments: Vec<Object>,
+        mut arguments: Vec<Object>,
         enclosing: &Environment,
     ) -> Result<Object, RuntimeError> {
         match callee {
@@ -465,9 +483,18 @@ impl<'err> Evaluator<'err> {
                 }
             },
             Object::Class(class) => {
-                self.check_arity(arguments.len(), Arity::Exact(0), &class.name, paren)?;
-                let instance = PyInstance::new(class.clone());
+                self.check_arity(
+                    arguments.len(),
+                    Arity::Exact(0),
+                    &class.borrow().name,
+                    paren,
+                )?;
+                let instance = PyInstance::new(class);
                 Ok(Object::Instance(instance))
+            }
+            Object::BoundMethod { receiver, function } => {
+                arguments.insert(0, Object::Instance(receiver));
+                self.call(Object::Function(function), paren, arguments, enclosing)
             }
             _ => Err(RuntimeError::TypeError(
                 SourceLocation { line: paren.line },

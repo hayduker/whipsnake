@@ -1,4 +1,4 @@
-use std::collections::{HashMap, hash_map};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use whipsnake::{
     class::{PyClass, PyInstance},
@@ -1377,7 +1377,10 @@ class Klass:
     print(1)
 
 Klass"#,
-    Object::Class(PyClass::new("Klass".into(), HashMap::new()))
+    Object::Class(Rc::new(RefCell::new(PyClass::new(
+        "Klass".into(),
+        HashMap::new()
+    ))))
 );
 
 // =======================================================
@@ -1391,10 +1394,10 @@ class Klass:
     print(1)
 
 Klass()"#,
-    Object::Instance(PyInstance::new(PyClass::new(
+    Object::Instance(PyInstance::new(Rc::new(RefCell::new(PyClass::new(
         "Klass".into(),
         HashMap::new()
-    )))
+    )))))
 );
 
 // =======================================================
@@ -1412,4 +1415,49 @@ k = Klass()
 k.thing = 3
 k.thing"#,
     Object::Int(3)
+);
+
+test_case!(
+    class_methods_0,
+    r#"
+class Person:
+    def say_name(self):
+        return self.name
+
+bill = Person()
+bill.name = "Bill"
+bill.say_name()"#,
+    Object::String("Bill".into())
+);
+
+test_case!(
+    class_methods_1,
+    r#"
+class Person:
+    def say_name(self):
+        return self.name
+
+Person.name = "Bill"
+Person.say_name(Person)"#,
+    Object::String("Bill".into())
+);
+
+test_case!(
+    class_methods_2,
+    r#"
+class Person:
+    def say_name(self):
+        return self.name
+
+bill = Person()
+bill.name = "Bill"
+say_bill = bill.say_name
+
+jane = Person()
+jane.name = "Jane"
+say_jane = jane.say_name
+
+bill.name = jane.name
+say_bill()"#,
+    Object::String("Jane".into())
 );

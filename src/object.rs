@@ -2,7 +2,7 @@
 //! in Whipsake. This includes integers, floats, strings, booleans, None, and callable functions.
 //! It also provides methods for type introspection and truthiness checking.
 
-use std::fmt;
+use std::{cell::RefCell, fmt, rc::Rc};
 
 use crate::{
     callable::Callable,
@@ -21,8 +21,12 @@ pub enum Object {
     Bool(bool),
     None,
     Function(Callable),
-    Class(PyClass),
+    Class(Rc<RefCell<PyClass>>),
     Instance(PyInstance),
+    BoundMethod {
+        receiver: PyInstance,
+        function: Callable,
+    },
 }
 
 impl Object {
@@ -61,6 +65,10 @@ impl Object {
             Object::Function(_) => true,
             Object::Class(_) => true,
             Object::Instance(_) => true,
+            Object::BoundMethod {
+                receiver: _,
+                function: _,
+            } => true,
         }
     }
 
@@ -91,7 +99,11 @@ impl Object {
                 Callable::Native(_) => "builtin_function_or_method".to_string(),
             },
             Object::Class(_) => "type".to_string(),
-            Object::Instance(instance) => instance.inner.borrow().class.name.clone(),
+            Object::Instance(instance) => instance.inner.borrow().class.borrow().name.clone(),
+            Object::BoundMethod {
+                receiver: _,
+                function: _,
+            } => "method".to_string(),
         }
     }
 
@@ -168,15 +180,32 @@ impl fmt::Display for Object {
                 }
             },
             Object::Class(class) => {
-                write!(f, "<class {}>", class.name)
+                write!(f, "<class {}>", class.borrow().name)
             }
             Object::Instance(instance) => {
-                let raw_ptr = instance as *const _;
+                let address = instance as *const _;
                 write!(
                     f,
                     "<{} object at {:p}>",
-                    instance.inner.borrow().class.name,
-                    raw_ptr
+                    instance.inner.borrow().class.borrow().name,
+                    address
+                )
+            }
+            Object::BoundMethod { receiver, function } => {
+                let inner = receiver.inner.borrow();
+                let class = inner.class.borrow();
+
+                let cls_name = class.name.as_str();
+                let fn_name = match function {
+                    Callable::Native(f) => f.name,
+                    Callable::UserDefined(f) => &f.name,
+                };
+                let address = receiver as *const _;
+
+                write!(
+                    f,
+                    "<bound method {}.{} of <{} object at {:p}>",
+                    cls_name, fn_name, cls_name, address
                 )
             }
         }
