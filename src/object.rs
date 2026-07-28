@@ -34,7 +34,7 @@ pub enum Object {
 impl Object {
     pub fn get_attr(&self, name: &Token) -> Result<Object, RuntimeError> {
         match self {
-            Object::Instance(instance) => instance.get(name),
+            Object::Instance(instance) => instance.get(&name.lexeme),
             Object::Class(class) => {
                 let class_borrow = class.borrow();
                 class_borrow
@@ -61,7 +61,7 @@ impl Object {
     pub fn set_attr(&self, name: &Token, value: Object) -> Result<(), RuntimeError> {
         match self {
             Object::Instance(instance) => {
-                instance.set(name, value);
+                instance.set(&name.lexeme, value);
                 Ok(())
             }
             Object::Class(class) => {

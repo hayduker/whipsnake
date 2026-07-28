@@ -2,10 +2,13 @@
 //! It walks the AST, evaluates expressions, and executes statements to produce results.
 //! It also manages the runtime environment and handles runtime errors.
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    ast::{Expr, Stmt},
+    ast::{
+        Expr,
+        Stmt::{self, Function},
+    },
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
     class::{PyClass, PyInstance},
     environment::Environment,
@@ -433,13 +436,26 @@ impl<'err> Evaluator<'err> {
                 }
             },
             Object::Class(class) => {
-                self.check_arity(
-                    arguments.len(),
-                    Arity::Exact(0),
-                    &class.borrow().name,
-                    paren,
-                )?;
-                let instance = PyInstance::new(class);
+                let instance = PyInstance::new(class.clone());
+
+                if let Ok(init_fn) = instance.get("__init__") {
+                    let init_return = self.call(init_fn.clone(), paren, arguments, enclosing)?;
+                    if init_return != Object::None {
+                        return Err(RuntimeError::TypeError(
+                            SourceLocation { line: paren.line },
+                            format!(
+                                "__init__() should return None, not '{}'",
+                                init_return.py_type()
+                            ),
+                        ));
+                    }
+                } else if !arguments.is_empty() {
+                    return Err(RuntimeError::TypeError(
+                        SourceLocation { line: paren.line },
+                        format!("{}() takes no arguments", class.borrow().name),
+                    ));
+                }
+
                 Ok(Object::Instance(instance))
             }
             Object::BoundMethod { receiver, function } => {

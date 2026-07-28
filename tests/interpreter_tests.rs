@@ -3,11 +3,12 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use whipsnake::{
     class::{PyClass, PyInstance},
     environment::Environment,
-    error::ErrorReporter,
+    error::{ErrorReporter, RuntimeError::RuntimeError},
     evaluator::Evaluator,
     lexer::Lexer,
     object::Object,
     parser::Parser,
+    token::SourceLocation,
 };
 
 macro_rules! test_case {
@@ -1473,4 +1474,29 @@ say_bill()"#,
 
 // MetaDemob"#,
 //     Object::Int(10)
+// );
+
+test_case!(
+    class_init,
+    r#"
+class K:
+    def __init__(self, x):
+        self.y = x
+
+k = K(123)
+k.y"#,
+    Object::Int(123)
+);
+
+// should return RuntimeError
+// test_case!(
+//     class_init_bad_return,
+//     r#"
+// class K:
+//     def __init__(self, x):
+//         self.y = x
+//         return 42
+
+// k = K(123)"#,
+//     Object::None
 // );

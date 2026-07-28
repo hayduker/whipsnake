@@ -1,10 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{
-    error::RuntimeError,
-    object::Object,
-    token::{SourceLocation, Token},
-};
+use crate::{error::RuntimeError, object::Object, token::SourceLocation};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PyClass {
@@ -33,12 +29,12 @@ impl PyInstance {
         }
     }
 
-    pub fn get(&self, name: &Token) -> Result<Object, RuntimeError> {
+    pub fn get(&self, name: &str) -> Result<Object, RuntimeError> {
         let inner = self.inner.borrow();
         // TODO: Should we clone here?
-        if let Some(value) = inner.fields.get(&name.lexeme) {
+        if let Some(value) = inner.fields.get(name) {
             Ok(value.clone())
-        } else if let Some(value) = inner.class.borrow().attrs.get(&name.lexeme) {
+        } else if let Some(value) = inner.class.borrow().attrs.get(name) {
             match value {
                 Object::Function(callable) => Ok(Object::BoundMethod {
                     receiver: self.clone(),
@@ -48,21 +44,21 @@ impl PyInstance {
             }
         } else {
             Err(RuntimeError::AttributeError(
-                SourceLocation { line: name.line },
+                SourceLocation { line: 0 },
                 format!(
                     "'{}' object has no attribute '{}'",
                     inner.class.borrow().name,
-                    name.lexeme
+                    name
                 ),
             ))
         }
     }
 
-    pub fn set(&self, name: &Token, value: Object) {
+    pub fn set(&self, name: &str, value: Object) {
         self.inner
             .borrow_mut()
             .fields
-            .insert(name.lexeme.clone(), value);
+            .insert(name.to_string(), value);
     }
 }
 
