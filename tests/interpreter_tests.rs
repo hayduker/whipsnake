@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use whipsnake::{
     class::{PyClass, PyInstance},
@@ -1374,10 +1374,10 @@ test_case!(
     class_definition,
     r#"
 class Klass:
-    print(1)
+    x = 1
 
-Klass"#,
-    Object::Class(PyClass::new("Klass".into(), vec![], HashMap::new()))
+Klass.x"#,
+    Object::Int(1)
 );
 
 // =======================================================
@@ -1388,14 +1388,11 @@ test_case!(
     class_instantiation,
     r#"
 class Klass:
-    print(1)
+    def __init__(self):
+        self.x = 1
 
-Klass()"#,
-    Object::Instance(PyInstance::new(PyClass::new(
-        "Klass".into(),
-        vec![],
-        HashMap::new()
-    )))
+Klass().x"#,
+    Object::Int(1)
 );
 
 // =======================================================
@@ -1460,19 +1457,6 @@ say_bill()"#,
     Object::String("Jane".into())
 );
 
-// test_case!(
-//     class_complex_def,
-//     r#"
-// class MetaDemo:
-//     print("Executing class body right now!")
-
-//     a = 5
-//     b = a * 2
-
-// MetaDemob"#,
-//     Object::Int(10)
-// );
-
 test_case!(
     class_init,
     r#"
@@ -1485,15 +1469,257 @@ k.y"#,
     Object::Int(123)
 );
 
-// should return RuntimeError
-// test_case!(
-//     class_init_bad_return,
-//     r#"
-// class K:
-//     def __init__(self, x):
-//         self.y = x
-//         return 42
+// =========================================================================
+// CONSTRUCTORS & INITIALIZATION EDGE CASES
+// =========================================================================
 
-// k = K(123)"#,
-//     Object::None
-// );
+test_case!(
+    class_init_reinitialization,
+    r#"
+class Person:
+    def __init__(self, name):
+        self.name = name
+
+p = Person("Derek")
+p.__init__("Rosalea")
+p.name"#,
+    Object::String("Rosalea".into())
+);
+
+test_case!(
+    class_init_returns_none,
+    r#"
+class K:
+    def __init__(self, x):
+        self.x = x
+        return None
+
+k = K(42)
+k.x"#,
+    Object::Int(42)
+);
+
+// =========================================================================
+// ATTRIBUTE LOOKUP & SHADOWING
+// =========================================================================
+
+test_case!(
+    class_attr_shadowing_instance,
+    r#"
+class Counter:
+    count = 0
+
+c1 = Counter()
+c2 = Counter()
+
+c1.count = 10
+c1.count + c2.count"#,
+    // c1.count shadows class attr (10), c2.count falls back to class attr (0)
+    Object::Int(10)
+);
+
+test_case!(
+    class_attr_mutation_reflected_in_instances,
+    r#"
+class Config:
+    mode = "debug"
+
+a = Config()
+b = Config()
+Config.mode = "release"
+a.mode + "_" + b.mode"#,
+    Object::String("release_release".into())
+);
+
+test_case!(
+    class_method_reassignment,
+    r#"
+class Calculator:
+    def double(self, x):
+        return x * 2
+
+def triple(self, x):
+    return x * 3
+
+c = Calculator()
+res1 = c.double(5)
+
+Calculator.double = triple
+res2 = c.double(5)
+
+res1 + res2"#,
+    Object::Int(25) // 10 + 15
+);
+
+// =========================================================================
+// BOUND METHOD & CALLABLE DYNAMICS
+// =========================================================================
+
+test_case!(
+    bound_method_late_binding,
+    r#"
+class Box:
+    def get_val(self):
+        return self.val
+
+b = Box()
+getter = b.get_val
+b.val = 999
+getter()"#,
+    // Evaluates if BoundMethod retains pointer to instance rather than taking snapshot
+    Object::Int(999)
+);
+
+test_case!(
+    unbound_method_explicit_self,
+    r#"
+class Adder:
+    def add(self, a, b):
+        return self.base + a + b
+
+a = Adder()
+a.base = 100
+Adder.add(a, 10, 20)"#,
+    Object::Int(130)
+);
+
+// =========================================================================
+// SINGLE INHERITANCE
+// =========================================================================
+
+test_case!(
+    single_inheritance_method_fallback,
+    r#"
+class Animal:
+    def speak(self):
+        return "generic sound"
+
+class Dog(Animal):
+    pass
+
+d = Dog()
+d.speak()"#,
+    Object::String("generic sound".into())
+);
+
+test_case!(
+    single_inheritance_method_override,
+    r#"
+class Parent:
+    def value(self):
+        return 1
+
+class Child(Parent):
+    def value(self):
+        return 2
+
+c = Child()
+c.value()"#,
+    Object::Int(2)
+);
+
+test_case!(
+    single_inheritance_deep_chain,
+    r#"
+class A:
+    def x(self):
+        return "A"
+
+class B(A):
+    pass
+
+class C(B):
+    pass
+
+class D(C):
+    pass
+
+d = D()
+d.x()"#,
+    Object::String("A".into())
+);
+
+test_case!(
+    single_inheritance_constructor_inheritance,
+    r#"
+class Base:
+    def __init__(self, val):
+        self.val = val
+
+class Sub(Base):
+    pass
+
+s = Sub(42)
+s.val"#,
+    Object::Int(42)
+);
+
+// =========================================================================
+// MULTIPLE INHERITANCE & MRO
+// =========================================================================
+
+test_case!(
+    multi_inheritance_left_to_right_priority,
+    r#"
+class A:
+    def which(self):
+        return "A"
+
+class B:
+    def which(self):
+        return "B"
+
+class LeftFirst(A, B):
+    pass
+
+class RightFirst(B, A):
+    pass
+
+LeftFirst().which() + RightFirst().which()"#,
+    Object::String("AB".into())
+);
+
+test_case!(
+    multi_inheritance_diamond_resolution,
+    r#"
+class Top:
+    def tag(self):
+        return "Top"
+
+class Left(Top):
+    pass
+
+class Right(Top):
+    def tag(self):
+        return "Right"
+
+class Bottom(Left, Right):
+    pass
+
+b = Bottom()
+b.tag()"#,
+    // MRO for Bottom is [Bottom, Left, Right, Top].
+    // Left doesn't define `tag`, so it must fall back to Right before Top!
+    Object::String("Right".into())
+);
+
+test_case!(
+    multi_inheritance_attribute_shadowing,
+    r#"
+class Layer1:
+    val = 1
+
+class Layer2:
+    val = 2
+
+class Combined(Layer1, Layer2):
+    pass
+
+c = Combined()
+v1 = c.val
+Combined.val = 100
+v2 = c.val
+
+v1 + v2"#,
+    Object::Int(101)
+);
