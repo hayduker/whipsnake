@@ -8,6 +8,7 @@ use crate::{
     class::{PyClass, PyInstance},
     environment::Environment,
     error::{ErrorReporter, RuntimeError},
+    list::{LIST_NAME, create_list_class},
     object::Object,
     token::{Literal, SourceLocation, Token, TokenKind},
 };
@@ -90,6 +91,8 @@ impl<'err> Evaluator<'err> {
             ID_FUNC.name.to_string(),
             Object::Function(Callable::Native(ID_FUNC)),
         );
+
+        environment.define(LIST_NAME.to_string(), create_list_class());
 
         match self.execute_statements(statements, environment, interactive) {
             Ok(last_value) => Some(last_value),
@@ -210,7 +213,7 @@ impl<'err> Evaluator<'err> {
                 let mut tmp_env = Environment::new_local(environment);
                 self.execute_statements(body, &mut tmp_env, interactive)?;
                 let attrs = std::mem::take(&mut tmp_env.values);
-                let class = Object::Class(PyClass::new(name.clone(), superclasses, attrs));
+                let class = Object::Class(PyClass::new(name.clone(), superclasses, attrs, None));
 
                 environment.define(name.clone(), class);
             }

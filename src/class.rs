@@ -5,7 +5,20 @@ use std::{
     rc::Rc,
 };
 
-use crate::{error::RuntimeError, object::Object, token::SourceLocation};
+use crate::{error::RuntimeError, list::ListPayload, object::Object, token::SourceLocation};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NativeAlloc {
+    List,
+}
+
+impl NativeAlloc {
+    pub fn allocate(&self) -> NativePayload {
+        match self {
+            NativeAlloc::List => NativePayload::List(ListPayload::new()),
+        }
+    }
+}
 
 #[derive(PartialEq, Clone)]
 pub struct PyClass {
@@ -13,6 +26,7 @@ pub struct PyClass {
     pub supers: Vec<Rc<RefCell<PyClass>>>,
     pub mro: Vec<Rc<RefCell<PyClass>>>,
     pub attrs: HashMap<String, Object>,
+    pub native_alloc: Option<NativeAlloc>,
 }
 
 impl PyClass {
@@ -20,12 +34,14 @@ impl PyClass {
         name: String,
         supers: Vec<Rc<RefCell<PyClass>>>,
         attrs: HashMap<String, Object>,
+        native_alloc: Option<NativeAlloc>,
     ) -> Rc<RefCell<Self>> {
         let class_rc = Rc::new(RefCell::new(PyClass {
             name,
             supers,
             mro: vec![],
             attrs,
+            native_alloc,
         }));
 
         let mro = Self::compute_mro(&class_rc);
@@ -59,9 +75,6 @@ impl PyClass {
             }
         }
 
-        let pretty: Vec<String> = mro.iter().map(|c| c.borrow().name.clone()).collect();
-        println!("computed mro: {:?}", pretty);
-
         mro
     }
 }
@@ -91,45 +104,44 @@ pub struct PyInstance {
 
 impl PyInstance {
     pub fn new(class: Rc<RefCell<PyClass>>) -> Self {
+        let payload = Self::allocate_payload(&class);
+
         Self {
             inner: Rc::new(RefCell::new(PyInstanceData {
                 class,
                 fields: HashMap::default(),
+                payload,
             })),
         }
+    }
+
+    fn allocate_payload(class: &Rc<RefCell<PyClass>>) -> Option<NativePayload> {
+        // Walk the class's MRO so custom subclasses like `class MyList(list):`
+        // also inherit the ability to allocate a `NativePayload::List`
+        for cls in &class.borrow().mro {
+            if let Some(allocator) = cls.borrow().native_alloc {
+                return Some(allocator.allocate());
+            }
+        }
+        None
     }
 
     pub fn get(&self, name: &str) -> Result<Object, RuntimeError> {
         let inner = self.inner.borrow();
 
         if let Some(value) = inner.fields.get(name) {
-            println!("got {} in object", name);
             return Ok(value.clone());
         } else {
             for class in &inner.class.borrow().mro {
                 if let Some(value) = class.borrow().attrs.get(name) {
                     match value {
                         Object::Function(callable) => {
-                            println!(
-                                "got {} in class {} and its a function",
-                                name,
-                                class.borrow().name
-                            );
-
                             return Ok(Object::BoundMethod {
                                 receiver: self.clone(),
                                 function: callable.clone(),
                             });
                         }
-                        _ => {
-                            println!(
-                                "got {} in class {} and it aint no function",
-                                name,
-                                class.borrow().name
-                            );
-
-                            return Ok(value.clone());
-                        }
+                        _ => return Ok(value.clone()),
                     }
                 }
             }
@@ -157,4 +169,10 @@ impl PyInstance {
 pub struct PyInstanceData {
     pub class: Rc<RefCell<PyClass>>,
     fields: HashMap<String, Object>,
+    pub payload: Option<NativePayload>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum NativePayload {
+    List(ListPayload),
 }
