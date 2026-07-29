@@ -1,13 +1,6 @@
-use std::collections::HashMap;
-
 use whipsnake::{
-    class::{PyClass, PyInstance},
-    environment::Environment,
-    error::ErrorReporter,
-    evaluator::Evaluator,
-    lexer::Lexer,
-    object::Object,
-    parser::Parser,
+    environment::Environment, error::ErrorReporter, evaluator::Evaluator, lexer::Lexer,
+    object::Object, parser::Parser,
 };
 
 macro_rules! test_case {
