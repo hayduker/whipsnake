@@ -29,6 +29,7 @@ pub enum Stmt {
     },
     Class {
         name: Token,
+        supers: Vec<Expr>,
         body: Vec<Stmt>,
     },
     Set {

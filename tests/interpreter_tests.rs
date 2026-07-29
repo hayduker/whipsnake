@@ -3,12 +3,11 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use whipsnake::{
     class::{PyClass, PyInstance},
     environment::Environment,
-    error::{ErrorReporter, RuntimeError::RuntimeError},
+    error::ErrorReporter,
     evaluator::Evaluator,
     lexer::Lexer,
     object::Object,
     parser::Parser,
-    token::SourceLocation,
 };
 
 macro_rules! test_case {
@@ -1378,10 +1377,7 @@ class Klass:
     print(1)
 
 Klass"#,
-    Object::Class(Rc::new(RefCell::new(PyClass::new(
-        "Klass".into(),
-        HashMap::new()
-    ))))
+    Object::Class(PyClass::new("Klass".into(), vec![], HashMap::new()))
 );
 
 // =======================================================
@@ -1395,10 +1391,11 @@ class Klass:
     print(1)
 
 Klass()"#,
-    Object::Instance(PyInstance::new(Rc::new(RefCell::new(PyClass::new(
+    Object::Instance(PyInstance::new(PyClass::new(
         "Klass".into(),
+        vec![],
         HashMap::new()
-    )))))
+    )))
 );
 
 // =======================================================

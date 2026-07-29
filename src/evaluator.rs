@@ -2,13 +2,8 @@
 //! It walks the AST, evaluates expressions, and executes statements to produce results.
 //! It also manages the runtime environment and handles runtime errors.
 
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{
-    ast::{
-        Expr,
-        Stmt::{self, Function},
-    },
+    ast::{Expr, Stmt},
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
     class::{PyClass, PyInstance},
     environment::Environment,
@@ -194,12 +189,29 @@ impl<'err> Evaluator<'err> {
                 environment.define(name, user_fn);
             }
 
-            Stmt::Class { name, body } => {
+            Stmt::Class { name, supers, body } => {
+                let mut superclasses = Vec::with_capacity(supers.len());
+                for super_expr in supers {
+                    let value = self
+                        .evaluate(super_expr, environment)
+                        .map_err(ControlFlow::Error)?;
+
+                    if let Object::Class(class) = value {
+                        superclasses.push(class);
+                    } else {
+                        return Err(ControlFlow::Error(RuntimeError::TypeError(
+                            SourceLocation { line: name.line },
+                            format!("superclass '{}' is not a class", name.lexeme),
+                        )));
+                    }
+                }
+
                 let name = name.lexeme.clone();
                 let mut tmp_env = Environment::new_local(environment);
                 self.execute_statements(body, &mut tmp_env, interactive)?;
                 let attrs = std::mem::take(&mut tmp_env.values);
-                let class = Object::Class(Rc::new(RefCell::new(PyClass::new(name.clone(), attrs))));
+                let class = Object::Class(PyClass::new(name.clone(), superclasses, attrs));
+
                 environment.define(name.clone(), class);
             }
 

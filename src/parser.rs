@@ -419,8 +419,6 @@ impl<'err> Parser<'err> {
                     "expected parameter name",
                 )?);
 
-                println!("Got identifier {:?}", params.iter().rev().peekable().peek());
-
                 if !self.advance_if(tokens, TokenKind::Comma) {
                     break;
                 }
@@ -452,12 +450,31 @@ impl<'err> Parser<'err> {
             "expected identifier name after 'class'",
         )?;
 
+        let mut supers = vec![];
+        if self.peek_matches(tokens, TokenKind::LeftParen) {
+            self.advance(tokens); // consume "("
+
+            if !self.peek_matches(tokens, TokenKind::RightParen) {
+                loop {
+                    if supers.len() >= 255 {
+                        return Err(self.error(tokens, "can't have more than 255 superclasses"));
+                    }
+                    supers.push(self.expression(tokens)?);
+                    if !self.advance_if(tokens, TokenKind::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(tokens, TokenKind::RightParen, "'(' was never closed")?;
+        }
+
         self.consume(tokens, TokenKind::Colon, "expected ':' after ')'")?;
         self.consume(tokens, TokenKind::NewLine, "expected new line after ':'")?;
 
         let body = self.block(tokens)?;
 
-        Ok(Stmt::Class { name, body })
+        Ok(Stmt::Class { name, supers, body })
     }
 
     fn return_statement<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Stmt, ParseError>
