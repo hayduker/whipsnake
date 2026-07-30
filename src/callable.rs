@@ -90,3 +90,13 @@ pub const ID_FUNC: NativeFn = NativeFn {
     arity: Arity::Exact(1),
     body: id_impl,
 };
+
+pub fn len_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+    Ok(Object::Int(args[0].identity()))
+}
+
+pub const ID_FUNC: NativeFn = NativeFn {
+    name: "id",
+    arity: Arity::Exact(1),
+    body: id_impl,
+};

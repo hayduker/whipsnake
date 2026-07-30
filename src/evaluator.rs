@@ -5,10 +5,10 @@
 use crate::{
     ast::{Expr, Stmt},
     callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
-    class::{PyClass, PyInstance},
+    class::{PyClass, PyInstance, PyInstanceData},
     environment::Environment,
     error::{ErrorReporter, RuntimeError},
-    list::{LIST_NAME, create_list_class},
+    list::{self, LIST_NAME, create_list_class},
     object::Object,
     token::{Literal, SourceLocation, Token, TokenKind},
 };
@@ -403,6 +403,27 @@ impl<'err> Evaluator<'err> {
                 let object = self.evaluate(object, environment)?;
 
                 object.get_attr(name)?
+            }
+
+            Expr::List { items } => {
+                let items: Vec<Object> = items
+                    .iter()
+                    .map(|expr| self.evaluate(expr, environment))
+                    .collect::<Result<Vec<Object>, RuntimeError>>()?;
+
+                let list_class = match environment.get(LIST_NAME) {
+                    Some(Object::Class(class)) => class,
+                    _ => {
+                        return Err(RuntimeError::TypeError(
+                            SourceLocation { line: 0 },
+                            String::from("built-in list class not found, that is not good"),
+                        ));
+                    }
+                };
+
+                let instance = PyInstance::with_payload(list_class.clone(), items.into());
+
+                Object::Instance(instance)
             }
         };
 

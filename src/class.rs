@@ -115,6 +115,16 @@ impl PyInstance {
         }
     }
 
+    pub fn with_payload(class: Rc<RefCell<PyClass>>, payload: NativePayload) -> Self {
+        Self {
+            inner: Rc::new(RefCell::new(PyInstanceData {
+                class,
+                fields: HashMap::default(),
+                payload: Some(payload),
+            })),
+        }
+    }
+
     fn allocate_payload(class: &Rc<RefCell<PyClass>>) -> Option<NativePayload> {
         // Walk the class's MRO so custom subclasses like `class MyList(list):`
         // also inherit the ability to allocate a `NativePayload::List`
@@ -172,7 +182,23 @@ pub struct PyInstanceData {
     pub payload: Option<NativePayload>,
 }
 
+impl PyInstanceData {
+    pub fn with_payload(class: Rc<RefCell<PyClass>>, payload: NativePayload) -> Self {
+        PyInstanceData {
+            class,
+            fields: HashMap::new(),
+            payload: Some(payload),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum NativePayload {
     List(ListPayload),
+}
+
+impl From<Vec<Object>> for NativePayload {
+    fn from(items: Vec<Object>) -> Self {
+        NativePayload::List(ListPayload { items })
+    }
 }

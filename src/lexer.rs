@@ -155,6 +155,8 @@ impl<'src, 'err> Lexer<'src, 'err> {
             ' ' | '\t' | '\r' => return Ok(None),
             '(' => TokenKind::LeftParen,
             ')' => TokenKind::RightParen,
+            '[' => TokenKind::LeftSqr,
+            ']' => TokenKind::RightSqr,
             ':' => TokenKind::Colon,
             ',' => TokenKind::Comma,
             '.' => TokenKind::Dot,

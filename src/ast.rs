@@ -67,4 +67,7 @@ pub enum Expr {
         object: Box<Expr>,
         name: Token,
     },
+    List {
+        items: Vec<Expr>,
+    },
 }

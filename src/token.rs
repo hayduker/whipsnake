@@ -8,6 +8,8 @@ pub enum TokenKind {
     // single-character tokens
     LeftParen,
     RightParen,
+    LeftSqr,
+    RightSqr,
     Colon,
     Comma,
     Dot,

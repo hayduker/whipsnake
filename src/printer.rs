@@ -228,6 +228,13 @@ fn convert_expr(e: &Expr) -> SExpr {
             ];
             SExpr::List(sexpr)
         }
+        Expr::List { items } => {
+            let mut sexpr = vec![atom("list")];
+            for item in items {
+                sexpr.push(convert_expr(item));
+            }
+            SExpr::List(sexpr)
+        }
     }
 }
 

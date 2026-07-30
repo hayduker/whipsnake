@@ -762,6 +762,10 @@ impl<'err> Parser<'err> {
             return Ok(Expr::Grouping(Box::new(expr)));
         }
 
+        if self.peek_matches(tokens, TokenKind::LeftSqr) {
+            return self.list_literal(tokens);
+        }
+
         let peek_kind = tokens.peek().unwrap().kind;
         Err(self.error(
             tokens,
@@ -793,6 +797,27 @@ impl<'err> Parser<'err> {
             paren: right_paren,
             arguments,
         })
+    }
+
+    fn list_literal<I>(&mut self, tokens: &mut Peekable<I>) -> Result<Expr, ParseError>
+    where
+        I: Iterator<Item = Token>,
+    {
+        self.advance(tokens); // consume '['
+
+        let mut items = vec![];
+        if !self.peek_matches(tokens, TokenKind::RightSqr) {
+            loop {
+                items.push(self.expression(tokens)?);
+                if !self.advance_if(tokens, TokenKind::Comma) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(tokens, TokenKind::RightSqr, "'[' was never closed")?;
+
+        Ok(Expr::List { items })
     }
 
     fn error<I>(&mut self, tokens: &mut Peekable<I>, msg: &str) -> ParseError
