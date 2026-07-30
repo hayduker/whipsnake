@@ -1,4 +1,11 @@
-use crate::{ast::Stmt, error::RuntimeError, object::Object, token::Token};
+use crate::{
+    ast::Stmt,
+    environment::Environment,
+    error::RuntimeError,
+    evaluator::Evaluator,
+    object::Object,
+    token::{SourceLocation, Token, TokenKind::LeftParen},
+};
 
 // TODO: Technically class constructors should be represented here, but
 // when I tried it that way the evaluator balked in its call() method
@@ -41,11 +48,13 @@ pub enum Arity {
     Minimum(usize),
 }
 
+type NativeFnBody = fn(&mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError>;
+
 #[derive(Debug, Clone, Copy)]
 pub struct NativeFn {
     pub name: &'static str,
     pub arity: Arity,
-    pub body: fn(args: Vec<Object>) -> Result<Object, RuntimeError>,
+    pub body: NativeFnBody,
 }
 
 impl PartialEq for NativeFn {
@@ -54,7 +63,43 @@ impl PartialEq for NativeFn {
     }
 }
 
-pub fn print_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+pub fn len_impl(evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
+    let object = args[0].clone();
+    let len_fn = match object.get_attr("__len__") {
+        Ok(f) => f,
+        Err(_) => {
+            return Err(RuntimeError::TypeError(
+                SourceLocation { line: 0 },
+                format!("object of type '{}' has no len()", object.py_type()),
+            ));
+        }
+    };
+
+    // TODO: This is hacky af. The artificial token doesn't carry actual line info with it,
+    // and using a new empty environment won't work for user-defined native functions that
+    // make use of their surrounding environment. I could pass in the actual paren and
+    // environment from the evaluator but I don't want to muck up all the native function
+    // signatures that wouldn't even be using it just for this edge case. Also Evaluator::call
+    // is now the only public method. All this makes me think this could be designed better.
+
+    let artificial_token = Token::new(LeftParen, "(", 0);
+    let length_value = evaluator.call(
+        len_fn,
+        &artificial_token,
+        vec![],
+        &Environment::new_global(),
+    )?;
+
+    Ok(length_value)
+}
+
+pub const LEN_FUNC: NativeFn = NativeFn {
+    name: "len",
+    arity: Arity::Exact(1),
+    body: len_impl,
+};
+
+pub fn print_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     let string = args
         .iter()
         .map(|arg| arg.to_string())
@@ -71,7 +116,7 @@ pub const PRINT_FUNC: NativeFn = NativeFn {
     body: print_impl,
 };
 
-pub fn type_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+pub fn type_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     Ok(Object::String(format!("<class '{}'>", &args[0].py_type())))
 }
 
@@ -81,17 +126,7 @@ pub const TYPE_FUNC: NativeFn = NativeFn {
     body: type_impl,
 };
 
-pub fn id_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
-    Ok(Object::Int(args[0].identity()))
-}
-
-pub const ID_FUNC: NativeFn = NativeFn {
-    name: "id",
-    arity: Arity::Exact(1),
-    body: id_impl,
-};
-
-pub fn len_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+pub fn id_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     Ok(Object::Int(args[0].identity()))
 }
 

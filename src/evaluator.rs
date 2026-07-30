@@ -4,11 +4,11 @@
 
 use crate::{
     ast::{Expr, Stmt},
-    callable::{Arity, Callable, ID_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
-    class::{PyClass, PyInstance, PyInstanceData},
+    callable::{Arity, Callable, ID_FUNC, LEN_FUNC, PRINT_FUNC, TYPE_FUNC, UserDefinedFn},
+    class::{PyClass, PyInstance},
     environment::Environment,
     error::{ErrorReporter, RuntimeError},
-    list::{self, LIST_NAME, create_list_class},
+    list::{LIST_NAME, create_list_class},
     object::Object,
     token::{Literal, SourceLocation, Token, TokenKind},
 };
@@ -77,6 +77,11 @@ impl<'err> Evaluator<'err> {
         environment: &mut Environment,
         interactive: bool,
     ) -> Option<Object> {
+        environment.define(
+            LEN_FUNC.name.to_string(),
+            Object::Function(Callable::Native(LEN_FUNC)),
+        );
+
         environment.define(
             PRINT_FUNC.name.to_string(),
             Object::Function(Callable::Native(PRINT_FUNC)),
@@ -250,7 +255,9 @@ impl<'err> Evaluator<'err> {
                     .evaluate(value, environment)
                     .map_err(ControlFlow::Error)?;
 
-                object.set_attr(name, value).map_err(ControlFlow::Error)?;
+                object
+                    .set_attr(&name.lexeme, value)
+                    .map_err(ControlFlow::Error)?;
             }
         }
 
@@ -402,7 +409,7 @@ impl<'err> Evaluator<'err> {
             Expr::Get { object, name } => {
                 let object = self.evaluate(object, environment)?;
 
-                object.get_attr(name)?
+                object.get_attr(&name.lexeme)?
             }
 
             Expr::List { items } => {
@@ -430,7 +437,7 @@ impl<'err> Evaluator<'err> {
         Ok(value)
     }
 
-    fn call(
+    pub fn call(
         &mut self,
         callee: Object,
         paren: &Token,
@@ -468,7 +475,7 @@ impl<'err> Evaluator<'err> {
                 }
                 Callable::Native(native_fn) => {
                     self.check_arity(arguments.len(), native_fn.arity, native_fn.name, paren)?;
-                    (native_fn.body)(arguments)
+                    (native_fn.body)(self, arguments)
                 }
             },
             Object::Class(class) => {

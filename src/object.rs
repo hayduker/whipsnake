@@ -8,7 +8,7 @@ use crate::{
     callable::Callable,
     class::{PyClass, PyInstance},
     error::RuntimeError,
-    token::{SourceLocation, Token},
+    token::SourceLocation,
 };
 
 /// Represents all possible runtime values in the Whipsake interpreter.
@@ -32,44 +32,40 @@ pub enum Object {
 }
 
 impl Object {
-    pub fn get_attr(&self, name: &Token) -> Result<Object, RuntimeError> {
+    pub fn get_attr(&self, name: &str) -> Result<Object, RuntimeError> {
         match self {
-            Object::Instance(instance) => instance.get(&name.lexeme),
+            Object::Instance(instance) => instance.get(name),
             Object::Class(class) => {
                 let class_borrow = class.borrow();
-                class_borrow
-                    .attrs
-                    .get(&name.lexeme)
-                    .cloned()
-                    .ok_or_else(|| {
-                        RuntimeError::AttributeError(
-                            SourceLocation { line: name.line },
-                            format!(
-                                "type object '{}' has no attribute '{}'",
-                                class_borrow.name, name.lexeme
-                            ),
-                        )
-                    })
+                class_borrow.attrs.get(name).cloned().ok_or_else(|| {
+                    RuntimeError::AttributeError(
+                        SourceLocation { line: 0 },
+                        format!(
+                            "type object '{}' has no attribute '{}'",
+                            class_borrow.name, name
+                        ),
+                    )
+                })
             }
             _ => Err(RuntimeError::TypeError(
-                SourceLocation { line: name.line },
+                SourceLocation { line: 0 },
                 format!("'{}' object has no attributes", self.py_type()),
             )),
         }
     }
 
-    pub fn set_attr(&self, name: &Token, value: Object) -> Result<(), RuntimeError> {
+    pub fn set_attr(&self, name: &str, value: Object) -> Result<(), RuntimeError> {
         match self {
             Object::Instance(instance) => {
-                instance.set(&name.lexeme, value);
+                instance.set(name, value);
                 Ok(())
             }
             Object::Class(class) => {
-                class.borrow_mut().attrs.insert(name.lexeme.clone(), value);
+                class.borrow_mut().attrs.insert(name.to_string(), value);
                 Ok(())
             }
             _ => Err(RuntimeError::TypeError(
-                SourceLocation { line: name.line },
+                SourceLocation { line: 0 },
                 format!("'{}' object has no attributes", self.py_type()),
             )),
         }

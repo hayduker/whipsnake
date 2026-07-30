@@ -4,6 +4,7 @@ use crate::{
     callable::{Arity, Callable, NativeFn},
     class::{NativeAlloc, NativePayload, PyClass},
     error::RuntimeError,
+    evaluator::Evaluator,
     object::Object,
     token::SourceLocation,
 };
@@ -92,7 +93,7 @@ where
 
 const APPEND_FN_NAME: &str = "append";
 
-pub fn append_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+pub fn append_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     let item = args[1].clone();
 
     with_self_list(&args, |list| {
@@ -114,7 +115,7 @@ const APPEND_FN: NativeFn = NativeFn {
 
 const CLEAR_FN_NAME: &str = "clear";
 
-fn clear_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+fn clear_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     with_self_list(&args, |list| {
         list.items.clear();
     })?;
@@ -134,7 +135,7 @@ const CLEAR_FN: NativeFn = NativeFn {
 
 const GETITEM_FN_NAME: &str = "__getitem__";
 
-fn getitem_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+fn getitem_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     let mut index = match args[1].clone() {
         Object::Int(i) => i,
         object => {
@@ -179,7 +180,7 @@ const GETITEM_FN: NativeFn = NativeFn {
 
 const LEN_FN_NAME: &str = "__len__";
 
-fn len_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+fn len_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     let length = with_self_list(&args, |list| list.items.len())?;
     Ok(Object::Int(length as i64))
 }
@@ -196,7 +197,7 @@ const LEN_FN: NativeFn = NativeFn {
 
 const SETITEM_FN_NAME: &str = "__setitem__";
 
-fn setitem_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+fn setitem_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     let mut index = match args[1] {
         Object::Int(i) => i,
         ref object => {
@@ -248,7 +249,7 @@ const SETITEM_FN: NativeFn = NativeFn {
 
 const STR_FN_NAME: &str = "__str__";
 
-fn str_impl(args: Vec<Object>) -> Result<Object, RuntimeError> {
+fn str_impl(_evaluator: &mut Evaluator, args: Vec<Object>) -> Result<Object, RuntimeError> {
     let string = with_self_list(&args, |list| {
         let mut s = String::from("[");
         for item in &list.items {
