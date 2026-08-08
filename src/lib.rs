@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod bytecode;
 pub mod callable;
 pub mod class;
 pub mod environment;
