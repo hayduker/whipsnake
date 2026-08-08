@@ -1716,3 +1716,79 @@ v2 = c.val
 v1 + v2"#,
     Object::Int(101)
 );
+
+test_case!(
+    list_literal_and_indexing,
+    r#"
+lst = [10, 20, 30]
+v1 = lst.__getitem__(0)
+v2 = lst.__getitem__(1)
+lst.__setitem__(2, 40)
+v3 = lst.__getitem__(-1)
+
+v1 + v2 + v3"#,
+    Object::Int(70)
+);
+
+test_case!(
+    list_append_and_len_method,
+    r#"
+lst = list()
+lst.append(1)
+lst.append(2)
+lst.append(3)
+lst.__len__()"#,
+    Object::Int(3)
+);
+
+test_case!(
+    builtin_len_function_with_list,
+    r#"
+lst = [1, 2, 3, 4]
+len(lst)"#,
+    Object::Int(4)
+);
+
+test_case!(
+    builtin_len_dispatches_to_custom_class_dunder,
+    r#"
+class CustomContainer:
+    def __len__(self):
+        return 42
+
+c = CustomContainer()
+len(c)"#,
+    Object::Int(42)
+);
+
+test_case!(
+    list_clear,
+    r#"
+lst = [1, 2, 3]
+lst.clear()
+len(lst)"#,
+    Object::Int(0)
+);
+
+test_case!(
+    list_negative_indexing,
+    r#"
+lst = [10, 20, 30, 40]
+lst.__setitem__(-2, 99)
+lst.__getitem__(-2)"#,
+    Object::Int(99)
+);
+
+test_case!(
+    subclass_built_in_list_inherits_methods,
+    r#"
+class CustomList(list):
+    def count_plus_one(self):
+        return len(self) + 1
+
+cl = CustomList()
+cl.append(10)
+cl.append(20)
+cl.count_plus_one()"#,
+    Object::Int(3)
+);

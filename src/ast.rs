@@ -70,4 +70,8 @@ pub enum Expr {
     List {
         items: Vec<Expr>,
     },
+    // Index {
+    //     object: Box<Expr>,
+    //     index: Box<Expr>,
+    // },
 }
